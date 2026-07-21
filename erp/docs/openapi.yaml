@@ -1,0 +1,605 @@
+openapi: 3.0.3
+info:
+  title: SIBA School ERP API
+  version: 1.0.0
+  description: >
+    API-first School ERP backend for web and mobile apps.
+    
+    The site (public website & parent portal) and ERP now share a single database (`siba_erp`).
+    Site tables (parents, admins, applications, fees, cms_pages, settings, notifications, staff)
+    coexist in the same database as ERP tables, with FK links between them.
+servers:
+  - url: http://localhost/siba/erp/public/api/v1
+    description: Local Development
+  - url: https://sibapublicschool.com/erp/public/api/v1
+    description: Production
+tags:
+  - name: Auth
+  - name: Students
+  - name: Academics
+  - name: Finance
+  - name: Operations
+  - name: HR
+  - name: Admissions
+  - name: Reports
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+  schemas:
+    ApiSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+    ApiError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+security:
+  - bearerAuth: []
+paths:
+  /admissions/applications:
+    get:
+      tags: [Admissions]
+      summary: List admission applications
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Search by student name, father name, mother name, parent name, or phone
+        - in: query
+          name: status
+          schema: { type: string }
+          description: Filter by status (Application started, Under review, Admitted, Rejected)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      applications:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: integer }
+                            student_name: { type: string }
+                            first_name: { type: string }
+                            class_sought: { type: string }
+                            status: { type: string }
+                            admission_no: { type: string }
+                            applied_at: { type: string }
+                            parent_name: { type: string }
+                            parent_phone: { type: string }
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+  /admissions/register-parent:
+    post:
+      tags: [Admissions]
+      summary: Register a new parent account only (no application)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+                - email
+                - password
+              properties:
+                name: { type: string, description: Parent's full name }
+                phone: { type: string, description: 10-digit mobile number }
+                email: { type: string, format: email, description: Parent email address }
+                password: { type: string, description: Account password }
+      responses:
+        '200':
+          description: Parent registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: Parent registered successfully }
+                  data:
+                    type: object
+                    properties:
+                      parent_id: { type: integer }
+                      user_id: { type: integer }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: false }
+                  message: { type: string }
+  /admissions/apply:
+    post:
+      tags: [Admissions]
+      summary: Submit a new admission application (creates parent account + application)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+                - email
+                - password
+                - student_name
+                - dob
+                - class_sought
+                - father_name
+                - mother_name
+              properties:
+                name: { type: string, description: Parent's full name }
+                phone: { type: string, description: 10-digit mobile number }
+                email: { type: string, format: email, description: Parent email address }
+                password: { type: string, description: Account password }
+                student_name: { type: string, description: Full name of the student }
+                first_name: { type: string }
+                middle_name: { type: string }
+                last_name: { type: string }
+                dob: { type: string, format: date, description: Date of birth (YYYY-MM-DD) }
+                gender: { type: string, enum: [Male, Female, Other] }
+                religion: { type: string }
+                blood_group: { type: string }
+                aadhaar_no: { type: string }
+                previous_school: { type: string }
+                previous_class: { type: string }
+                class_sought: { type: string, description: Class applying for (e.g. Nursery, UKG, Class 1) }
+                address_line1: { type: string }
+                address_line2: { type: string }
+                post_office: { type: string }
+                police_station: { type: string }
+                district: { type: string }
+                village_city: { type: string }
+                pin: { type: string }
+                state: { type: string }
+                country: { type: string, default: India }
+                father_name: { type: string }
+                father_occupation: { type: string }
+                mother_name: { type: string }
+                mother_occupation: { type: string }
+                guardian_name: { type: string }
+                guardian_occupation: { type: string }
+                family_annual_income: { type: string }
+                contact_no: { type: string }
+                address: { type: string }
+      responses:
+        '200':
+          description: Application submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: Application submitted successfully }
+                  data:
+                    type: object
+                    properties:
+                      parent_id: { type: integer }
+                      application_id: { type: integer }
+                      user_id: { type: integer }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: false }
+                  message: { type: string }
+  /health:
+    get:
+      tags: [Reports]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and get API token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiSuccess' }
+        '401':
+          description: Invalid credentials
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user profile
+      responses:
+        '200': { description: OK }
+  /students:
+    get:
+      tags: [Students]
+      summary: List students
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: class_name
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Students]
+      summary: Create student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [admission_no, first_name, last_name]
+              properties:
+                admission_no: { type: string }
+                first_name: { type: string }
+                last_name: { type: string }
+                gender: { type: string }
+                dob: { type: string, format: date }
+                phone: { type: string }
+                email: { type: string }
+      responses:
+        '200': { description: Created }
+  /students/{id}:
+    get:
+      tags: [Students]
+      summary: Get student
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+    put:
+      tags: [Students]
+      summary: Update student
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Students]
+      summary: Delete student
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Deleted }
+  /students/attendance:
+    get:
+      tags: [Students]
+      summary: List attendance
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer }
+        - in: query
+          name: student_id
+          schema: { type: integer }
+        - in: query
+          name: date
+          schema: { type: string, format: date }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Students]
+      summary: Create or update attendance by date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, date, status]
+              properties:
+                student_id: { type: integer }
+                date: { type: string, format: date }
+                status: { type: string }
+                remark: { type: string }
+      responses:
+        '200': { description: Saved }
+  /students/attendance/{id}:
+    put:
+      tags: [Students]
+      summary: Update attendance record
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Students]
+      summary: Delete attendance
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Deleted }
+  /students/lifecycle:
+    get:
+      tags: [Students]
+      summary: List lifecycle records
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer }
+        - in: query
+          name: student_id
+          schema: { type: integer }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Students]
+      summary: Create lifecycle record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, class_name, session_label, status]
+              properties:
+                student_id: { type: integer }
+                class_name: { type: string }
+                section_name: { type: string }
+                session_label: { type: string }
+                status: { type: string }
+      responses:
+        '200': { description: Created }
+  /students/lifecycle/{id}:
+    put:
+      tags: [Students]
+      summary: Update lifecycle record
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Students]
+      summary: Delete lifecycle record
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Deleted }
+  /academics/subjects:
+    get: { tags: [Academics], summary: List subjects, responses: { '200': { description: OK } } }
+    post: { tags: [Academics], summary: Create subject, responses: { '200': { description: Created } } }
+  /academics/subjects/{id}:
+    put: { tags: [Academics], summary: Update subject, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Academics], summary: Delete subject, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /academics/exam-results:
+    get: { tags: [Academics], summary: List exam results, responses: { '200': { description: OK } } }
+    post: { tags: [Academics], summary: Create exam result, responses: { '200': { description: Created } } }
+  /academics/exam-results/{id}:
+    put: { tags: [Academics], summary: Update exam result, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Academics], summary: Delete exam result, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /academics/assignments:
+    get: { tags: [Academics], summary: List assignments, responses: { '200': { description: OK } } }
+    post: { tags: [Academics], summary: Create assignment, responses: { '200': { description: Created } } }
+  /academics/assignments/{id}:
+    put: { tags: [Academics], summary: Update assignment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Academics], summary: Delete assignment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /academics/assignments/submissions:
+    get: { tags: [Academics], summary: List assignment submissions, responses: { '200': { description: OK } } }
+    post: { tags: [Academics], summary: Create submission, responses: { '200': { description: Created } } }
+  /academics/assignments/submissions/{id}:
+    put: { tags: [Academics], summary: Update submission, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Academics], summary: Delete submission, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /academics/messages:
+    get: { tags: [Academics], summary: List messages, responses: { '200': { description: OK } } }
+    post: { tags: [Academics], summary: Send message, responses: { '200': { description: Sent } } }
+  /academics/messages/{id}:
+    put: { tags: [Academics], summary: Update message, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Academics], summary: Delete message, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /finance/fee-structures:
+    get: { tags: [Finance], summary: List fee structures, responses: { '200': { description: OK } } }
+    post: { tags: [Finance], summary: Create fee structure, responses: { '200': { description: Created } } }
+  /finance/fee-structures/{id}:
+    put: { tags: [Finance], summary: Update fee structure, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Finance], summary: Delete fee structure, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /finance/fees/dues:
+    get: { tags: [Finance], summary: List fee dues, responses: { '200': { description: OK } } }
+    post: { tags: [Finance], summary: Create fee due, responses: { '200': { description: Created } } }
+  /finance/fees/dues/{id}:
+    put: { tags: [Finance], summary: Update fee due, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Finance], summary: Delete fee due, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /finance/payments:
+    get: { tags: [Finance], summary: List payments, responses: { '200': { description: OK } } }
+  /finance/payments/offline:
+    post: { tags: [Finance], summary: Create offline payment + receipt, responses: { '200': { description: Created } } }
+  /finance/payments/{id}:
+    put: { tags: [Finance], summary: Update payment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Finance], summary: Delete payment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /finance/fees/summary:
+    get: { tags: [Finance], summary: Fees summary, responses: { '200': { description: OK } } }
+  /finance/reconciliation:
+    get: { tags: [Finance], summary: List reconciliation entries, responses: { '200': { description: OK } } }
+    post: { tags: [Finance], summary: Create reconciliation entry, responses: { '200': { description: Created } } }
+  /finance/reconciliation/{id}:
+    put: { tags: [Finance], summary: Update reconciliation entry, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Finance], summary: Delete reconciliation entry, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /operations/timetable:
+    get: { tags: [Operations], summary: List timetable periods, responses: { '200': { description: OK } } }
+    post: { tags: [Operations], summary: Upload timetable periods, responses: { '200': { description: Created } } }
+  /operations/timetable/{id}:
+    put: { tags: [Operations], summary: Update timetable row, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Operations], summary: Delete timetable row, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /operations/transport/routes:
+    get: { tags: [Operations], summary: List transport routes, responses: { '200': { description: OK } } }
+    post: { tags: [Operations], summary: Create transport route, responses: { '200': { description: Created } } }
+  /operations/transport/routes/{id}:
+    put: { tags: [Operations], summary: Update route, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Operations], summary: Delete route, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /operations/transport/allocations:
+    get: { tags: [Operations], summary: List transport allocations, responses: { '200': { description: OK } } }
+    post: { tags: [Operations], summary: Create transport allocation, responses: { '200': { description: Created } } }
+  /operations/transport/allocations/{id}:
+    put: { tags: [Operations], summary: Update transport allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Operations], summary: Delete transport allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /operations/hostels:
+    get: { tags: [Operations], summary: List hostels, responses: { '200': { description: OK } } }
+    post: { tags: [Operations], summary: Create hostel, responses: { '200': { description: Created } } }
+  /operations/hostels/{id}:
+    put: { tags: [Operations], summary: Update hostel, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Operations], summary: Delete hostel, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /operations/hostels/rooms:
+    get: { tags: [Operations], summary: List hostel rooms, responses: { '200': { description: OK } } }
+    post: { tags: [Operations], summary: Create hostel room, responses: { '200': { description: Created } } }
+  /operations/hostels/rooms/{id}:
+    put: { tags: [Operations], summary: Update hostel room, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Operations], summary: Delete hostel room, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /operations/hostel/allocations:
+    get: { tags: [Operations], summary: List hostel allocations, responses: { '200': { description: OK } } }
+    post: { tags: [Operations], summary: Create hostel allocation, responses: { '200': { description: Created } } }
+  /operations/hostel/allocations/{id}:
+    put: { tags: [Operations], summary: Update hostel allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [Operations], summary: Delete hostel allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /hr/employees:
+    get: { tags: [HR], summary: List employees, responses: { '200': { description: OK } } }
+    post: { tags: [HR], summary: Create employee, responses: { '200': { description: Created } } }
+  /hr/employees/{id}:
+    put: { tags: [HR], summary: Update employee, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [HR], summary: Delete employee, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /hr/leave-requests:
+    get: { tags: [HR], summary: List leave requests, responses: { '200': { description: OK } } }
+    post: { tags: [HR], summary: Create leave request, responses: { '200': { description: Created } } }
+  /hr/leave-requests/{id}:
+    put: { tags: [HR], summary: Update leave request, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
+    delete: { tags: [HR], summary: Delete leave request, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /hr/leave-requests/approve:
+    post: { tags: [HR], summary: Approve or reject leave request, responses: { '200': { description: Updated } } }
+  /hr/payroll/runs:
+    get: { tags: [HR], summary: List payroll runs, responses: { '200': { description: OK } } }
+  /hr/payroll/runs/{id}:
+    delete: { tags: [HR], summary: Delete payroll run, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+  /hr/payroll/items:
+    get: { tags: [HR], summary: List payroll items, responses: { '200': { description: OK } } }
+  /hr/payroll/generate:
+    post: { tags: [HR], summary: Generate payroll run, responses: { '200': { description: Generated } } }
+  /reports/dashboard:
+    get: { tags: [Reports], summary: Dashboard metrics, responses: { '200': { description: OK } } }
+  /reports/payroll-export:
+    get:
+      tags: [Reports]
+      summary: Payroll export in CSV (Excel-compatible)
+      parameters:
+        - in: query
+          name: month
+          schema: { type: string, example: 2026-04 }
+      responses:
+        '200':
+          description: CSV response

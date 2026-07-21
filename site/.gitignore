@@ -1,0 +1,23 @@
+# Uploaded user files – never commit these
+uploads/docs/*
+uploads/photos/*
+
+# Keep the directory structure
+!uploads/docs/.gitkeep
+!uploads/photos/.gitkeep
+
+# Config with real credentials (copy from config.example.php)
+# includes/config.php   ← uncomment this line on production
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor folders
+.vscode/
+.idea/
+
+# PHP error logs
+*.log
+error_log
