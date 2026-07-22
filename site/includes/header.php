@@ -47,7 +47,7 @@ require_once(__DIR__ . '/config.php');
         <?php elseif (isset($_SESSION['admin_id'])): ?>
             <a href="<?php echo SITE_URL; ?>/admin/dashboard.php" class="btn btn-primary"><i class="fas fa-shield-alt"></i> Admin</a>
         <?php else: ?>
-            <a href="<?php echo SITE_URL; ?>/parent/login.php" class="btn btn-outline-primary btn"><i class="fas fa-sign-in-alt"></i> Parent Login</a>
+            <a href="<?php echo SITE_URL; ?>/parent/login.php" class="btn btn-outline-primary btn" title="My Account"><i class="fas fa-user-circle" style="font-size:1.3rem;"></i></a>
             <a href="<?php echo SITE_URL; ?>/parent/register.php" class="btn btn-accent"><i class="fas fa-user-plus"></i> Admission</a>
         <?php endif; ?>
     </div>
