@@ -16,6 +16,9 @@ if (!$fullApp) {
 
 $paidCheck = $conn->query("SELECT * FROM fees WHERE application_id='$app_id' AND fee_type='application' AND status='Paid' LIMIT 1");
 $feePaid = $paidCheck->fetch_assoc();
+$appNo = $fullApp['application_no'] ?? 'SBA-' . date('Y') . '-' . str_pad($app_id, 4, '0', STR_PAD_LEFT);
+$fullName = trim(($fullApp['first_name'] ?? '') . ' ' . ($fullApp['middle_name'] ?? '') . ' ' . ($fullApp['last_name'] ?? ''));
+if (!$fullName) $fullName = $fullApp['student_name'];
 ?>
 
 <style>
@@ -39,12 +42,18 @@ $feePaid = $paidCheck->fetch_assoc();
 .summary-contact h3 { margin-bottom: 0.75rem; font-size: 1.2rem; }
 .summary-contact p { opacity: 0.9; font-size: 0.93rem; margin-bottom: 0.3rem; }
 .summary-contact i { margin-right: 0.4rem; }
+.photo-thumb { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #e2e8f0; }
+@media print { .no-print { display:none; } body { background:#fff; } .summary-wrap { max-width:100%; } }
 </style>
 
 <div class="portal-header">
     <div class="portal-header-title">
-        <h2><i class="fas fa-check-circle" style="color:var(--success-color, #28a745);"></i> &nbsp;Application Submitted</h2>
-        <p>Your application for admission has been received. Here is the complete summary.</p>
+        <h2><i class="fas fa-file-alt" style="color:var(--secondary-color);"></i> &nbsp;Application Summary</h2>
+        <p>Application No: <strong><?= htmlspecialchars($appNo) ?></strong></p>
+    </div>
+    <div class="no-print" style="display:flex;gap:.75rem;">
+        <a href="receipt.php?app_id=<?= $app_id ?>" class="btn btn-outline-primary" target="_blank"><i class="fas fa-receipt"></i> Print Receipt</a>
+        <a href="dashboard.php" class="btn btn-outline-primary"><i class="fas fa-arrow-left"></i> Dashboard</a>
     </div>
 </div>
 
@@ -63,8 +72,12 @@ $feePaid = $paidCheck->fetch_assoc();
         <div class="head"><i class="fas fa-id-card"></i> Application Status</div>
         <div class="body">
             <div class="summary-row">
-                <span class="lbl">Application ID</span>
-                <span class="val">SIBA-2026-<?php echo str_pad($app_id, 4, '0', STR_PAD_LEFT); ?></span>
+                <span class="lbl">Application No</span>
+                <span class="val"><strong><?= htmlspecialchars($appNo) ?></strong></span>
+            </div>
+            <div class="summary-row">
+                <span class="lbl">Admission No</span>
+                <span class="val"><?= htmlspecialchars($fullApp['admission_no'] ?? '—') ?></span>
             </div>
             <div class="summary-row">
                 <span class="lbl">Status</span>
@@ -76,7 +89,15 @@ $feePaid = $paidCheck->fetch_assoc();
             </div>
             <div class="summary-row">
                 <span class="lbl">Fee Payment</span>
-                <span class="val"><?php echo $feePaid ? '<span style="color:#155724;font-weight:600;"><i class="fas fa-check-circle"></i> Paid</span>' : '<span style="color:#856404;font-weight:600;"><i class="fas fa-clock"></i> Pending</span>'; ?></span>
+                <span class="val">
+                    <?php if ($feePaid): ?>
+                        <span style="color:#155724;font-weight:600;"><i class="fas fa-check-circle"></i> Paid</span>
+                    <?php elseif (($fullApp['payment_status'] ?? 'Pending') === 'Paid'): ?>
+                        <span style="color:#155724;font-weight:600;"><i class="fas fa-check-circle"></i> Paid</span>
+                    <?php else: ?>
+                        <span style="color:#856404;font-weight:600;"><i class="fas fa-clock"></i> Pending</span>
+                    <?php endif; ?>
+                </span>
             </div>
         </div>
     </div>
@@ -85,9 +106,12 @@ $feePaid = $paidCheck->fetch_assoc();
     <div class="summary-card">
         <div class="head"><i class="fas fa-child"></i> Student Information</div>
         <div class="body">
-            <div class="summary-row"><span class="lbl">First Name</span><span class="val"><?php echo htmlspecialchars($fullApp['first_name'] ?? ''); ?></span></div>
-            <div class="summary-row"><span class="lbl">Middle Name</span><span class="val"><?php echo htmlspecialchars($fullApp['middle_name'] ?? ''); ?></span></div>
-            <div class="summary-row"><span class="lbl">Last Name</span><span class="val"><?php echo htmlspecialchars($fullApp['last_name'] ?? ''); ?></span></div>
+            <?php if ($fullApp['photo']): ?>
+                <div style="text-align:center;margin-bottom:1rem;">
+                    <img src="<?= SITE_URL ?>/uploads/docs/<?= rawurlencode($fullApp['photo']) ?>" alt="Student Photo" class="photo-thumb">
+                </div>
+            <?php endif; ?>
+            <div class="summary-row"><span class="lbl">Full Name</span><span class="val"><?php echo htmlspecialchars($fullName); ?></span></div>
             <div class="summary-row"><span class="lbl">Date of Birth</span><span class="val"><?php echo htmlspecialchars($fullApp['dob']); ?></span></div>
             <div class="summary-row"><span class="lbl">Gender</span><span class="val"><?php echo htmlspecialchars($fullApp['gender'] ?? ''); ?></span></div>
             <div class="summary-row"><span class="lbl">Religion</span><span class="val"><?php echo htmlspecialchars($fullApp['religion'] ?? ''); ?></span></div>
@@ -125,7 +149,9 @@ $feePaid = $paidCheck->fetch_assoc();
             <div class="summary-row"><span class="lbl">Mother's Occupation</span><span class="val"><?php echo htmlspecialchars($fullApp['mother_occupation'] ?? ''); ?></span></div>
             <div class="summary-row"><span class="lbl">Guardian's Name</span><span class="val"><?php echo htmlspecialchars($fullApp['guardian_name'] ?? ''); ?></span></div>
             <div class="summary-row"><span class="lbl">Guardian's Occupation</span><span class="val"><?php echo htmlspecialchars($fullApp['guardian_occupation'] ?? ''); ?></span></div>
-            <div class="summary-row"><span class="lbl">Family Annual Income</span><span class="val"><?php echo htmlspecialchars($fullApp['family_annual_income'] ?? ''); ?></span></div>
+            <div class="summary-row"><span class="lbl">Family Annual Income</span><span class="val">₹<?php echo htmlspecialchars($fullApp['family_annual_income'] ?? ''); ?></span></div>
+            <div class="summary-row"><span class="lbl">Contact No</span><span class="val"><?php echo htmlspecialchars($fullApp['contact_no'] ?? ''); ?></span></div>
+            <div class="summary-row"><span class="lbl">Email</span><span class="val"><?php echo htmlspecialchars($fullApp['email'] ?? ''); ?></span></div>
         </div>
     </div>
 
@@ -135,10 +161,10 @@ $feePaid = $paidCheck->fetch_assoc();
         <div class="body">
             <?php
             $docs = [
-                'Aadhaar Card'            => $fullApp['aadhaar'],
-                'Birth Certificate'       => $fullApp['birth_cert'],
-                'Leaving Certificate'     => $fullApp['leaving_cert'],
-                'Previous Marksheet'      => $fullApp['prev_marksheet'],
+                'Aadhaar Card'            => $fullApp['aadhaar'] ?? $fullApp['aadhaar_file'] ?? '',
+                'Birth Certificate'       => $fullApp['birth_cert'] ?? '',
+                'Leaving Certificate'     => $fullApp['leaving_cert'] ?? '',
+                'Previous Marksheet'      => $fullApp['prev_marksheet'] ?? '',
             ];
             ?>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">

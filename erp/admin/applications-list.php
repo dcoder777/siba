@@ -80,6 +80,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status']) && v
     }
 }
 
+// ─── Delete Application ───
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_app']) && verify_csrf()) {
+    $appId = (int) ($_POST['app_id'] ?? 0);
+    if ($appId > 0) {
+        try {
+            $pdo->prepare("DELETE FROM fees WHERE application_id = :id")->execute(['id' => $appId]);
+            $pdo->prepare("DELETE FROM applications WHERE id = :id")->execute(['id' => $appId]);
+            $success = 'Application deleted successfully.';
+        } catch (Exception $e) {
+            $error = 'Failed to delete application: ' . $e->getMessage();
+        }
+    }
+}
+
+// ─── Toggle Payment Status ───
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_payment']) && verify_csrf()) {
+    $appId = (int) ($_POST['app_id'] ?? 0);
+    $newStatus = trim((string) ($_POST['payment_status'] ?? ''));
+    if ($appId > 0 && in_array($newStatus, ['Pending', 'Paid'], true)) {
+        try {
+            $pdo->prepare("UPDATE applications SET payment_status = :status WHERE id = :id")->execute(['status' => $newStatus, 'id' => $appId]);
+            $success = 'Payment status updated to ' . $newStatus . '.';
+        } catch (Exception $e) {
+            $error = 'Failed to update payment status: ' . $e->getMessage();
+        }
+    }
+}
+
 // ─── Fetch Applications ───
 $where = [];
 $params = [];
@@ -244,6 +272,7 @@ function statusBadge(string $s): string {
                 <thead>
                     <tr>
                         <th>#</th>
+                        <th>App No</th>
                         <th>Student</th>
                         <th>Class</th>
                         <th>Parent</th>
@@ -255,11 +284,12 @@ function statusBadge(string $s): string {
                 </thead>
                 <tbody>
                     <?php if (empty($applications)): ?>
-                        <tr><td colspan="8" style="text-align:center;padding:2rem;color:#94a3b8;">No applications found.</td></tr>
+                        <tr><td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No applications found.</td></tr>
                     <?php else: ?>
                         <?php foreach ($applications as $i => $a): ?>
                             <tr>
                                 <td style="color:#94a3b8;"><?= $offset + $i + 1 ?></td>
+                                <td><code style="font-size:.85rem;"><?= e($a['application_no'] ?? '—') ?></code></td>
                                 <td>
                                     <strong><?= e($a['student_name']) ?></strong>
                                     <?php if ($a['admission_no']): ?>
@@ -272,17 +302,31 @@ function statusBadge(string $s): string {
                                 <td style="white-space:nowrap;"><?= date('d-m-Y', strtotime($a['applied_at'])) ?></td>
                                 <td><?= statusBadge($a['status']) ?></td>
                                 <td>
-                                    <form method="post" class="inline-status-form" onsubmit="return confirm('Update status to \'' + this.status.value + '\'?')">
+                                    <?php $payStatus = $a['payment_status'] ?? 'Pending'; ?>
+                                    <form method="post" class="inline-status-form" onsubmit="return confirm('Update status & payment for <?= e($a['student_name']) ?>?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
                                         <input type="hidden" name="update_status" value="1">
-                                        <select name="status">
+                                        <input type="hidden" name="toggle_payment" value="1">
+                                        <select name="status" title="Application status" style="padding:.25rem .4rem;font-size:.8rem;border:1px solid #cbd5e1;border-radius:4px;">
                                             <?php foreach ($statusOptions as $s): ?>
                                                 <option value="<?= e($s) ?>" <?= $a['status'] === $s ? 'selected' : '' ?>><?= e($s) ?></option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                                        <select name="payment_status" title="Payment status" style="padding:.25rem .4rem;font-size:.8rem;border:1px solid #cbd5e1;border-radius:4px;">
+                                            <option value="Pending" <?= $payStatus === 'Pending' ? 'selected' : '' ?>>💳 Pending</option>
+                                            <option value="Paid" <?= $payStatus === 'Paid' ? 'selected' : '' ?>>✅ Paid</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-primary btn-sm" style="padding:.25rem .6rem;font-size:.8rem;">Save</button>
                                     </form>
+                                    <div style="margin-top:.3rem;">
+                                        <form method="post" style="display:inline;" onsubmit="return confirm('Delete application <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
+                                            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                            <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
+                                            <input type="hidden" name="delete_app" value="1">
+                                            <button type="submit" class="btn btn-sm" style="background:none;border:none;color:#dc2626;font-size:.78rem;cursor:pointer;padding:0;text-decoration:underline;">Delete</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

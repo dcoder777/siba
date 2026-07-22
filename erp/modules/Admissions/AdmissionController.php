@@ -163,6 +163,17 @@ class AdmissionController extends Controller
             $params['mother_name'] = $motherName;
             $params['student_name'] = $studentName;
 
+            // Generate application number
+            $year = date('Y');
+            $prefix = "SBA-{$year}-";
+            $countStmt = $this->pdo->query("SELECT COUNT(*) AS c FROM applications WHERE application_no LIKE '{$prefix}%'");
+            $appCount = (int) $countStmt->fetch()['c'];
+            $appNo = $prefix . str_pad((string) ($appCount + 1), 4, '0', STR_PAD_LEFT);
+
+            $colNames[] = 'application_no';
+            $placeholders[] = ':application_no';
+            $params['application_no'] = $appNo;
+
             $appStmt = $this->pdo->prepare(
                 'INSERT INTO applications (' . implode(', ', $colNames) . ", status, applied_at) VALUES (" . implode(', ', $placeholders) . ", 'Application started', NOW())"
             );
@@ -172,6 +183,7 @@ class AdmissionController extends Controller
             $this->pdo->commit();
 
             $this->ok([
+                'application_no' => $appNo,
                 'parent_id' => $parentResult['parent_id'],
                 'application_id' => $applicationId,
                 'user_id' => $parentResult['user_id'],

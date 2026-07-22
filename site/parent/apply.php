@@ -44,9 +44,19 @@ if ($cols->num_rows === 0) {
 
 $error   = '';
 $success = '';
+$submittedApp = null;
+
+// ---- Generate application number ----
+function generateApplicationNo(mysqli $conn): string {
+    $year = date('Y');
+    $prefix = "SBA-{$year}-";
+    $result = $conn->query("SELECT COUNT(*) AS c FROM applications WHERE application_no LIKE '{$prefix}%'");
+    $count = $result ? (int) $result->fetch_assoc()['c'] : 0;
+    return $prefix . str_pad((string) ($count + 1), 4, '0', STR_PAD_LEFT);
+}
 
 // ---- Handle form submission ----
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application']) || isset($_POST['submit_and_pay']))) {
 
     $first_name       = $conn->real_escape_string(trim($_POST['first_name']));
     $middle_name      = $conn->real_escape_string(trim($_POST['middle_name']));
@@ -142,8 +152,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application']))
         }
 
         if (!$error) {
+            $appNo = generateApplicationNo($conn);
+            $payStatus = isset($_POST['submit_and_pay']) ? 'Pending' : 'Pending';
+
             $sql = "INSERT INTO applications SET
                 parent_id = '$parent_id',
+                application_no = '$appNo',
+                payment_status = '$payStatus',
                 first_name = '$first_name',
                 middle_name = '$middle_name',
                 last_name = '$last_name',
@@ -180,7 +195,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application']))
 
             if ($conn->query($sql)) {
                 $appId = $conn->insert_id;
-                header("Location: pay-fees.php?app_id=$appId"); exit();
+
+                // Send email notification
+                $parentData = $conn->query("SELECT name, email FROM parents WHERE id = $parent_id")->fetch_assoc();
+                $parentEmail = $parentData ? $parentData['email'] : '';
+                $parentName = $parentData ? $parentData['name'] : 'Parent';
+
+                if ($parentEmail) {
+                    $subject = "SIBA Public School – Application Submitted (#{$appNo})";
+                    $loginUrl = SITE_URL . '/parent/login.php';
+                    $receiptUrl = SITE_URL . "/parent/receipt.php?app_id={$appId}";
+                    $message = <<<HTML
+<!doctype html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;padding:20px;color:#333;">
+    <h2>Application Submitted Successfully</h2>
+    <p>Dear {$parentName},</p>
+    <p>Your admission application for <strong>{$student_name}</strong> has been received at SIBA Public School.</p>
+    <table style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0;">
+        <tr><td><strong>Application No:</strong></td><td>{$appNo}</td></tr>
+        <tr><td><strong>Student Name:</strong></td><td>{$student_name}</td></tr>
+        <tr><td><strong>Class Applied:</strong></td><td>{$admission_class}</td></tr>
+        <tr><td><strong>Status:</strong></td><td>Application started</td></tr>
+    </table>
+    <p>Please keep your Application No. <strong>{$appNo}</strong> for future reference.</p>
+    <p><a href="{$receiptUrl}" style="background:#1e293b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Download Receipt</a></p>
+    <p>To pay the application fee and complete the process, please visit your <a href="{$loginUrl}">Parent Portal Dashboard</a>.</p>
+    <p>Best regards,<br>SIBA Public School Administration</p>
+</body>
+</html>
+HTML;
+                    $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibaschool.com\r\n";
+                    @mail($parentEmail, $subject, $message, $headers);
+                }
+
+                if (isset($_POST['submit_and_pay'])) {
+                    header("Location: pay-fees.php?app_id=$appId");
+                    exit();
+                }
+
+                $submittedApp = [
+                    'id' => $appId,
+                    'app_no' => $appNo,
+                    'student_name' => $student_name,
+                    'class' => $admission_class,
+                ];
+                $success = "Application submitted successfully! Your Application No. is <strong>{$appNo}</strong>.";
             } else {
                 $error = "Database error: " . $conn->error;
             }
@@ -219,7 +280,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application']))
     <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <?php echo $error; ?></div>
 <?php endif; ?>
 
-<form method="POST" enctype="multipart/form-data" id="applyForm">
+    <?php if ($submittedApp): ?>
+        <div class="section-card" style="border:2px solid #22c55e;">
+            <div class="section-head" style="background:#22c55e;"><i class="fas fa-check-circle"></i> Application Submitted Successfully</div>
+            <div class="section-body" style="text-align:center;padding:2rem;">
+                <div style="font-size:4rem;color:#22c55e;margin-bottom:1rem;"><i class="fas fa-check-circle"></i></div>
+                <h3 style="margin-bottom:0.5rem;">Application No: <strong style="color:#1e293b;font-size:1.4rem;"><?= $submittedApp['app_no'] ?></strong></h3>
+                <p style="color:#64748b;margin-bottom:0.25rem;">Student: <?= htmlspecialchars($submittedApp['student_name']) ?> | Class: <?= htmlspecialchars($submittedApp['class']) ?></p>
+                <p style="color:#64748b;margin-bottom:1.5rem;">Please quote this Application No. in all correspondence with the school.</p>
+                <p style="color:#dc2626;font-weight:600;margin-bottom:1.5rem;">Note: Please contact the school to complete the admission process and make the payment.</p>
+                <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+                    <a href="receipt.php?app_id=<?= $submittedApp['id'] ?>" class="btn btn-primary" target="_blank"><i class="fas fa-download"></i> Download Receipt</a>
+                    <a href="dashboard.php" class="btn btn-outline-primary"><i class="fas fa-tachometer-alt"></i> Go to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if (!$submittedApp): ?>
+    <form method="POST" enctype="multipart/form-data" id="applyForm">
 
     <!-- ===== SECTION 1: STUDENT DETAILS ===== -->
     <div class="section-card">
@@ -446,14 +525,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_application']))
         </div>
     </div>
 
-    <div style="display: flex; gap: 1rem; align-items: center;">
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <button type="submit" name="submit_and_pay" class="btn btn-accent btn-lg">
+            <i class="fas fa-credit-card"></i> Make Payment
+        </button>
         <button type="submit" name="submit_application" class="btn btn-primary btn-lg">
             <i class="fas fa-paper-plane"></i> Submit Application
         </button>
-        <p style="font-size: 0.82rem; color: var(--text-light);">You will receive an acknowledgement after submission.</p>
+        <p style="font-size: 0.82rem; color: var(--text-light);">Submit now and pay later, or pay online now.</p>
     </div>
 
 </form>
+<?php endif; ?>
 
 </div><!-- /.portal-content -->
 </div><!-- /.portal-wrapper -->

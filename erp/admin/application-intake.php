@@ -15,6 +15,7 @@ $error = '';
 $success = '';
 $generatedPhone = '';
 $generatedPassword = '';
+$generatedAppNo = '';
 
 $classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
 $genderOptions = ['Male', 'Female', 'Other'];
@@ -56,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $pin = trim((string) ($_POST['pin'] ?? ''));
     $state = trim((string) ($_POST['state'] ?? ''));
     $country = trim((string) ($_POST['country'] ?? 'India'));
+    $paymentMethod = trim((string) ($_POST['payment_method'] ?? 'Online'));
 
     $errors = [];
     if ($parentName === '') $errors[] = 'Parent name is required.';
@@ -138,9 +140,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 move_uploaded_file($_FILES['prev_marksheet']['tmp_name'], $uploadDir . $prevMarksheet);
             }
 
-            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_occupation, family_annual_income, contact_no, email, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, status, applied_at) VALUES (:parent_id, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :mother_name, :mother_occupation, :guardian_name, :guardian_occupation, :family_annual_income, :contact_no, :email, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, 'Application started', NOW())");
+            // Generate application number
+            $year = date('Y');
+            $prefix = "SBA-{$year}-";
+            $countStmt = $pdo->query("SELECT COUNT(*) AS c FROM applications WHERE application_no LIKE '{$prefix}%'");
+            $appCount = (int) $countStmt->fetch()['c'];
+            $appNo = $prefix . str_pad((string) ($appCount + 1), 4, '0', STR_PAD_LEFT);
+
+            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, application_no, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_occupation, family_annual_income, contact_no, email, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, payment_method, payment_status, status, applied_at) VALUES (:parent_id, :application_no, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :mother_name, :mother_occupation, :guardian_name, :guardian_occupation, :family_annual_income, :contact_no, :email, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, :payment_method, :payment_status, 'Application started', NOW())");
             $stmt->execute([
-                'parent_id' => $parentId, 'student_name' => $studentName, 'first_name' => $firstName,
+                'parent_id' => $parentId, 'application_no' => $appNo, 'student_name' => $studentName, 'first_name' => $firstName,
                 'middle_name' => $middleName ?: null, 'last_name' => $lastName ?: null, 'dob' => $dob,
                 'gender' => $gender ?: null, 'religion' => $religion ?: null, 'blood_group' => $bloodGroup ?: null,
                 'aadhaar_no' => $aadhaarNo ?: null, 'previous_school' => $previousSchool ?: null,
@@ -156,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 'email' => $studentEmail ?: null, 'address' => $combinedAddress ?: null,
                 'birth_cert' => $birthCert ?: null, 'aadhaar' => $aadhaarFile ?: null,
                 'leaving_cert' => $leavingCert ?: null, 'prev_marksheet' => $prevMarksheet ?: null,
+                'payment_method' => $paymentMethod, 'payment_status' => $paymentMethod === 'Offline' ? 'Paid' : 'Pending',
             ]);
 
             $pdo->commit();
@@ -198,6 +208,7 @@ HTML;
             } else {
                 $success .= ' An email with login credentials has been sent to the parent.';
             }
+            $generatedAppNo = $appNo;
         } catch (\RuntimeException $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             $error = $e->getMessage();
@@ -296,6 +307,10 @@ HTML;
         <?php if ($success !== ''): ?>
             <div class="flash" style="background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32"><?= $success ?></div>
             <?php if ($generatedPhone !== ''): ?>
+                <div class="cred-box">
+                    <strong>Application Created</strong><br>
+                    Application No: <code><?= e($generatedAppNo) ?></code>
+                </div>
                 <div class="cred-box">
                     <strong>Parent Login Credentials</strong><br>
                     Portal: <a href="http://localhost/siba/site/parent/login.php">http://localhost/siba/site/parent/login.php</a><br>
@@ -515,6 +530,22 @@ HTML;
                     <div>
                         <label for="prev_marksheet">Previous Marksheet</label>
                         <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf">
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" style="padding:1.25rem">
+                <div class="section-title" style="margin-bottom:1rem;">
+                    <h2>Payment</h2>
+                    <p>Select the payment method for this application.</p>
+                </div>
+                <div class="field-grid">
+                    <div>
+                        <label for="payment_method">Payment Method</label>
+                        <select id="payment_method" name="payment_method">
+                            <option value="Online" <?= ($_POST['payment_method'] ?? 'Online') === 'Online' ? 'selected' : '' ?>>Online (Pending)</option>
+                            <option value="Offline" <?= ($_POST['payment_method'] ?? '') === 'Offline' ? 'selected' : '' ?>>Offline (Paid – cash/cheque/dd)</option>
+                        </select>
                     </div>
                 </div>
             </section>

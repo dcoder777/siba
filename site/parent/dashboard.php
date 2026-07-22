@@ -109,6 +109,7 @@ $steps         = ['Submitted', 'Under Review', 'Decision'];
         $fullApp = $conn->query("SELECT * FROM applications WHERE id='{$app['id']}'")->fetch_assoc();
         ?>
         <div class="info-row"><span class="key">Full Name</span><span class="val"><?php echo htmlspecialchars($fullApp['student_name']); ?></span></div>
+        <div class="info-row"><span class="key">Application No</span><span class="val"><strong><?php echo htmlspecialchars($fullApp['application_no'] ?? '—'); ?></strong></span></div>
         <div class="info-row"><span class="key">Date of Birth</span><span class="val"><?php echo date('d M Y', strtotime($fullApp['dob'])); ?></span></div>
         <div class="info-row"><span class="key">Class Applied</span><span class="val"><?php echo htmlspecialchars($fullApp['class_sought']); ?></span></div>
         <div class="info-row"><span class="key">Applied On</span><span class="val"><?php echo date('d M Y', strtotime($fullApp['applied_at'])); ?></span></div>
