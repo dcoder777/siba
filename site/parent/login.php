@@ -27,11 +27,12 @@ include('../includes/portal_header.php');
 ?>
 
 <div style="min-height: calc(100vh - 75px); background: var(--primary-color); display: flex; align-items: center; justify-content: center; padding: 2rem;">
-<div class="form-container" style="width: 100%; max-width: 400px; margin: 0;">
+<div class="form-container" style="width: 100%; max-width: 440px; margin: 0;">
 
     <div style="text-align: center; margin-bottom: 2rem;">
-        <div style="font-size: 3.5rem; color: var(--secondary-color); margin-bottom: 0.5rem;"><i class="fas fa-user-circle"></i></div>
-        <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--primary-color);">My Account</h2>
+        <img src="<?php echo SITE_LOGO_URL; ?>" alt="SIBA Public School Logo" class="brand-logo brand-logo-auth" style="margin: 0 auto 1rem;">
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--primary-color);">Parent Portal Login</h2>
+        <p style="color: var(--text-light); font-size: 0.9rem;">Access your child's admission status and fees</p>
     </div>
 
     <?php if ($error): ?>
@@ -40,24 +41,28 @@ include('../includes/portal_header.php');
 
     <form method="POST">
         <div class="form-group">
-            <label><i class="fas fa-mobile-alt"></i></label>
-            <input type="tel" name="phone" placeholder="Phone number" maxlength="10"
+            <label><i class="fas fa-mobile-alt"></i> &nbsp;Registered Phone Number</label>
+            <input type="tel" name="phone" placeholder="Enter 10-digit phone number" maxlength="10"
                    value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" required autofocus>
         </div>
         <div class="form-group">
-            <label><i class="fas fa-lock"></i></label>
-            <input type="password" name="password" placeholder="Password" required>
+            <label><i class="fas fa-lock"></i> &nbsp;Password</label>
+            <input type="password" name="password" placeholder="Enter your password" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
-            <i class="fas fa-sign-in-alt"></i> Login
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 0.5rem;">
+            <i class="fas fa-sign-in-alt"></i> Login to Portal
         </button>
     </form>
 
-    <div style="text-align: center; margin-top: 1rem;">
-        <a href="register.php" style="font-size: 0.85rem; color: var(--secondary-color);">Register</a>
+    <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
+        <p style="font-size: 0.88rem; color: var(--text-light);">Don't have an account?</p>
+        <a href="register.php" class="btn btn-accent" style="margin-top: 0.5rem; width: 100%;">
+            <i class="fas fa-user-plus"></i> Register & Apply for Admission
+        </a>
     </div>
-    <p style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-light);">
-        Demo: 1234567890 / password
+
+    <p style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: var(--text-light);">
+        <strong>Demo credentials:</strong> Phone: 1234567890 | Password: password
     </p>
 </div>
 </div>
