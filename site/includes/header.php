@@ -48,7 +48,7 @@ require_once(__DIR__ . '/config.php');
             <a href="<?php echo SITE_URL; ?>/admin/dashboard.php" class="btn btn-primary"><i class="fas fa-shield-alt"></i> Admin</a>
         <?php else: ?>
             <a href="<?php echo SITE_URL; ?>/parent/login.php" class="btn btn-outline-primary btn"><i class="fas fa-sign-in-alt"></i> Parent Login</a>
-            <a href="<?php echo SITE_URL; ?>/parent/register.php" class="btn btn-accent"><i class="fas fa-user-plus"></i> Apply Now</a>
+            <a href="<?php echo SITE_URL; ?>/parent/register.php" class="btn btn-accent"><i class="fas fa-user-plus"></i> Admission</a>
         <?php endif; ?>
     </div>
 </header>
