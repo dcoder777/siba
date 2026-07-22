@@ -112,7 +112,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $addrParts = array_filter([$addressLine1, $addressLine2, $villageCity ?: $district, $state, $pin]);
             $combinedAddress = implode(', ', $addrParts);
 
-            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_occupation, family_annual_income, contact_no, email, address, status, applied_at) VALUES (:parent_id, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :mother_name, :mother_occupation, :guardian_name, :guardian_occupation, :family_annual_income, :contact_no, :email, :address, 'Application started', NOW())");
+            // File uploads
+            $uploadDir = __DIR__ . '/../../site/uploads/docs/';
+            $birthCert = '';
+            $aadhaarFile = '';
+            $leavingCert = '';
+            $prevMarksheet = '';
+            $photo = '';
+            $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+
+            if (isset($_FILES['birth_cert']) && $_FILES['birth_cert']['error'] === UPLOAD_ERR_OK && in_array($_FILES['birth_cert']['type'], $allowed)) {
+                $birthCert = time() . '_bc_' . basename($_FILES['birth_cert']['name']);
+                move_uploaded_file($_FILES['birth_cert']['tmp_name'], $uploadDir . $birthCert);
+            }
+            if (isset($_FILES['aadhaar_file']) && $_FILES['aadhaar_file']['error'] === UPLOAD_ERR_OK && in_array($_FILES['aadhaar_file']['type'], $allowed)) {
+                $aadhaarFile = time() . '_aa_' . basename($_FILES['aadhaar_file']['name']);
+                move_uploaded_file($_FILES['aadhaar_file']['tmp_name'], $uploadDir . $aadhaarFile);
+            }
+            if (isset($_FILES['leaving_cert']) && $_FILES['leaving_cert']['error'] === UPLOAD_ERR_OK && in_array($_FILES['leaving_cert']['type'], $allowed)) {
+                $leavingCert = time() . '_lc_' . basename($_FILES['leaving_cert']['name']);
+                move_uploaded_file($_FILES['leaving_cert']['tmp_name'], $uploadDir . $leavingCert);
+            }
+            if (isset($_FILES['prev_marksheet']) && $_FILES['prev_marksheet']['error'] === UPLOAD_ERR_OK && in_array($_FILES['prev_marksheet']['type'], $allowed)) {
+                $prevMarksheet = time() . '_pm_' . basename($_FILES['prev_marksheet']['name']);
+                move_uploaded_file($_FILES['prev_marksheet']['tmp_name'], $uploadDir . $prevMarksheet);
+            }
+
+            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_occupation, family_annual_income, contact_no, email, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, status, applied_at) VALUES (:parent_id, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :mother_name, :mother_occupation, :guardian_name, :guardian_occupation, :family_annual_income, :contact_no, :email, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, 'Application started', NOW())");
             $stmt->execute([
                 'parent_id' => $parentId, 'student_name' => $studentName, 'first_name' => $firstName,
                 'middle_name' => $middleName ?: null, 'last_name' => $lastName ?: null, 'dob' => $dob,
@@ -128,6 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 'guardian_name' => $guardianName ?: null, 'guardian_occupation' => $guardianOccupation ?: null,
                 'family_annual_income' => $familyIncome ?: null, 'contact_no' => $contactNo ?: null,
                 'email' => $studentEmail ?: null, 'address' => $combinedAddress ?: null,
+                'birth_cert' => $birthCert ?: null, 'aadhaar' => $aadhaarFile ?: null,
+                'leaving_cert' => $leavingCert ?: null, 'prev_marksheet' => $prevMarksheet ?: null,
             ]);
 
             $pdo->commit();
@@ -277,7 +305,7 @@ HTML;
             <?php endif; ?>
         <?php endif; ?>
 
-        <form method="post" class="stack" style="gap:1.5rem;">
+        <form method="post" enctype="multipart/form-data" class="stack" style="gap:1.5rem;">
             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
 
             <section class="panel" style="padding:1.25rem">
@@ -462,6 +490,31 @@ HTML;
                     <div>
                         <label for="country">Country</label>
                         <input id="country" name="country" type="text" value="<?= e($_POST['country'] ?? 'India') ?>">
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" style="padding:1.25rem">
+                <div class="section-title" style="margin-bottom:1rem;">
+                    <h2>Document Uploads</h2>
+                    <p>Accepted formats: JPG, PNG, PDF</p>
+                </div>
+                <div class="field-grid">
+                    <div>
+                        <label for="aadhaar_file">Aadhaar Card</label>
+                        <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="birth_cert">Birth Certificate</label>
+                        <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="leaving_cert">Previous School Leaving Certificate</label>
+                        <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="prev_marksheet">Previous Marksheet</label>
+                        <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf">
                     </div>
                 </div>
             </section>
