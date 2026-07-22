@@ -47,8 +47,27 @@ include('../includes/portal_header.php');
         </div>
         <div class="form-group">
             <label><i class="fas fa-lock"></i> &nbsp;Password</label>
-            <input type="password" name="password" placeholder="Enter your password" required>
+            <div class="pw-wrap" style="position:relative;">
+                <input type="password" name="password" id="pw" placeholder="Enter your password" required style="padding-right:2.5rem;">
+                <i class="fas fa-eye pw-toggle" data-target="pw" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-light);"></i>
+            </div>
         </div>
+        <script>
+        document.querySelectorAll('.pw-toggle').forEach(function(el) {
+            el.addEventListener('click', function() {
+                var inp = document.getElementById(this.dataset.target);
+                if (inp.type === 'password') {
+                    inp.type = 'text';
+                    this.classList.remove('fa-eye');
+                    this.classList.add('fa-eye-slash');
+                } else {
+                    inp.type = 'password';
+                    this.classList.remove('fa-eye-slash');
+                    this.classList.add('fa-eye');
+                }
+            });
+        });
+        </script>
         <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 0.5rem;">
             <i class="fas fa-sign-in-alt"></i> Login to Portal
         </button>
