@@ -56,6 +56,9 @@ include('../includes/portal_header.php');
     <div style="text-align: center; margin-top: 1rem;">
         <a href="register.php" style="font-size: 0.85rem; color: var(--secondary-color);">Register</a>
     </div>
+    <p style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-light);">
+        Demo: 1234567890 / password
+    </p>
 </div>
 </div>
 
