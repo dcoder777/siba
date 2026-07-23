@@ -8,38 +8,57 @@ if ($hasApp) {
     header("Location: dashboard.php"); exit();
 }
 
-// Auto-migrate: add new columns to applications table
+// Auto-migrate: add new columns to applications table (safe — skips if already exist)
 $cols = $conn->query("SHOW COLUMNS FROM applications LIKE 'first_name'");
 if ($cols->num_rows === 0) {
-    $conn->query("ALTER TABLE applications ADD COLUMN middle_name VARCHAR(100) AFTER student_name");
-    $conn->query("ALTER TABLE applications ADD COLUMN last_name VARCHAR(100) AFTER middle_name");
-    $conn->query("ALTER TABLE applications ADD COLUMN first_name VARCHAR(100) AFTER student_name");
-    $conn->query("ALTER TABLE applications ADD COLUMN gender VARCHAR(10) AFTER dob");
-    $conn->query("ALTER TABLE applications ADD COLUMN religion VARCHAR(50) AFTER gender");
-    $conn->query("ALTER TABLE applications ADD COLUMN blood_group VARCHAR(10) AFTER religion");
-    $conn->query("ALTER TABLE applications ADD COLUMN aadhaar_no VARCHAR(20) AFTER blood_group");
-    $conn->query("ALTER TABLE applications ADD COLUMN previous_school VARCHAR(200) AFTER aadhaar_no");
-    $conn->query("ALTER TABLE applications ADD COLUMN previous_class VARCHAR(20) AFTER previous_school");
-    $conn->query("ALTER TABLE applications ADD COLUMN address_line1 TEXT AFTER previous_class");
-    $conn->query("ALTER TABLE applications ADD COLUMN address_line2 TEXT AFTER address_line1");
-    $conn->query("ALTER TABLE applications ADD COLUMN post_office VARCHAR(100) AFTER address_line2");
-    $conn->query("ALTER TABLE applications ADD COLUMN police_station VARCHAR(100) AFTER post_office");
-    $conn->query("ALTER TABLE applications ADD COLUMN village_city VARCHAR(100) AFTER police_station");
-    $conn->query("ALTER TABLE applications ADD COLUMN father_occupation VARCHAR(100) AFTER father_name");
-    $conn->query("ALTER TABLE applications ADD COLUMN mother_occupation VARCHAR(100) AFTER mother_name");
-    $conn->query("ALTER TABLE applications ADD COLUMN guardian_occupation VARCHAR(100) AFTER guardian_name");
-    $conn->query("ALTER TABLE applications ADD COLUMN family_annual_income VARCHAR(50) AFTER guardian_occupation");
-    $conn->query("ALTER TABLE applications ADD COLUMN leaving_cert VARCHAR(255) AFTER aadhaar");
-    $conn->query("ALTER TABLE applications ADD COLUMN prev_marksheet VARCHAR(255) AFTER leaving_cert");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN address TEXT NULL");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN pin VARCHAR(10) NULL");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN district VARCHAR(50) NULL");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN state VARCHAR(50) NULL");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN country VARCHAR(50) DEFAULT 'India'");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN email VARCHAR(100) NULL");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN contact_no VARCHAR(15) NULL");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN photo VARCHAR(255) NULL");
-    $conn->query("ALTER TABLE applications MODIFY COLUMN birth_cert VARCHAR(255) NULL");
+    $migrateCols = [
+        "ADD COLUMN first_name VARCHAR(100) AFTER student_name",
+        "ADD COLUMN middle_name VARCHAR(100) AFTER first_name",
+        "ADD COLUMN last_name VARCHAR(100) AFTER middle_name",
+        "ADD COLUMN gender VARCHAR(10) AFTER dob",
+        "ADD COLUMN religion VARCHAR(50) AFTER gender",
+        "ADD COLUMN blood_group VARCHAR(10) AFTER religion",
+        "ADD COLUMN aadhaar_no VARCHAR(20) AFTER blood_group",
+        "ADD COLUMN previous_school VARCHAR(200) AFTER aadhaar_no",
+        "ADD COLUMN previous_class VARCHAR(20) AFTER previous_school",
+        "ADD COLUMN address_line1 TEXT AFTER previous_class",
+        "ADD COLUMN address_line2 TEXT AFTER address_line1",
+        "ADD COLUMN post_office VARCHAR(100) AFTER address_line2",
+        "ADD COLUMN police_station VARCHAR(100) AFTER post_office",
+        "ADD COLUMN village_city VARCHAR(100) AFTER police_station",
+        "ADD COLUMN father_occupation VARCHAR(100) AFTER father_name",
+        "ADD COLUMN mother_occupation VARCHAR(100) AFTER mother_name",
+        "ADD COLUMN guardian_occupation VARCHAR(100) AFTER guardian_name",
+        "ADD COLUMN family_annual_income VARCHAR(50) AFTER guardian_occupation",
+        "ADD COLUMN leaving_cert VARCHAR(255) AFTER aadhaar",
+        "ADD COLUMN prev_marksheet VARCHAR(255) AFTER leaving_cert",
+        "MODIFY COLUMN address TEXT NULL",
+        "MODIFY COLUMN pin VARCHAR(10) NULL",
+        "MODIFY COLUMN district VARCHAR(50) NULL",
+        "MODIFY COLUMN state VARCHAR(50) NULL",
+        "MODIFY COLUMN country VARCHAR(50) DEFAULT 'India'",
+        "MODIFY COLUMN email VARCHAR(100) NULL",
+        "MODIFY COLUMN contact_no VARCHAR(15) NULL",
+        "MODIFY COLUMN photo VARCHAR(255) NULL",
+        "MODIFY COLUMN birth_cert VARCHAR(255) NULL",
+    ];
+    foreach ($migrateCols as $stmt) {
+        try {
+            $conn->query("ALTER TABLE applications $stmt");
+        } catch (\Throwable $e) {
+            // skip if column already exists
+        }
+    }
+}
+
+// Ensure application_no and payment_status columns exist
+$appNoCol = $conn->query("SHOW COLUMNS FROM applications LIKE 'application_no'");
+if ($appNoCol->num_rows === 0) {
+    $conn->query("ALTER TABLE applications ADD COLUMN application_no VARCHAR(30) NULL AFTER id");
+}
+$payStatusCol = $conn->query("SHOW COLUMNS FROM applications LIKE 'payment_status'");
+if ($payStatusCol->num_rows === 0) {
+    $conn->query("ALTER TABLE applications ADD COLUMN payment_status ENUM('Pending','Paid') DEFAULT 'Pending' AFTER application_no");
 }
 
 $error   = '';
