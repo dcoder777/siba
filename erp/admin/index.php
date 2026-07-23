@@ -725,6 +725,10 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
                 <span>Applications</span>
                 <span class="nav-tag">List</span>
             </a>
+            <a class="nav-link" href="parents-list.php">
+                <span class="sidebar-icon">👤</span>
+                <span>Parents</span>
+            </a>
         </div>
 
         <?php foreach ($menus as $menuKey => $menu): ?>
