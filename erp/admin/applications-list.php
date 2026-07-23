@@ -319,7 +319,8 @@ function statusBadge(string $s): string {
                                         </select>
                                         <button type="submit" class="btn btn-primary btn-sm" style="padding:.25rem .6rem;font-size:.8rem;">Save</button>
                                     </form>
-                                    <div style="margin-top:.3rem;">
+                                    <div style="margin-top:.3rem;display:flex;gap:.6rem;">
+                                        <a href="application-view.php?app_id=<?= (int) $a['id'] ?>" style="color:#2563eb;font-size:.78rem;text-decoration:underline;">View</a>
                                         <form method="post" style="display:inline;" onsubmit="return confirm('Delete application <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
                                             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                             <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
