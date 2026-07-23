@@ -267,6 +267,9 @@ HTML;
             <a class="nav-link" href="applications-list.php">
                 <span class="sidebar-icon">📂</span><span>Applications</span><span class="nav-tag">List</span>
             </a>
+            <a class="nav-link" href="parents-list.php">
+                <span class="sidebar-icon">👤</span><span>Parents</span>
+            </a>
         </div>
         <?php foreach ($menus as $menuKey => $menu): ?>
             <div class="nav-group">

@@ -212,6 +212,9 @@ function statusBadge(string $s): string {
             <a class="nav-link active" href="applications-list.php">
                 <span class="sidebar-icon">📂</span><span>Applications</span><span class="nav-tag"><?= $totalApps ?></span>
             </a>
+            <a class="nav-link" href="parents-list.php">
+                <span class="sidebar-icon">👤</span><span>Parents</span>
+            </a>
         </div>
 
         <?php foreach ($menus as $menuKey => $menu): ?>
