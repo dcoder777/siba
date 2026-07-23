@@ -7,7 +7,7 @@ uploads/photos/*
 !uploads/photos/.gitkeep
 
 # Config with real credentials (copy from config.example.php)
-# includes/config.php   ← uncomment this line on production
+includes/config.php
 
 # OS files
 .DS_Store
