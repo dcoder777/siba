@@ -1,9 +1,31 @@
 <?php
 // Global Configuration
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'siba_erp');
+
+// Read DB config from the shared .env (used by both site and ERP)
+$envPath = __DIR__ . '/../../erp/.env';
+$dbHost = 'localhost';
+$dbUser = 'root';
+$dbPass = '';
+$dbName = 'siba_erp';
+
+if (file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $env = [];
+    foreach ($lines as $line) {
+        if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) continue;
+        [$k, $v] = explode('=', $line, 2);
+        $env[trim($k)] = trim($v);
+    }
+    $dbHost = $env['DB_HOST'] ?? $dbHost;
+    $dbUser = $env['DB_USER'] ?? $dbUser;
+    $dbPass = $env['DB_PASS'] ?? $dbPass;
+    $dbName = $env['DB_NAME'] ?? $dbName;
+}
+
+define('DB_HOST', $dbHost);
+define('DB_USER', $dbUser);
+define('DB_PASS', $dbPass);
+define('DB_NAME', $dbName);
 
 define('SITE_NAME', 'SIBA Public School');
 define('SITE_URL', 'http://localhost/siba/site');
