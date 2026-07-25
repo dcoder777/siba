@@ -502,7 +502,7 @@ HTML;
                     </div>
                     <div>
                         <label for="pin">PIN Code</label>
-                        <input id="pin" name="pin" type="text" maxlength="10" value="<?= e($_POST['pin'] ?? '') ?>">
+                        <input id="pin" name="pin" type="text" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?= e($_POST['pin'] ?? '') ?>">
                     </div>
                     <div>
                         <label for="state">State</label>

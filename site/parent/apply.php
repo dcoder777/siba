@@ -433,7 +433,7 @@ HTML;
             <div class="form-row">
                 <div class="form-group">
                     <label>PIN Code *</label>
-                    <input type="text" name="pin" placeholder="6-digit PIN" maxlength="6" required value="<?php echo htmlspecialchars($_POST['pin'] ?? ''); ?>">
+                    <input type="text" name="pin" placeholder="6-digit PIN" maxlength="6" required inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['pin'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
                     <label>State *</label>
