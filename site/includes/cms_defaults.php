@@ -33,7 +33,7 @@ function getCmsPageDefaults()
                 'about_points' => [
                     ['icon' => 'book', 'title' => 'WBBSE Curriculum', 'text' => 'State recognized board-aligned curriculum with a focus on conceptual clarity and application-based learning.'],
                     ['icon' => 'heart', 'title' => 'Value-Based Education', 'text' => 'We mould not just scholars but responsible citizens through a disciplined and ethical environment.'],
-                    ['icon' => 'globe', 'title' => 'Lush green Campus', 'text' => 'Sprawling green campus with modern infrastructure, providing a serene and inspiring environment for learning.'],
+                    ['icon' => 'globe', 'title' => 'Lush green Campus', 'text' => 'A serene, eco-friendly campus with abundant greenery, open spaces, and a refreshing environment that inspires learning and well-being.'],
                 ],
                 'offerings_badge' => 'Our Offerings',
                 'offerings_heading' => 'Everything Your Child Needs to Succeed',
