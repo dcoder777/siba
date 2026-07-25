@@ -28,7 +28,7 @@ function getCmsPageDefaults()
                 ],
                 'about_badge' => 'About SIBA',
                 'about_heading' => 'A Legacy of Academic Excellence',
-                'about_text' => 'For over two decades, SIBA Public School has been shaping future leaders with a curriculum that balances academic rigour, creative thinking, and strong values.',
+                'about_text' => 'SIBA Public School is on a journey to create future leaders with a curriculum that balances academic rigour, creative thinking, and strong values.',
                 'about_image' => 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&q=80&w=800',
                 'about_points' => [
                     ['icon' => 'book', 'title' => 'CBSE Curriculum', 'text' => 'Nationally recognized board-aligned curriculum with a focus on conceptual clarity and application-based learning.'],
