@@ -41,22 +41,7 @@ include('includes/header.php');
     </div>
 </section>
 
-<section class="section" style="background: var(--bg-color);">
-    <div class="section-title">
-        <span class="badge"><?php echo htmlspecialchars($data['streams_badge'] ?? ''); ?></span>
-        <h2><?php echo htmlspecialchars($data['streams_heading'] ?? ''); ?></h2>
-        <p><?php echo htmlspecialchars($data['streams_text'] ?? ''); ?></p>
-    </div>
-    <div class="grid">
-        <?php foreach (($data['streams'] ?? []) as $stream): ?>
-            <div class="card feature-card" style="border-top: 4px solid var(--secondary-color);">
-                <div class="icon" style="background: var(--secondary-color);"><i class="fas fa-<?php echo htmlspecialchars($stream['icon'] ?? 'book'); ?>"></i></div>
-                <h3><?php echo htmlspecialchars($stream['title'] ?? ''); ?></h3>
-                <p><?php echo htmlspecialchars($stream['text'] ?? ''); ?></p>
-            </div>
-        <?php endforeach; ?>
-    </div>
-</section>
+<!-- Section removed -->
 
 <section class="section section-alt">
     <div class="section-title">
