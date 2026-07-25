@@ -114,7 +114,7 @@ include('includes/header.php');
                     <div class="testimonial-card">
                         <p>"<?php echo htmlspecialchars($item['text'] ?? ''); ?>"</p>
                         <div class="author">
-                            <img src="<?php echo htmlspecialchars($item['image'] ?? ''); ?>" alt="Parent">
+                            <?php if (!empty($item['image'])): ?><img src="<?php echo htmlspecialchars($item['image']); ?>" alt="Parent"><?php endif; ?>
                             <div><strong><?php echo htmlspecialchars($item['name'] ?? ''); ?></strong><span><?php echo htmlspecialchars($item['role'] ?? ''); ?></span></div>
                         </div>
                     </div>

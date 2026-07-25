@@ -67,7 +67,7 @@ function getCmsPageDefaults()
                 'testimonials_badge' => 'Parent Voices',
                 'testimonials_heading' => 'What Parents Say',
                 'testimonials' => [
-                    ['text' => 'SIBA has transformed my daughter completely. The teachers are supportive and the environment is truly nurturing.', 'name' => 'Priya Sharma', 'role' => 'Mother of Class 8 student', 'image' => 'https://images.unsplash.com/photo-1494790108755-2616b612b8e0?auto=format&fit=crop&q=80&w=100'],
+                    ['text' => 'SIBA has transformed my daughter completely. The teachers are supportive and the environment is truly nurturing.', 'name' => 'Priya Sharma', 'role' => 'Mother of Class 8 student', 'image' => ''],
                     ['text' => 'The online admission process was seamless. The Parent Portal kept us updated at every step.', 'name' => 'Rahul Gupta', 'role' => 'Father of Class 5 student', 'image' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100'],
                 ],
                 'final_cta_heading' => 'Ready to Give Your Child the Best Start?',
