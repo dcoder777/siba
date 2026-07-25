@@ -506,7 +506,13 @@ HTML;
                     </div>
                     <div>
                         <label for="state">State</label>
-                        <input id="state" name="state" type="text" value="<?= e($_POST['state'] ?? '') ?>">
+                        <select id="state" name="state">
+                            <option value="">Select State</option>
+                            <?php $states = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry']; ?>
+                            <?php foreach ($states as $st): ?>
+                                <option value="<?= e($st) ?>" <?= ($_POST['state'] ?? '') === $st ? 'selected' : '' ?>><?= e($st) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div>
                         <label for="country">Country</label>

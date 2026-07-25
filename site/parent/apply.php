@@ -437,7 +437,14 @@ HTML;
                 </div>
                 <div class="form-group">
                     <label>State *</label>
-                    <input type="text" name="state" required value="<?php echo htmlspecialchars($_POST['state'] ?? ''); ?>">
+                    <select name="state" required>
+                        <option value="">Select State</option>
+                        <?php
+                        $states = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+                        foreach ($states as $st): ?>
+                            <option value="<?php echo $st; ?>" <?php echo (($_POST['state'] ?? '') === $st) ? 'selected' : ''; ?>><?php echo $st; ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Country *</label>
