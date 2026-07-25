@@ -21,9 +21,9 @@ function getCmsPageDefaults()
                     ['number' => '20+', 'label' => 'Years of Excellence'],
                 ],
                 'stats_bar' => [
-                    ['number' => '45+', 'label' => 'Clubs & Activities'],
+                    ['number' => '10+', 'label' => 'Best in class Faculties'],
                     ['number' => '12', 'label' => 'Acres Campus'],
-                    ['number' => '100%', 'label' => 'Scholarship Recipients'],
+                    ['number' => '100%', 'label' => 'Bengali Medium'],
                     ['number' => '#1', 'label' => 'Rated in the District'],
                 ],
                 'about_badge' => 'About SIBA',
