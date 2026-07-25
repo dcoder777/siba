@@ -361,7 +361,7 @@ HTML;
                 </div>
                 <div class="field-grid">
                     <div>
-                        <label for="student_name">Student Full Name *</label>
+                        <label for="student_name">First name *</label>
                         <input id="student_name" name="student_name" type="text" required value="<?= e($_POST['student_name'] ?? '') ?>">
                     </div>
                     <div>
