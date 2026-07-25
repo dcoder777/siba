@@ -377,7 +377,7 @@ HTML;
             <div class="form-row">
                 <div class="form-group">
                     <label>Previous School</label>
-                    <input type="text" name="previous_school" value="<?php echo htmlspecialchars($_POST['previous_school'] ?? ''); ?>">
+                    <input type="text" name="previous_school" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['previous_school'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
                     <label>Previous Class</label>
