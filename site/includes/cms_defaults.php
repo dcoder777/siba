@@ -61,9 +61,7 @@ function getCmsPageDefaults()
                 'admission_cta_secondary_link' => 'admissions.php',
                 'events_badge' => "What's Happening",
                 'events_heading' => 'Upcoming Events & Notices',
-                'events' => [
-                    ['day' => '01', 'month' => 'Aug', 'title' => 'Application for admission starts 1st August', 'text' => ''],
-                ],
+                'events' => [],
                 'testimonials_badge' => 'Parent Voices',
                 'testimonials_heading' => 'What Parents Say',
                 'testimonials' => [
@@ -269,12 +267,7 @@ function getCmsPageDefaults()
                 'hero_text' => 'Stay updated with the latest happenings at SIBA Public School.',
                 'events_badge' => 'Calendar',
                 'events_heading' => 'Upcoming Events',
-                'events' => [
-                    ['day' => '15', 'month' => 'Apr', 'title' => 'Annual Athletic Meet 2026', 'text' => 'All parents and guardians are invited to attend.', 'icon' => 'running', 'color' => '#4b5563'],
-                    ['day' => '22', 'month' => 'Apr', 'title' => 'Class 10 & 12 Board Results', 'text' => 'Results displayed by 10 AM with counselor support.', 'icon' => 'graduation-cap', 'color' => '#272727'],
-                    ['day' => '01', 'month' => 'May', 'title' => 'New Batch Orientation Day', 'text' => 'Welcome session for newly admitted students and parents.', 'icon' => 'handshake', 'color' => '#feb630'],
-                    ['day' => '05', 'month' => 'May', 'title' => 'Science & Innovation Fair 2026', 'text' => 'Students from Grades 6-12 present original projects.', 'icon' => 'flask', 'color' => '#5eabe3'],
-                ],
+                'events' => [],
                 'news_badge' => 'News',
                 'news_heading' => 'Latest from SIBA',
                 'news' => [
