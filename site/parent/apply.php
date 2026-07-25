@@ -370,7 +370,7 @@ HTML;
                 </div>
                 <div class="form-group">
                     <label>Aadhaar No.</label>
-                    <input type="text" name="aadhaar_no" placeholder="12-digit Aadhaar" maxlength="12" value="<?php echo htmlspecialchars($_POST['aadhaar_no'] ?? ''); ?>">
+                    <input type="text" name="aadhaar_no" placeholder="12-digit Aadhaar" maxlength="12" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['aadhaar_no'] ?? ''); ?>">
                 </div>
             </div>
 
