@@ -226,7 +226,7 @@ HTML;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Application Intake — SIBA ERP Admin</title>
+    <title>Admission Application — SIBA ERP Admin</title>
     <link rel="stylesheet" href="../assets/erp-ui.css">
     <style>
         .intake-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
@@ -300,7 +300,7 @@ HTML;
             <div class="toolbar">
                 <div class="stack" style="gap:.55rem">
                     <span class="eyebrow">Admissions</span>
-                    <h1>Register a parent and submit an admission application on their behalf.</h1>
+                    <h1>Admission Application</h1>
                     <p>This form creates a parent portal account and an admission application in one step. The parent will receive their login credentials via email.</p>
                 </div>
             </div>
