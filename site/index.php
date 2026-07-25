@@ -103,7 +103,6 @@ include('includes/header.php');
                     <?php } ?>
                 <?php endforeach; ?>
             </div>
-            <a href="events.php" class="btn btn-primary" style="margin-top: 1.25rem;"><i class="fas fa-calendar"></i> View All Events</a>
         </div>
         <div>
             <div class="section-title" style="text-align: left; margin-bottom: 1.5rem;">
