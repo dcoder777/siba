@@ -80,9 +80,7 @@ include('../includes/portal_header.php');
         </a>
     </div>
 
-    <p style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: var(--text-light);">
-        <strong>Demo credentials:</strong> Phone: 1234567890 | Password: password
-    </p>
+
 </div>
 </div>
 
