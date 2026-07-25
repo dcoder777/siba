@@ -43,7 +43,7 @@ function getCmsPageDefaults()
                     ['icon' => 'desktop', 'title' => 'Digital Learning', 'text' => 'Smart classrooms with interactive boards, 1:1 device program, and high-speed campus-wide Wi-Fi.'],
                     ['icon' => 'running', 'title' => 'Sports & Fitness', 'text' => 'Football, cricket, basketball, swimming, and athletics coached by state-level sports professionals.'],
                     ['icon' => 'palette', 'title' => 'Arts & Culture', 'text' => 'Music, dance, drama, painting, and photography studios that nurture creative expression in every child.'],
-                    ['icon' => 'book-open', 'title' => 'Library & Research', 'text' => 'A vast collection of books, e-journals, and a dedicated research room for senior students.'],
+                    ['icon' => 'book-open', 'title' => 'Library & Reading Corner', 'text' => 'A child-friendly library filled with storybooks, reference books, and age-appropriate learning resources that inspire a lifelong love for reading.'],
                     ['icon' => 'bus', 'title' => 'Safe Transport', 'text' => 'GPS-enabled buses covering major routes with trained drivers and attendants for safe journeys.'],
                 ],
                 'admission_badge' => 'Admissions 2026-27',
