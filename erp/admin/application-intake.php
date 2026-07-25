@@ -359,7 +359,7 @@ HTML;
                     <h2>Student Details</h2>
                     <p>Enter the student's details for the admission application.</p>
                 </div>
-                <div class="field-grid">
+                <div class="field-grid" style="grid-template-columns:1fr;">
                     <div>
                         <label for="student_name">First name *</label>
                         <input id="student_name" name="student_name" type="text" required value="<?= e($_POST['student_name'] ?? '') ?>">
