@@ -41,9 +41,14 @@ include('includes/header.php');
     <div class="grid">
         <div class="card">
             <h3 style="color: var(--primary-color); margin-bottom: 1.25rem;"><i class="fas fa-check-circle" style="color: var(--secondary-color);"></i> &nbsp;<?php echo htmlspecialchars($data['eligibility_heading'] ?? 'Eligibility Criteria'); ?></h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
             <?php foreach (($data['eligibility_items'] ?? []) as $item): ?>
-                <div class="info-row"><span class="key"><?php echo htmlspecialchars($item['key'] ?? ''); ?></span><span class="val"><?php echo htmlspecialchars($item['value'] ?? ''); ?></span></div>
+                <div>
+                    <div style="font-weight: 600; color: var(--primary-color); font-size: 0.9rem; margin-bottom: 0.2rem;"><?php echo htmlspecialchars($item['key'] ?? ''); ?></div>
+                    <div style="color: var(--text-light); font-size: 0.85rem; line-height: 1.5;"><?php echo htmlspecialchars($item['value'] ?? ''); ?></div>
+                </div>
             <?php endforeach; ?>
+            </div>
         </div>
         <div class="card">
             <h3 style="color: var(--primary-color); margin-bottom: 1.25rem;"><i class="fas fa-file-alt" style="color: var(--secondary-color);"></i> &nbsp;<?php echo htmlspecialchars($data['fees_heading'] ?? 'Documents Required'); ?></h3>
