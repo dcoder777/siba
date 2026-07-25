@@ -62,10 +62,7 @@ function getCmsPageDefaults()
                 'events_badge' => "What's Happening",
                 'events_heading' => 'Upcoming Events & Notices',
                 'events' => [
-                    ['day' => '15', 'month' => 'Apr', 'title' => 'Annual Athletic Meet 2026', 'text' => 'All parents are invited. Registration mandatory at the school office.'],
-                    ['day' => '22', 'month' => 'Apr', 'title' => 'Class 10 & 12 Result Declaration', 'text' => 'Board results will be displayed on the school notice board by 10 AM.'],
-                    ['day' => '01', 'month' => 'May', 'title' => 'Admissions Open - New Batch Orientation', 'text' => 'Newly admitted students and parents are invited for the welcome session.'],
-                    ['day' => '05', 'month' => 'May', 'title' => 'Science Exhibition & Fair', 'text' => 'Students from Grade 6-12 showcase innovative science projects.'],
+                    ['day' => '01', 'month' => 'Aug', 'title' => 'Application for admission starts 1st August', 'text' => ''],
                 ],
                 'testimonials_badge' => 'Parent Voices',
                 'testimonials_heading' => 'What Parents Say',
