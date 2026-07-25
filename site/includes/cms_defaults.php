@@ -40,7 +40,7 @@ function getCmsPageDefaults()
                 'offerings_text' => "A complete ecosystem built to nurture every dimension of a student's development.",
                 'offerings' => [
                     ['icon' => 'flask', 'title' => 'Experienced & Caring Teachers', 'text' => 'Dedicated educators provide individual attention, nurturing every child\'s academic, social, and emotional growth in a supportive learning environment.'],
-                    ['icon' => 'desktop', 'title' => 'Digital Learning', 'text' => 'Smart classrooms with interactive boards, 1:1 device program, and high-speed campus-wide Wi-Fi.'],
+                    ['icon' => 'desktop', 'title' => 'Activity-Based Learning', 'text' => 'Hands-on activities, creative projects, and interactive lessons that make learning enjoyable while building confidence, curiosity, and practical skills.'],
                     ['icon' => 'running', 'title' => 'Sports & Fitness', 'text' => 'Football, cricket, basketball, swimming, and athletics coached by state-level sports professionals.'],
                     ['icon' => 'palette', 'title' => 'Arts & Culture', 'text' => 'Music, dance, drama, painting, and photography studios that nurture creative expression in every child.'],
                     ['icon' => 'book-open', 'title' => 'Library & Reading Corner', 'text' => 'A child-friendly library filled with storybooks, reference books, and age-appropriate learning resources that inspire a lifelong love for reading.'],
