@@ -17,7 +17,7 @@ $generatedPhone = '';
 $generatedPassword = '';
 $generatedAppNo = '';
 
-$classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+$classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 $genderOptions = ['Male', 'Female', 'Other'];
 $bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 $incomeOptions = ['Below 1 Lakh', '1 - 2.5 Lakhs', '2.5 - 5 Lakhs', '5 - 10 Lakhs', 'Above 10 Lakhs'];

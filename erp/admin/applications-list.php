@@ -14,7 +14,7 @@ $entityMap = entity_config();
 $error = '';
 $success = '';
 
-$classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+$classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 $statusOptions = ['Application started', 'Under review', 'Admitted', 'Rejected'];
 $currentStatus = trim((string) ($_GET['status'] ?? ''));
 $searchQ = trim((string) ($_GET['q'] ?? ''));

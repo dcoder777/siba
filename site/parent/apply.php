@@ -387,7 +387,7 @@ HTML;
                     <label>Admission Class *</label>
                     <select name="admission_class" required>
                         <option value="">Select Class</option>
-                        <?php foreach (range(1, 12) as $cls): ?>
+                        <?php foreach (range(1, 8) as $cls): ?>
                             <option value="Class <?php echo $cls; ?>" <?php echo (($_POST['admission_class'] ?? '') == "Class $cls") ? 'selected' : ''; ?>>Class <?php echo $cls; ?></option>
                         <?php endforeach; ?>
                     </select>
