@@ -82,10 +82,8 @@ include('includes/header.php');
     </div>
 </section>
 
-<section style="background: #e5e7eb; height: 350px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; color: var(--text-light);">
-    <i class="fas fa-map-marked-alt" style="font-size: 3rem; color: var(--secondary-color);"></i>
-    <p style="font-weight: 600;"><?php echo htmlspecialchars($data['map_title'] ?? 'Interactive map coming soon'); ?></p>
-    <p style="font-size: 0.85rem;"><?php echo htmlspecialchars($data['map_subtitle'] ?? ''); ?></p>
+<section style="padding:0; height:400px;">
+    <iframe src="https://www.google.com/maps?q=23.503188,88.553666&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
 </section>
 
 <?php include('includes/footer.php'); ?>
