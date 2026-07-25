@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_account'])) {
             $error = "Could not create account. Please try again.";
         }
     }
+    }
 }
 
 include('../includes/portal_header.php');
