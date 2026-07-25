@@ -19,7 +19,7 @@ require_once(__DIR__ . '/config.php');
 
 <div class="announcement-bar">
     <span class="label">📢 NOTICE</span>
-    <span class="ticker">Admissions Open for Academic Year 2026–27 &nbsp;|&nbsp; Apply before 30th June 2026 &nbsp;|&nbsp; Results of Annual Sports Day announced on the Notice Board</span>
+    <span class="ticker">Admissions Open for Academic Year 2026–27</span>
 </div>
 
 <header>

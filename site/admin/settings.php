@@ -19,7 +19,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS settings (
 $defaults = [
     'site_name'       => 'SIBA Public School',
     'school_email'    => 'info@sibaschool.com',
-    'school_phone'    => '+91 12345 67890',
+    'school_phone'    => '+91-75010119960',
     'school_address'  => '123 Education Lane, City, State - 700001',
     'admission_open'  => '1',
     'fee_amount'      => '5000',

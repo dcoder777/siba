@@ -185,7 +185,7 @@ if (!$fullName) $fullName = $fullApp['student_name'];
     <!-- Contact -->
     <div class="summary-contact">
         <h3><i class="fas fa-phone-alt"></i> Need Help?</h3>
-        <p><i class="fas fa-phone"></i> +91 12345 67890</p>
+        <p><i class="fas fa-phone"></i> +91-75010119960</p>
         <p><i class="fas fa-envelope"></i> info@sibaschool.com</p>
         <p style="margin-top:0.5rem;font-size:0.85rem;opacity:0.75;">Mon–Fri: 8:00 AM – 3:00 PM</p>
     </div>

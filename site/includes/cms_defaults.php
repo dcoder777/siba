@@ -77,7 +77,7 @@ function getCmsPageDefaults()
                 'final_cta_secondary_text' => 'Contact Us',
                 'final_cta_secondary_link' => 'contact.php',
                 'contact_strip' => [
-                    ['icon' => 'phone-alt', 'label' => 'Call Us', 'value' => '+91 12345 67890'],
+                    ['icon' => 'phone-alt', 'label' => 'Call Us', 'value' => '+91-75010119960'],
                     ['icon' => 'envelope', 'label' => 'Email Us', 'value' => 'info@sibaschool.com'],
                     ['icon' => 'map-marker-alt', 'label' => 'Visit Us', 'value' => '123 Education Lane, City'],
                     ['icon' => 'clock', 'label' => 'School Hours', 'value' => 'Mon-Fri: 8 AM - 3 PM'],
@@ -295,7 +295,7 @@ function getCmsPageDefaults()
                 'details_heading' => 'School Office',
                 'contacts' => [
                     ['icon' => 'map-marker-alt', 'title' => 'Address', 'value' => '123 Education Lane, City, State - 700001, India'],
-                    ['icon' => 'phone', 'title' => 'Phone', 'value' => '+91 12345 67890 (Reception)\n+91 98765 43210 (Admissions Cell)'],
+                    ['icon' => 'phone', 'title' => 'Phone', 'value' => '+91-75010119960 (Reception)\n+91 98765 43210 (Admissions Cell)'],
                     ['icon' => 'envelope', 'title' => 'Email', 'value' => "info@sibaschool.com\nadmissions@sibaschool.com"],
                     ['icon' => 'clock', 'title' => 'Office Hours', 'value' => "Monday to Friday: 8:00 AM - 4:00 PM\nSaturday: 9:00 AM - 12:00 PM (Admissions only)"],
                 ],
