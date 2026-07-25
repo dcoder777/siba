@@ -92,7 +92,7 @@ include('includes/header.php');
         background: #d9981f;
     }
     .pp-contact-box {
-        background: linear-gradient(135deg, #a86b1a 0%, #6b2d1a 100%);
+        background: linear-gradient(135deg, var(--primary-color) 0%, #374151 100%);
         color: #fff;
         padding: 1.8rem 2rem;
         border-radius: 4px;
@@ -203,7 +203,7 @@ include('includes/header.php');
             <p><i class="fas fa-map-marker-alt" style="margin-right:0.5rem;opacity:0.9;"></i> Bangaljhi, West Bengal 741123</p>
             <p><i class="fas fa-phone" style="margin-right:0.5rem;opacity:0.9;"></i> +91-75010119960</p>
             <p><i class="fas fa-envelope" style="margin-right:0.5rem;opacity:0.9;"></i> info@sibapublicschool.com</p>
-            <p><i class="fas fa-clock" style="margin-right:0.5rem;opacity:0.9;"></i> Mon–Fri: 8:00 AM – 3:00 PM</p>
+            <p><i class="fas fa-clock" style="margin-right:0.5rem;opacity:0.9;"></i> Mon – Fri: 7 am – 3 pm<br>Sat: 7 am – 1 pm</p>
             <p style="margin-top:0.6rem;">For any privacy-related concerns, please contact the school administration.</p>
         </div>
     </div>
