@@ -46,11 +46,15 @@ include('includes/header.php');
             <?php endforeach; ?>
         </div>
         <div class="card">
-            <h3 style="color: var(--primary-color); margin-bottom: 1.25rem;"><i class="fas fa-rupee-sign" style="color: var(--secondary-color);"></i> &nbsp;<?php echo htmlspecialchars($data['fees_heading'] ?? 'Fee Structure'); ?></h3>
+            <h3 style="color: var(--primary-color); margin-bottom: 1.25rem;"><i class="fas fa-file-alt" style="color: var(--secondary-color);"></i> &nbsp;<?php echo htmlspecialchars($data['fees_heading'] ?? 'Documents Required'); ?></h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             <?php foreach (($data['fees_items'] ?? []) as $item): ?>
-                <div class="info-row"><span class="key"><?php echo htmlspecialchars($item['key'] ?? ''); ?></span><span class="val"><?php echo htmlspecialchars($item['value'] ?? ''); ?></span></div>
+                <div style="display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.9rem; color: var(--text-light);">
+                    <i class="fas fa-chevron-right" style="font-size: 0.6rem; color: var(--secondary-color); flex-shrink: 0;"></i>
+                    <span><?php echo htmlspecialchars($item['key'] ?? ''); ?><?php if (!empty($item['value'])): ?> <span style="opacity:0.7;">(<?php echo htmlspecialchars($item['value']); ?>)</span><?php endif; ?></span>
+                </div>
             <?php endforeach; ?>
-            <p style="font-size: 0.8rem; color: var(--text-light); margin-top: 1rem;"><?php echo htmlspecialchars($data['fees_note'] ?? ''); ?></p>
+            </div>
         </div>
     </div>
 </section>
