@@ -52,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="hero-panel stack">
                 <span class="eyebrow">Admin Access</span>
                 <div class="stack" style="gap:.8rem">
-                    <h1 style="font-size:2.8rem">Welcome back to SIBA ERP.</h1>
                     <p>
                         Access the central workspace for school operations, student management,
                         finance, HR, reporting, and interconnected dashboards.
