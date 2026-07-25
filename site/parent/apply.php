@@ -381,7 +381,7 @@ HTML;
                 </div>
                 <div class="form-group">
                     <label>Previous Class</label>
-                    <input type="text" name="previous_class" placeholder="e.g. Class 5" value="<?php echo htmlspecialchars($_POST['previous_class'] ?? ''); ?>">
+                    <input type="text" name="previous_class" placeholder="e.g. 5" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['previous_class'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
                     <label>Admission Class *</label>
