@@ -18,9 +18,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS settings (
 // Defaults
 $defaults = [
     'site_name'       => 'SIBA Public School',
-    'school_email'    => 'info@sibaschool.com',
+    'school_email'    => 'info@sibapublicschool.com',
     'school_phone'    => '+91-75010119960',
-    'school_address'  => '123 Education Lane, City, State - 700001',
+    'school_address'  => 'Bangaljhi, West Bengal 741123',
     'admission_open'  => '1',
     'fee_amount'      => '5000',
     'academic_year'   => '2026-27',

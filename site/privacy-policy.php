@@ -200,9 +200,9 @@ include('includes/header.php');
         <div class="pp-contact-box">
             <h2>Contact Us</h2>
             <p><strong>SIBA Public School</strong></p>
-            <p><i class="fas fa-map-marker-alt" style="margin-right:0.5rem;opacity:0.9;"></i> 123 Education Lane, City, State – 700001</p>
+            <p><i class="fas fa-map-marker-alt" style="margin-right:0.5rem;opacity:0.9;"></i> Bangaljhi, West Bengal 741123</p>
             <p><i class="fas fa-phone" style="margin-right:0.5rem;opacity:0.9;"></i> +91-75010119960</p>
-            <p><i class="fas fa-envelope" style="margin-right:0.5rem;opacity:0.9;"></i> info@sibaschool.com</p>
+            <p><i class="fas fa-envelope" style="margin-right:0.5rem;opacity:0.9;"></i> info@sibapublicschool.com</p>
             <p><i class="fas fa-clock" style="margin-right:0.5rem;opacity:0.9;"></i> Mon–Fri: 8:00 AM – 3:00 PM</p>
             <p style="margin-top:0.6rem;">For any privacy-related concerns, please contact the school administration.</p>
         </div>
