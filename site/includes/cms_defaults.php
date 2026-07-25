@@ -205,7 +205,7 @@ function getCmsPageDefaults()
                 'faq_badge' => 'FAQ',
                 'faq_heading' => 'Frequently Asked Questions',
                 'faqs' => [
-                    ['question' => 'When do admissions open?', 'answer' => 'Admissions open in January for the upcoming academic year.'],
+                    ['question' => 'When do admissions open?', 'answer' => 'Admission open in August for the upcoming academic year.'],
                     ['question' => 'Is there an entrance test?', 'answer' => 'Yes, depending on the class and seat availability.'],
                     ['question' => 'Can I visit the school before applying?', 'answer' => 'Yes, school tours are available on working days.'],
                     ['question' => 'Is there a hostel facility?', 'answer' => 'Yes, separate hostels are available for boys and girls.'],
