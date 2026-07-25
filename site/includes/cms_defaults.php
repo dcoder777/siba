@@ -282,9 +282,9 @@ function getCmsPageDefaults()
                 'details_badge' => 'Contact Details',
                 'details_heading' => 'School Office',
                 'contacts' => [
-                    ['icon' => 'map-marker-alt', 'title' => 'Address', 'value' => 'Bangaljhi, West Bengal 741123, India'],
-                    ['icon' => 'phone', 'title' => 'Phone', 'value' => '+91-75010119960 (Reception)\n+91 98765 43210 (Admissions Cell)'],
-                    ['icon' => 'envelope', 'title' => 'Email', 'value' => "info@sibapublicschool.com\nadmissions@sibapublicschool.com"],
+                    ['icon' => 'map-marker-alt', 'title' => 'Address', 'value' => 'Bangaljhi, West Bengal 741123'],
+                    ['icon' => 'phone', 'title' => 'Phone', 'value' => '+91-75010119960'],
+                    ['icon' => 'envelope', 'title' => 'Email', 'value' => 'info@sibapublicschool.com'],
                     ['icon' => 'clock', 'title' => 'Office Hours', 'value' => "Mon – Fri: 7 am – 3 pm\nSat: 7 am – 1 pm"],
                 ],
                 'portal_title' => 'Parent Portal',
