@@ -474,16 +474,7 @@ HTML;
                 <div class="section-title" style="margin-bottom:1rem;">
                     <h2>Address Details</h2>
                 </div>
-                <div class="field-grid">
-                    <div class="full-col">
-                        <label for="address_line1">Address Line 1</label>
-                        <input id="address_line1" name="address_line1" type="text" value="<?= e($_POST['address_line1'] ?? '') ?>">
-                    </div>
-                    <div class="full-col">
-                        <label for="address_line2">Address Line 2</label>
-                        <input id="address_line2" name="address_line2" type="text" value="<?= e($_POST['address_line2'] ?? '') ?>">
-                    </div>
-                    <div>
+                <div class="field-grid" style="grid-template-columns:1fr;">
                         <label for="post_office">Post Office</label>
                         <input id="post_office" name="post_office" type="text" value="<?= e($_POST['post_office'] ?? '') ?>">
                     </div>
