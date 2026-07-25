@@ -14,7 +14,6 @@ $entityMap = entity_config();
 $error = '';
 $success = '';
 
-$classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 $statusOptions = ['Application started', 'Under review', 'Admitted', 'Rejected'];
 $currentStatus = trim((string) ($_GET['status'] ?? ''));
 $searchQ = trim((string) ($_GET['q'] ?? ''));
@@ -169,17 +168,22 @@ function statusBadge(string $s): string {
         .app-filters { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
         .app-filters input, .app-filters select { padding:.45rem .7rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }
         .app-filters .btn { padding:.45rem 1rem; }
-        .app-table { width:100%; border-collapse:collapse; font-size:.875rem; }
-        .app-table th { text-align:left; padding:.65rem .5rem; border-bottom:2px solid #e2e8f0; color:#64748b; font-weight:600; white-space:nowrap; }
-        .app-table td { padding:.65rem .5rem; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
-        .app-table tr:hover td { background:#f8fafc; }
+        .app-table { width:100%; table-layout:auto; border-collapse:collapse; font-size:.85rem; }
+        .app-table thead th { text-align:left; padding:.55rem .65rem; background:#f8fafc; border-bottom:2px solid #e2e8f0; color:#64748b; font-weight:600; white-space:nowrap; position:sticky; top:0; }
+        .app-table tbody td { padding:.6rem .65rem; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+        .app-table tbody tr:nth-child(even) td { background:#fafbfc; }
+        .app-table tbody tr:hover td { background:#eff6ff; }
+        .row-actions { display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; }
+        .row-actions select { padding:.22rem .25rem; font-size:.73rem; border:1px solid #cbd5e1; border-radius:4px; background:#fff; }
+        .row-actions .btn-xs { padding:.18rem .45rem; font-size:.72rem; border-radius:4px; border:1px solid transparent; cursor:pointer; }
+        .row-actions .btn-xs-save { background:#1e293b; color:#fff; }
+        .row-actions .btn-xs-save:hover { background:#334155; }
+        .row-links { display:flex; gap:.55rem; margin-top:.25rem; }
+        .row-links a, .row-links button { font-size:.73rem; background:none; border:none; cursor:pointer; padding:0; }
         .pagination { display:flex; gap:.5rem; align-items:center; margin-top:1rem; }
         .pagination a, .pagination span { padding:.35rem .7rem; border:1px solid #e2e8f0; border-radius:6px; text-decoration:none; font-size:.85rem; color:#334155; }
         .pagination a:hover { background:#f1f5f9; }
         .pagination .current { background:#1e293b; color:#fff; border-color:#1e293b; }
-        .inline-status-form { display:flex; gap:.35rem; align-items:center; }
-        .inline-status-form select { padding:.25rem .4rem; font-size:.8rem; border:1px solid #cbd5e1; border-radius:4px; }
-        .inline-status-form .btn-sm { padding:.25rem .6rem; font-size:.8rem; }
     </style>
 </head>
 <body style="min-height:100vh;">
@@ -273,7 +277,7 @@ function statusBadge(string $s): string {
             <span style="margin-left:auto;color:#64748b;font-size:.85rem;"><?= $totalApps ?> application<?= $totalApps !== 1 ? 's' : '' ?></span>
         </form>
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:auto;">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow-x:auto;">
             <table class="app-table">
                 <thead>
                     <tr>
@@ -293,9 +297,9 @@ function statusBadge(string $s): string {
                         <tr><td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No applications found.</td></tr>
                     <?php else: ?>
                         <?php foreach ($applications as $i => $a): ?>
-                            <tr>
+                                <tr>
                                 <td style="color:#94a3b8;"><?= $offset + $i + 1 ?></td>
-                                <td><code style="font-size:.85rem;"><?= e($a['application_no'] ?? '—') ?></code></td>
+                                <td><code style="font-size:.8rem;"><?= e($a['application_no'] ?? '—') ?></code></td>
                                 <td>
                                     <strong><?= e($a['student_name']) ?></strong>
                                     <?php if ($a['admission_no']): ?>
@@ -309,29 +313,31 @@ function statusBadge(string $s): string {
                                 <td><?= statusBadge($a['status']) ?></td>
                                 <td>
                                     <?php $payStatus = $a['payment_status'] ?? 'Pending'; ?>
-                                    <form method="post" class="inline-status-form" onsubmit="return confirm('Update status & payment for <?= e($a['student_name']) ?>?')">
+                                    <form method="post" onsubmit="return confirm('Update for <?= e($a['student_name']) ?>?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
                                         <input type="hidden" name="update_status" value="1">
                                         <input type="hidden" name="toggle_payment" value="1">
-                                        <select name="status" title="Application status" style="padding:.25rem .4rem;font-size:.8rem;border:1px solid #cbd5e1;border-radius:4px;">
-                                            <?php foreach ($statusOptions as $s): ?>
-                                                <option value="<?= e($s) ?>" <?= $a['status'] === $s ? 'selected' : '' ?>><?= e($s) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <select name="payment_status" title="Payment status" style="padding:.25rem .4rem;font-size:.8rem;border:1px solid #cbd5e1;border-radius:4px;">
-                                            <option value="Pending" <?= $payStatus === 'Pending' ? 'selected' : '' ?>>💳 Pending</option>
-                                            <option value="Paid" <?= $payStatus === 'Paid' ? 'selected' : '' ?>>✅ Paid</option>
-                                        </select>
-                                        <button type="submit" class="btn btn-primary btn-sm" style="padding:.25rem .6rem;font-size:.8rem;">Save</button>
+                                        <div class="row-actions">
+                                            <select name="status" title="Status">
+                                                <?php foreach ($statusOptions as $s): ?>
+                                                    <option value="<?= e($s) ?>" <?= $a['status'] === $s ? 'selected' : '' ?>><?= e($s) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <select name="payment_status" title="Payment">
+                                                <option value="Pending" <?= $payStatus === 'Pending' ? 'selected' : '' ?>>💳 Pending</option>
+                                                <option value="Paid" <?= $payStatus === 'Paid' ? 'selected' : '' ?>>✅ Paid</option>
+                                            </select>
+                                            <button type="submit" class="btn-xs btn-xs-save">Save</button>
+                                        </div>
                                     </form>
-                                    <div style="margin-top:.3rem;display:flex;gap:.6rem;">
-                                        <a href="application-view.php?app_id=<?= (int) $a['id'] ?>" style="color:#2563eb;font-size:.78rem;text-decoration:underline;">View</a>
-                                        <form method="post" style="display:inline;" onsubmit="return confirm('Delete application <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
+                                    <div class="row-links">
+                                        <a href="application-view.php?app_id=<?= (int) $a['id'] ?>" style="color:#2563eb;text-decoration:underline;">View</a>
+                                        <form method="post" style="display:inline;" onsubmit="return confirm('Delete <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
                                             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                             <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
                                             <input type="hidden" name="delete_app" value="1">
-                                            <button type="submit" class="btn btn-sm" style="background:none;border:none;color:#dc2626;font-size:.78rem;cursor:pointer;padding:0;text-decoration:underline;">Delete</button>
+                                            <button type="submit" style="color:#dc2626;text-decoration:underline;">Delete</button>
                                         </form>
                                     </div>
                                 </td>
