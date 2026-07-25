@@ -39,7 +39,7 @@ function getCmsPageDefaults()
                 'offerings_heading' => 'Everything Your Child Needs to Succeed',
                 'offerings_text' => "A complete ecosystem built to nurture every dimension of a student's development.",
                 'offerings' => [
-                    ['icon' => 'flask', 'title' => 'Science & Labs', 'text' => 'State-of-the-art Physics, Chemistry, and Biology labs equipped with modern instruments for hands-on learning.'],
+                    ['icon' => 'flask', 'title' => 'Experienced & Caring Teachers', 'text' => 'Dedicated educators provide individual attention, nurturing every child\'s academic, social, and emotional growth in a supportive learning environment.'],
                     ['icon' => 'desktop', 'title' => 'Digital Learning', 'text' => 'Smart classrooms with interactive boards, 1:1 device program, and high-speed campus-wide Wi-Fi.'],
                     ['icon' => 'running', 'title' => 'Sports & Fitness', 'text' => 'Football, cricket, basketball, swimming, and athletics coached by state-level sports professionals.'],
                     ['icon' => 'palette', 'title' => 'Arts & Culture', 'text' => 'Music, dance, drama, painting, and photography studios that nurture creative expression in every child.'],
