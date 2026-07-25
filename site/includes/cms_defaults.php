@@ -44,7 +44,7 @@ function getCmsPageDefaults()
                     ['icon' => 'running', 'title' => 'Sports & Physical Development', 'text' => 'Spacious playgrounds and indoor games encourage fitness, teamwork, discipline, and healthy habits for every child.'],
                     ['icon' => 'palette', 'title' => 'Arts & Culture', 'text' => 'Music, dance, drama, painting, and photography studios that nurture creative expression in every child.'],
                     ['icon' => 'book-open', 'title' => 'Library & Reading Corner', 'text' => 'A child-friendly library filled with storybooks, reference books, and age-appropriate learning resources that inspire a lifelong love for reading.'],
-                    ['icon' => 'bus', 'title' => 'Safe Transport', 'text' => 'GPS-enabled buses covering major routes with trained drivers and attendants for safe journeys.'],
+                    ['icon' => 'bus', 'title' => 'Safe & Secure Campus', 'text' => 'CCTV-monitored premises, dedicated school transport, and a well-equipped medical room ensure a safe and caring environment for every student.'],
                 ],
                 'admission_badge' => 'Admissions 2026-27',
                 'admission_heading' => 'Simple 4-Step Admission Process',
