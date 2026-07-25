@@ -42,7 +42,7 @@ function getCmsPageDefaults()
                     ['icon' => 'flask', 'title' => 'Experienced & Caring Teachers', 'text' => 'Dedicated educators provide individual attention, nurturing every child\'s academic, social, and emotional growth in a supportive learning environment.'],
                     ['icon' => 'desktop', 'title' => 'Activity-Based Learning', 'text' => 'Hands-on activities, creative projects, and interactive lessons that make learning enjoyable while building confidence, curiosity, and practical skills.'],
                     ['icon' => 'running', 'title' => 'Sports & Physical Development', 'text' => 'Spacious playgrounds and indoor games encourage fitness, teamwork, discipline, and healthy habits for every child.'],
-                    ['icon' => 'palette', 'title' => 'Arts & Culture', 'text' => 'Music, dance, drama, painting, and photography studios that nurture creative expression in every child.'],
+                    ['icon' => 'palette', 'title' => 'Affordable Quality Education', 'text' => 'Experienced teachers, personal attention, regular parent-teacher interaction, and affordable fees provide quality education that every family can trust.'],
                     ['icon' => 'book-open', 'title' => 'Library & Reading Corner', 'text' => 'A child-friendly library filled with storybooks, reference books, and age-appropriate learning resources that inspire a lifelong love for reading.'],
                     ['icon' => 'bus', 'title' => 'Safe & Secure Campus', 'text' => 'CCTV-monitored premises, dedicated school transport, and a well-equipped medical room ensure a safe and caring environment for every student.'],
                 ],
