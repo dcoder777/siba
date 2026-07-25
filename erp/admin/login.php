@@ -49,32 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="content-wrap auth-shell">
     <section class="surface-card hero-card">
         <div class="hero-grid">
-            <div class="hero-panel stack">
-                <span class="eyebrow">Admin Access</span>
-                <div class="stack" style="gap:.8rem">
-                    <p>
-                        Access the central workspace for school operations, student management,
-                        finance, HR, reporting, and interconnected dashboards.
-                    </p>
-                </div>
-
-                <div class="feature-list">
-                    <div class="feature-item">
-                        <strong>Modern operational overview</strong>
-                        <p>Dashboards, records, and workflows from one secure control panel.</p>
-                    </div>
-                    <div class="feature-item">
-                        <strong>Role-based access</strong>
-                        <p>Users can be limited to the modules and records relevant to their jobs.</p>
-                    </div>
-                    <div class="feature-item">
-                        <strong>API-ready foundation</strong>
-                        <p>The same backend is ready to support future mobile applications.</p>
-                    </div>
-                </div>
-            </div>
-
-            <aside class="hero-panel stack" style="justify-content:center">
+            <aside class="hero-panel stack" style="justify-content:center;grid-column:1/-1;max-width:440px;margin:0 auto;">
                 <div class="stack" style="gap:.45rem">
                     <span class="eyebrow">Secure Sign In</span>
                     <h2 style="font-size:2rem">Admin Login</h2>
@@ -95,10 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="flash" style="background:#fdecea;border-color:#f3c8c5;color:#8f1c13"><?= e($error) ?></div>
                     <?php endif; ?>
                 </form>
-
-                <div class="inline-note">
-                    Need the public entry page? <a href="../index.php" style="color:var(--brand-deep);font-weight:700">Go back to welcome screen</a>
-                </div>
             </aside>
         </div>
     </section>
