@@ -426,7 +426,7 @@ HTML;
                 <div class="section-title" style="margin-bottom:1rem;">
                     <h2>Parent / Guardian Details</h2>
                 </div>
-                <div class="field-grid">
+                <div class="field-grid" style="grid-template-columns:1fr;">
                     <div>
                         <label for="father_name">Father's Name *</label>
                         <input id="father_name" name="father_name" type="text" required value="<?= e($_POST['father_name'] ?? '') ?>">
@@ -461,7 +461,6 @@ HTML;
                         </select>
                     </div>
                     <div>
-                        <label for="contact_no">Contact Number</label>
                         <input id="contact_no" name="contact_no" type="tel" value="<?= e($_POST['contact_no'] ?? '') ?>">
                     </div>
                     <div>
