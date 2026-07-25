@@ -356,7 +356,7 @@ HTML;
 
             <section class="panel" style="padding:1.25rem">
                 <div class="section-title" style="margin-bottom:1rem;">
-                    <h2>Student Admission Application</h2>
+                    <h2>Student Details</h2>
                     <p>Enter the student's details for the admission application.</p>
                 </div>
                 <div class="field-grid">
