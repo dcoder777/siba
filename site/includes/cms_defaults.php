@@ -183,11 +183,9 @@ function getCmsPageDefaults()
                 'steps_cta_link' => 'parent/register.php',
                 'eligibility_heading' => 'Eligibility Criteria',
                 'eligibility_items' => [
-                    ['key' => 'Class 1', 'value' => 'Age 5-6 years as of 1st April'],
-                    ['key' => 'Class 2-8', 'value' => 'Promoted from previous class with passing marks'],
-                    ['key' => 'Class 9', 'value' => 'Class 8 pass certificate from a recognised school'],
-                    ['key' => 'Class 11', 'value' => 'Class 10 pass with minimum 55%'],
-                    ['key' => 'Documents', 'value' => 'Birth certificate, report card, and school records'],
+                    ['key' => 'Play School – UKG', 'value' => 'Admission based on the prescribed age criteria as of 1st April of the academic year.'],
+                    ['key' => 'Class I', 'value' => 'Students should meet the minimum age requirement and have completed the previous academic level.'],
+                    ['key' => 'Classes II – VIII', 'value' => 'Students must have successfully passed the previous class from a recognised school. Admission is subject to seat availability.'],
                 ],
                 'fees_heading' => 'Fee Structure (Annual)',
                 'fees_items' => [
