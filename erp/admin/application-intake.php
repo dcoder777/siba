@@ -348,7 +348,7 @@ HTML;
                         <input id="parent_phone" name="parent_phone" type="tel" maxlength="10" required value="<?= e($_POST['parent_phone'] ?? '') ?>" placeholder="10-digit mobile number">
                     </div>
                     <div>
-                        <label for="parent_password">Password <span style="font-weight:400;color:var(--text-light)">(leave empty to auto-generate)</span></label>
+                        <label for="parent_password" style="white-space:nowrap;">Password <span style="font-weight:400;color:var(--text-light)">(leave empty to auto-generate)</span></label>
                         <input id="parent_password" name="parent_password" type="text" value="<?= e($_POST['parent_password'] ?? '') ?>" placeholder="Auto-generated if left blank">
                     </div>
                 </div>
