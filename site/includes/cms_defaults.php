@@ -98,12 +98,12 @@ function getCmsPageDefaults()
                     ['icon' => 'star', 'title' => 'Our Values', 'text' => 'Integrity, Excellence, Respect, and Compassion guide everything we do.'],
                 ],
                 'story_badge' => 'Our Story',
-                'story_heading' => 'Two Decades of Shaping Futures',
+                'story_heading' => 'A New Beginning for Future Leaders',
                 'story_image' => SITE_URL . '/assets/images/siba_banner1.jpeg',
                 'story_paragraphs' => [
-                    'Founded in 2005 with just 120 students and a handful of dedicated educators, SIBA Public School was born from a simple belief: every child deserves world-class education.',
-                    'Over the past two decades, we have grown into one of the region\'s respected institutions with 5,000+ students and 150+ faculty members.',
-                    'Our alumni have gone on to lead in medicine, engineering, business, arts, and public service.',
+                    'Every great institution begins with a vision. Our mission is to create a learning environment where children feel safe, valued, and inspired to achieve their fullest potential.',
+                    'With dedicated teachers, modern facilities, activity-based learning, and strong parent-school collaboration, we strive to provide an education that shapes confident, responsible, and compassionate individuals.',
+                    'As we begin this journey, we invite families to become part of a school community committed to excellence, character, and lifelong learning.',
                 ],
                 'story_stats' => [
                     ['number' => '2005', 'label' => 'Year Founded'],
