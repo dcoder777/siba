@@ -50,7 +50,7 @@ include('includes/header.php');
             <div class="grid grid-4" style="margin-top: 2rem;">
                 <?php foreach (($data['story_stats'] ?? []) as $stat): ?>
                     <div class="card" style="text-align: center; padding: 1rem; background: var(--primary-color); color: white;">
-                        <div style="font-size: 2rem; font-weight: 800; color: var(--accent-color);"><?php echo htmlspecialchars($stat['number'] ?? ''); ?></div>
+                        <div style="font-size: 1.1rem; font-weight: 800; color: var(--accent-color);"><?php echo htmlspecialchars($stat['number'] ?? ''); ?></div>
                         <div style="font-size: 0.75rem; opacity: 0.8;"><?php echo htmlspecialchars($stat['label'] ?? ''); ?></div>
                     </div>
                 <?php endforeach; ?>
