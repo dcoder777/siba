@@ -7,7 +7,7 @@ function getCmsPageDefaults()
             'label' => 'Home',
             'title' => 'Welcome - Nurturing Brilliance, Shaping Futures',
             'data' => [
-                'hero_badge' => 'CBSE Affiliated School - Est. 2005',
+                'hero_badge' => 'WBBSE Affiliated School - Est. 2005',
                 'hero_title' => 'Where Young Minds Learn, Grow & Lead',
                 'hero_description' => "SIBA Public School provides a holistic, world-class education that shapes both intellectual excellence and personal character. Join 5,000+ families who trust us with their children's future.",
                 'hero_primary_cta_text' => 'Apply for Admission',
@@ -31,7 +31,7 @@ function getCmsPageDefaults()
                 'about_text' => 'SIBA Public School is on a journey to create future leaders with a curriculum that balances academic rigour, creative thinking, and strong values.',
                 'about_image' => 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&q=80&w=800',
                 'about_points' => [
-                    ['icon' => 'book', 'title' => 'CBSE Curriculum', 'text' => 'Nationally recognized board-aligned curriculum with a focus on conceptual clarity and application-based learning.'],
+                    ['icon' => 'book', 'title' => 'WBBSE Curriculum', 'text' => 'Nationally recognized board-aligned curriculum with a focus on conceptual clarity and application-based learning.'],
                     ['icon' => 'heart', 'title' => 'Value-Based Education', 'text' => 'We mould not just scholars but responsible citizens through a disciplined and ethical environment.'],
                     ['icon' => 'globe', 'title' => 'Global Exposure', 'text' => 'International exchange programs, MUN, and technology integrations that prepare students for a global future.'],
                 ],
@@ -137,7 +137,7 @@ function getCmsPageDefaults()
                 'hero_title' => 'Academics at SIBA',
                 'hero_text' => 'A rigorous, balanced curriculum that prepares students for lifelong success.',
                 'curriculum_badge' => 'Curriculum',
-                'curriculum_heading' => 'CBSE-Aligned, Future-Ready Learning',
+                'curriculum_heading' => 'WBBSE-Aligned, Future-Ready Learning',
                 'curriculum_image' => 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&q=80&w=800',
                 'curriculum_points' => [
                     ['icon' => 'book', 'title' => 'Foundational Years (Class 1-5)', 'text' => 'Building literacy, numeracy and curiosity through activity-based learning methods.'],
