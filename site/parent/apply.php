@@ -552,13 +552,10 @@ HTML;
     </div>
 
     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-        <button type="submit" name="submit_and_pay" class="btn btn-accent btn-lg">
-            <i class="fas fa-credit-card"></i> Make Payment
-        </button>
         <button type="submit" name="submit_application" class="btn btn-primary btn-lg">
             <i class="fas fa-paper-plane"></i> Submit Application
         </button>
-        <p style="font-size: 0.82rem; color: var(--text-light);">Submit now and pay later, or pay online now.</p>
+        <p style="font-size: 0.82rem; color: var(--text-light);">Submit your application now.</p>
     </div>
 
 </form>
