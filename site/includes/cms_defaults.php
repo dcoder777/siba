@@ -41,7 +41,7 @@ function getCmsPageDefaults()
                 'offerings' => [
                     ['icon' => 'flask', 'title' => 'Experienced & Caring Teachers', 'text' => 'Dedicated educators provide individual attention, nurturing every child\'s academic, social, and emotional growth in a supportive learning environment.'],
                     ['icon' => 'desktop', 'title' => 'Activity-Based Learning', 'text' => 'Hands-on activities, creative projects, and interactive lessons that make learning enjoyable while building confidence, curiosity, and practical skills.'],
-                    ['icon' => 'running', 'title' => 'Sports & Fitness', 'text' => 'Football, cricket, basketball, swimming, and athletics coached by state-level sports professionals.'],
+                    ['icon' => 'running', 'title' => 'Sports & Physical Development', 'text' => 'Spacious playgrounds and indoor games encourage fitness, teamwork, discipline, and healthy habits for every child.'],
                     ['icon' => 'palette', 'title' => 'Arts & Culture', 'text' => 'Music, dance, drama, painting, and photography studios that nurture creative expression in every child.'],
                     ['icon' => 'book-open', 'title' => 'Library & Reading Corner', 'text' => 'A child-friendly library filled with storybooks, reference books, and age-appropriate learning resources that inspire a lifelong love for reading.'],
                     ['icon' => 'bus', 'title' => 'Safe Transport', 'text' => 'GPS-enabled buses covering major routes with trained drivers and attendants for safe journeys.'],
