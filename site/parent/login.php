@@ -69,7 +69,7 @@ include('../includes/portal_header.php');
         });
         </script>
         <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 0.5rem;">
-            <i class="fas fa-sign-in-alt"></i> Login to Portal
+            <i class="fas fa-sign-in-alt"></i> Access Parent Portal
         </button>
     </form>
 
