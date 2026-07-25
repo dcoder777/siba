@@ -35,12 +35,13 @@ include('../includes/portal_sidebar.php');
 $statusMap = [
     'Application started' => 0,
     'Under review'        => 1,
-    'Admitted'            => 2,
+    'Admitted'            => 3,
     'Rejected'            => -1,
 ];
 $currentStatus = $app['status'];
+$paymentPaid   = ($app['payment_status'] ?? '') === 'Paid';
 $statusIndex   = $statusMap[$currentStatus] ?? 0;
-$steps         = ['Submitted', 'Under Review', 'Decision'];
+$steps         = ['Submitted', 'Under Review', 'Payment', 'Decision'];
 ?>
 
 <div class="info-card" style="margin-bottom: 1.5rem;">
@@ -60,8 +61,10 @@ $steps         = ['Submitted', 'Under Review', 'Decision'];
     <div class="status-tracker">
         <?php foreach ($steps as $i => $label): ?>
         <?php
-        if ($currentStatus == 'Rejected' && $i == 2) {
-            $cls = 'rejected';
+        if ($currentStatus == 'Rejected') {
+            $cls = ($i < 2) ? 'done' : (($i == 3) ? 'rejected' : (($i == 2 && $paymentPaid) ? 'done' : ''));
+        } elseif ($i == 2) {
+            $cls = ($statusIndex >= 3 || ($statusIndex >= 1 && $paymentPaid)) ? 'done' : (($statusIndex >= 1) ? 'active' : '');
         } elseif ($i < $statusIndex) {
             $cls = 'done';
         } elseif ($i == $statusIndex) {
