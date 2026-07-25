@@ -25,6 +25,9 @@ include('includes/header.php');
                 <span class="badge"><?php echo htmlspecialchars($data['curriculum_badge'] ?? ''); ?></span>
                 <h2><?php echo htmlspecialchars($data['curriculum_heading'] ?? ''); ?></h2>
             </div>
+            <?php if (!empty($data['curriculum_intro'])): ?>
+                <p style="color: var(--text-light); margin-bottom: 1.5rem; line-height: 1.8;"><?php echo htmlspecialchars($data['curriculum_intro']); ?></p>
+            <?php endif; ?>
             <?php foreach (($data['curriculum_points'] ?? []) as $point): ?>
                 <div class="why-item">
                     <div class="why-icon"><i class="fas fa-<?php echo htmlspecialchars($point['icon'] ?? 'book'); ?>"></i></div>
