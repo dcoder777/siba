@@ -99,7 +99,7 @@ function getCmsPageDefaults()
                 ],
                 'story_badge' => 'Our Story',
                 'story_heading' => 'Two Decades of Shaping Futures',
-                'story_image' => 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
+                'story_image' => SITE_URL . '/assets/images/siba_banner1.jpeg',
                 'story_paragraphs' => [
                     'Founded in 2005 with just 120 students and a handful of dedicated educators, SIBA Public School was born from a simple belief: every child deserves world-class education.',
                     'Over the past two decades, we have grown into one of the region\'s respected institutions with 5,000+ students and 150+ faculty members.',
