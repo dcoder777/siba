@@ -270,11 +270,7 @@ function getCmsPageDefaults()
                 'events' => [],
                 'news_badge' => 'News',
                 'news_heading' => 'Latest from SIBA',
-                'news' => [
-                    ['image' => 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600', 'category' => 'Achievement', 'title' => 'SIBA Wins State Basketball Championship', 'text' => "Our U-17 boys' basketball team won the state trophy for the third year.", 'date' => 'March 20, 2026'],
-                    ['image' => 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&q=80&w=600', 'category' => 'Academic', 'title' => 'Students Excel in Maths Olympiad', 'text' => 'Five students qualified for the national round with medal wins.', 'date' => 'March 10, 2026'],
-                    ['image' => 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&q=80&w=600', 'category' => 'Infrastructure', 'title' => 'New Digital Library Wing Inaugurated', 'text' => 'Expanded digital library with e-books and research pods is now open.', 'date' => 'February 28, 2026'],
-                ],
+                'news' => [],
             ],
         ],
         'contact' => [

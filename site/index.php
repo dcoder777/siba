@@ -1,10 +1,18 @@
 <?php
 require_once('includes/db_connect.php');
 require_once('includes/cms.php');
+require_once('includes/events_helper.php');
 
 $cms = cmsGetPage($conn, 'index');
 $pageTitle = $cms['title'];
 $data = $cms['data'];
+
+try {
+    $dbEvents = getEventsFromDb($conn, 'event', 5);
+} catch (Throwable) {
+    $dbEvents = [];
+}
+
 include('includes/header.php');
 ?>
 
@@ -91,10 +99,10 @@ include('includes/header.php');
                 <h2><?php echo htmlspecialchars($data['events_heading'] ?? ''); ?></h2>
             </div>
             <div class="card" style="padding: 1.5rem;">
-                <?php foreach (($data['events'] ?? []) as $event): ?>
+                <?php $eventList = !empty($dbEvents) ? $dbEvents : ($data['events'] ?? []); ?>
+                <?php foreach ($eventList as $event): ?>
                     <?php 
-                        /* if there is  value in any array keys, skip the event */
-                        if (!empty($event['day']) || !empty($event['month']) || !empty($event['title']) || !empty($event['text'])) {
+                        if (!empty($event['title'])) {
                     ?>     
                     <div class="event-item">
                         <div class="event-date"><span class="day"><?php echo htmlspecialchars($event['day'] ?? ''); ?></span><span class="month"><?php echo htmlspecialchars($event['month'] ?? ''); ?></span></div>

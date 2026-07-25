@@ -399,3 +399,22 @@ INSERT INTO user_module_access (user_id, module_key, can_access) VALUES
 (1, 'operations', 1),
 (1, 'hr', 1),
 (1, 'reports', 1);
+
+-- ====== Events & News ======
+CREATE TABLE IF NOT EXISTS events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type ENUM('event', 'news') NOT NULL DEFAULT 'event',
+    title VARCHAR(255) NOT NULL,
+    text TEXT,
+    day VARCHAR(2),
+    month VARCHAR(20),
+    icon VARCHAR(50) DEFAULT 'calendar',
+    color VARCHAR(7) DEFAULT '#4b5563',
+    image VARCHAR(500),
+    category VARCHAR(100),
+    event_date DATE,
+    sort_order INT DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

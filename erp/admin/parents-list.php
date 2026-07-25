@@ -99,6 +99,9 @@ $totalPages = max(1, (int) ceil($total / $limit));
             <a class="nav-link active" href="parents-list.php">
                 <span class="sidebar-icon">👤</span><span>Parents</span><span class="nav-tag"><?= $total ?></span>
             </a>
+            <a class="nav-link" href="events-manager.php">
+                <span class="sidebar-icon">📅</span><span>Events & News</span>
+            </a>
         </div>
         <?php foreach ($menus as $menuKey => $menu): ?>
             <div class="nav-group">

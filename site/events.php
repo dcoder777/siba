@@ -1,10 +1,20 @@
 <?php
 require_once('includes/db_connect.php');
 require_once('includes/cms.php');
+require_once('includes/events_helper.php');
 
 $cms = cmsGetPage($conn, 'events');
 $pageTitle = $cms['title'];
 $data = $cms['data'];
+
+try {
+    $dbEvents = getEventsFromDb($conn, 'event');
+    $dbNews = getEventsFromDb($conn, 'news');
+} catch (Throwable) {
+    $dbEvents = [];
+    $dbNews = [];
+}
+
 include('includes/header.php');
 ?>
 
@@ -23,10 +33,11 @@ include('includes/header.php');
         <span class="badge"><?php echo htmlspecialchars($data['events_badge'] ?? 'Calendar'); ?></span>
         <h2><?php echo htmlspecialchars($data['events_heading'] ?? 'Upcoming Events'); ?></h2>
     </div>
-    <?php foreach (($data['events'] ?? []) as $event): ?>
+    <?php $eventList = !empty($dbEvents) ? $dbEvents : ($data['events'] ?? []); ?>
+    <?php foreach ($eventList as $event): ?>
         <?php 
             // if event is not empty //
-            if (!empty($event['title']) && !empty($event['text'])) { ?>
+            if (!empty($event['title'])) { ?>
         <div class="card" style="display: grid; grid-template-columns: auto 1fr; gap: 1.75rem; align-items: center; margin-bottom: 1.25rem;">
             <div style="text-align: center; background: <?php echo htmlspecialchars($event['color'] ?? '#4b5563'); ?>; color: white; border-radius: 14px; padding: 1rem 1.25rem; min-width: 80px;">
                 <div style="font-size: 2rem; font-weight: 800; line-height: 1;"><?php echo htmlspecialchars($event['day'] ?? ''); ?></div>
@@ -50,15 +61,22 @@ include('includes/header.php');
         <h2><?php echo htmlspecialchars($data['news_heading'] ?? 'Latest from SIBA'); ?></h2>
     </div>
     <div class="grid">
-        <?php foreach (($data['news'] ?? []) as $item): ?>
-            <div class="card">
-                <img src="<?php echo htmlspecialchars($item['image'] ?? ''); ?>" alt="News" style="width:100%; height:180px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">
-                <span class="badge badge-review" style="font-size:0.72rem; margin-bottom:0.5rem;"><?php echo htmlspecialchars($item['category'] ?? 'Update'); ?></span>
-                <h3 style="color: var(--primary-color); margin-bottom:0.5rem;"><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
-                <p style="color: var(--text-light); font-size:0.88rem;"><?php echo htmlspecialchars($item['text'] ?? ''); ?></p>
-                <p style="font-size: 0.78rem; color: var(--text-light); margin-top: 0.75rem;"><i class="fas fa-calendar-alt"></i> <?php echo htmlspecialchars($item['date'] ?? ''); ?></p>
-            </div>
-        <?php endforeach; ?>
+        <?php $newsList = !empty($dbNews) ? $dbNews : ($data['news'] ?? []); ?>
+    <?php foreach ($newsList as $item): ?>
+        <?php if (!empty($item['title'])): ?>
+        <div class="card">
+            <?php if (!empty($item['image'])): ?>
+                <img src="<?php echo htmlspecialchars($item['image']); ?>" alt="News" style="width:100%; height:180px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">
+            <?php endif; ?>
+            <span class="badge badge-review" style="font-size:0.72rem; margin-bottom:0.5rem;"><?php echo htmlspecialchars($item['category'] ?? 'Update'); ?></span>
+            <h3 style="color: var(--primary-color); margin-bottom:0.5rem;"><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
+            <p style="color: var(--text-light); font-size:0.88rem;"><?php echo htmlspecialchars($item['text'] ?? ''); ?></p>
+            <?php if (!empty($item['event_date'])): ?>
+                <p style="font-size: 0.78rem; color: var(--text-light); margin-top: 0.75rem;"><i class="fas fa-calendar-alt"></i> <?php echo htmlspecialchars($item['event_date']); ?></p>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+    <?php endforeach; ?>
     </div>
 </section>
 
