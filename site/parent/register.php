@@ -16,39 +16,11 @@ if ($cols->num_rows === 0) {
 $error = '';
 $success = '';
 
-// Send OTP
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_otp'])) {
-    $phone = preg_replace('/\D/', '', $_POST['phone']);
-    if (strlen($phone) !== 10) {
-        $error = "Please enter a valid 10-digit phone number.";
-    } else {
-        $check = $conn->query("SELECT id FROM parents WHERE phone = '$phone'");
-        if ($check->num_rows > 0) {
-            $error = "This phone number is already registered. <a href='login.php'>Login here</a>.";
-        } else {
-            $_SESSION['reg_phone'] = $phone;
-            $_SESSION['reg_otp']   = '123456';
-            $_SESSION['reg_name']  = $_POST['name'] ?? '';
-            $_SESSION['reg_email'] = $_POST['email'] ?? '';
-            $success = "OTP sent to +91 $phone (Demo OTP: 123456)";
-        }
-    }
-}
-
-// Resend OTP
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['resend_otp'])) {
-    if (!empty($_SESSION['reg_phone'])) {
-        $_SESSION['reg_otp'] = '123456';
-        $success = "OTP resent to +91 {$_SESSION['reg_phone']} (Demo OTP: 123456)";
-    }
-}
-
 // Create account
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_account'])) {
     $name       = trim($_POST['name']);
     $email      = trim($_POST['email']);
     $phone      = preg_replace('/\D/', '', $_POST['phone']);
-    $otp        = trim($_POST['otp']);
     $password   = $_POST['password'];
     $password2  = $_POST['password2'];
     $accept     = isset($_POST['accept_terms']) ? 1 : 0;
@@ -57,17 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_account'])) {
         $error = "Please enter your name.";
     } elseif (strlen($phone) !== 10) {
         $error = "Please enter a valid 10-digit phone number.";
-    } elseif (empty($otp)) {
-        $error = "Please enter the OTP.";
-    } elseif ($otp !== ($_SESSION['reg_otp'] ?? '') && $otp !== '123456') {
-        $error = "Invalid OTP. Please try again. (Hint: use 123456)";
-    } elseif (strlen($password) < 6) {
-        $error = "Password must be at least 6 characters.";
-    } elseif ($password !== $password2) {
-        $error = "Passwords do not match.";
-    } elseif (!$accept) {
-        $error = "You must accept the Terms & Conditions.";
     } else {
+        $check = $conn->query("SELECT id FROM parents WHERE phone = '$phone'");
+        if ($check->num_rows > 0) {
+            $error = "This phone number is already registered. <a href='login.php'>Login here</a>.";
+        } elseif (strlen($password) < 6) {
+            $error = "Password must be at least 6 characters.";
+        } elseif ($password !== $password2) {
+            $error = "Passwords do not match.";
+        } elseif (!$accept) {
+            $error = "You must accept the Terms & Conditions.";
+        } else {
         $hashed = password_hash($password, PASSWORD_DEFAULT);
         $stmt   = $conn->prepare("INSERT INTO parents (name, email, phone, password) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $name, $email, $phone, $hashed);
@@ -87,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_account'])) {
             $_SESSION['parent_id'] = $parent_id;
             $_SESSION['phone']     = $phone;
             $_SESSION['parent_name'] = $name;
-            unset($_SESSION['reg_step'], $_SESSION['reg_otp'], $_SESSION['reg_phone'], $_SESSION['reg_name'], $_SESSION['reg_email']);
+            unset($_SESSION['reg_step']);
             header("Location: apply.php"); exit();
         } else {
             $error = "Could not create account. Please try again.";
@@ -143,36 +115,19 @@ include('../includes/portal_header.php');
         <div class="form-group">
             <label><i class="fas fa-user"></i> &nbsp;Name</label>
             <input type="text" name="name" placeholder="Your full name" required
-                   value="<?php echo htmlspecialchars($_POST['name'] ?? $_SESSION['reg_name'] ?? ''); ?>">
+                   value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>">
         </div>
 
         <div class="form-group">
             <label><i class="fas fa-envelope"></i> &nbsp;Email <span style="color:var(--text-light);font-weight:400;">(Optional)</span></label>
             <input type="email" name="email" placeholder="your@email.com"
-                   value="<?php echo htmlspecialchars($_POST['email'] ?? $_SESSION['reg_email'] ?? ''); ?>">
+                   value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
         </div>
 
         <div class="form-group">
             <label><i class="fas fa-mobile-alt"></i> &nbsp;Phone No</label>
-            <div style="display:flex;gap:0.5rem;">
-                <input type="tel" name="phone" placeholder="10-digit mobile number" maxlength="10" required
-                       value="<?php echo htmlspecialchars($_POST['phone'] ?? $_SESSION['reg_phone'] ?? ''); ?>"
-                       style="flex:1;">
-                <button type="submit" name="send_otp" class="btn btn-primary" style="white-space:nowrap;padding:0.6rem 1rem;">
-                    <i class="fas fa-paper-plane"></i> Send OTP
-                </button>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label><i class="fas fa-key"></i> &nbsp;OTP</label>
-            <div style="display:flex;gap:0.5rem;">
-                <input type="text" name="otp" placeholder="Enter 6-digit OTP" maxlength="6"
-                       style="flex:1;letter-spacing:0.3em;text-align:center;">
-                <button type="submit" name="resend_otp" class="btn btn-outline-primary" style="white-space:nowrap;padding:0.6rem 0.8rem;font-size:0.8rem;">
-                    <i class="fas fa-redo"></i> Resend
-                </button>
-            </div>
+            <input type="tel" name="phone" placeholder="10-digit mobile number" maxlength="10" required
+                   value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>">
         </div>
 
         <div class="form-group">
