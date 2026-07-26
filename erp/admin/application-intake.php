@@ -592,9 +592,6 @@ HTML;
                         </select>
                     </div>
                     <div>
-                        <input id="contact_no" name="contact_no" type="tel" value="<?= e($_POST['contact_no'] ?? '') ?>">
-                    </div>
-                    <div>
                         <label for="student_email">Student Email</label>
                         <input id="student_email" name="student_email" type="email" value="<?= e($_POST['student_email'] ?? '') ?>">
                     </div>
