@@ -1,7 +1,16 @@
 <?php
 
+// Compute site base URL from server vars (independent of config.php)
+$cmsSiteUrl = (function () {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $dir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
+    return $protocol . '://' . $host . $dir;
+})();
+
 function getCmsPageDefaults()
 {
+    global $cmsSiteUrl;
     return [
         'index' => [
             'label' => 'Home',
@@ -97,7 +106,7 @@ function getCmsPageDefaults()
                 ],
                 'story_badge' => 'Our Story',
                 'story_heading' => 'A New Beginning for Future Leaders',
-                'story_image' => '/assets/images/siba_banner1.jpeg',
+                'story_image' => $cmsSiteUrl . '/assets/images/siba_banner1.jpeg',
                 'story_paragraphs' => [
                     'Every great institution begins with a vision. Our mission is to create a learning environment where children feel safe, valued, and inspired to achieve their fullest potential.',
                     'With dedicated teachers, modern facilities, activity-based learning, and strong parent-school collaboration, we strive to provide an education that shapes confident, responsible, and compassionate individuals.',
@@ -134,7 +143,7 @@ function getCmsPageDefaults()
                 'curriculum_badge' => 'ACADEMIC PROGRAMME',
                 'curriculum_heading' => 'Learning That Inspires Every Child',
                 'curriculum_intro' => 'Our well-structured curriculum blends academic excellence with creativity, values, and practical learning. From early childhood to upper primary, we focus on developing confident, responsible, and lifelong learners through engaging and child-friendly teaching methods.',
-                'curriculum_image' => '/assets/images/siba_banner1.jpeg',
+                'curriculum_image' => $cmsSiteUrl . '/assets/images/siba_banner1.jpeg',
                 'curriculum_points' => [
                     ['icon' => 'child', 'title' => 'Foundational Stage (Play School – UKG)', 'text' => 'Creating a joyful learning environment where children explore, discover, and develop essential social, emotional, and communication skills.'],
                     ['icon' => 'book', 'title' => 'Primary Stage (Class I – IV)', 'text' => 'Strengthening literacy, numeracy, and critical thinking through interactive lessons, activities, and personalized guidance.'],
