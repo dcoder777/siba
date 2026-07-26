@@ -84,7 +84,7 @@ function getCmsPageDefaults()
                 'final_cta_secondary_text' => 'Contact Us',
                 'final_cta_secondary_link' => 'contact.php',
                 'contact_strip' => [
-                    ['icon' => 'phone-alt', 'label' => 'Call Us', 'value' => '+91-75010119960'],
+                    ['icon' => 'phone-alt', 'label' => 'Call Us', 'value' => '+91-7501011996'],
                     ['icon' => 'envelope', 'label' => 'Email Us', 'value' => 'info@sibapublicschool.com'],
                     ['icon' => 'map-marker-alt', 'label' => 'Visit Us', 'value' => 'Bangaljhi, West Bengal 741123'],
                     ['icon' => 'clock', 'label' => 'School Hours', 'value' => "Mon – Fri: 7 am – 3 pm\nSat: 7 am – 1 pm"],
@@ -290,7 +290,7 @@ function getCmsPageDefaults()
                 'details_heading' => 'School Office',
                 'contacts' => [
                     ['icon' => 'map-marker-alt', 'title' => 'Address', 'value' => 'Bangaljhi, West Bengal 741123'],
-                    ['icon' => 'phone', 'title' => 'Phone', 'value' => '+91-75010119960'],
+                    ['icon' => 'phone', 'title' => 'Phone', 'value' => '+91-7501011996'],
                     ['icon' => 'envelope', 'title' => 'Email', 'value' => 'info@sibapublicschool.com'],
                     ['icon' => 'clock', 'title' => 'Office Hours', 'value' => "Mon – Fri: 7 am – 3 pm\nSat: 7 am – 1 pm"],
                 ],
