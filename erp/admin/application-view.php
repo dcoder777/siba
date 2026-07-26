@@ -72,11 +72,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
         $sql = "UPDATE applications SET " . implode(', ', $updates) . " WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $success = 'Application updated successfully.';
 
         $stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id");
         $stmt->execute(['id' => $appId]);
         $app = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (($params[':status'] ?? '') === 'Admitted' && empty($app['student_id'])) {
+            $nameParts = explode(' ', trim($app['student_name']), 2);
+            $firstName = $nameParts[0];
+            $lastName = $nameParts[1] ?? '';
+
+            $cntStmt = $pdo->query("SELECT COUNT(*) AS cnt FROM students");
+            $admissionNo = sprintf("ADM%04d", ((int) $cntStmt->fetch()['cnt']) + 1);
+
+            $addrParts = array_filter([$app['address_line1'], $app['address_line2'], $app['village_city'] ?? $app['district'], $app['state'], $app['pin']]);
+            $addr = implode(', ', $addrParts);
+
+            $insStmt = $pdo->prepare("INSERT INTO students (admission_no, first_name, last_name, gender, dob, blood_group, phone, email, address) VALUES (:admission_no, :first_name, :last_name, :gender, :dob, :blood_group, :phone, :email, :address)");
+            $insStmt->execute([
+                'admission_no' => $admissionNo,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'gender' => $app['gender'],
+                'dob' => $app['dob'],
+                'blood_group' => $app['blood_group'],
+                'phone' => $app['contact_no'],
+                'email' => $app['email'],
+                'address' => $addr,
+            ]);
+            $studentId = (int) $pdo->lastInsertId();
+
+            $sessionStmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'academic_year' LIMIT 1");
+            $sessionStmt->execute();
+            $sessionLabel = $sessionStmt->fetchColumn() ?: date('Y') . '-' . (date('y') + 1);
+
+            $enrollStmt = $pdo->prepare("INSERT INTO student_enrollments (student_id, class_name, session_label, status, is_current) VALUES (:student_id, :class_name, :session_label, 'active', 1)");
+            $enrollStmt->execute([
+                'student_id' => $studentId,
+                'class_name' => $app['class_sought'],
+                'session_label' => $sessionLabel,
+            ]);
+
+            $pdo->prepare("UPDATE applications SET student_id = :sid, admission_no = :ano WHERE id = :id")
+                ->execute(['sid' => $studentId, 'ano' => $admissionNo, 'id' => $appId]);
+
+            $stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id");
+            $stmt->execute(['id' => $appId]);
+            $app = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        $success = 'Application updated successfully.';
     }
 }
 

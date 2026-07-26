@@ -18,67 +18,6 @@ $statusOptions = ['Application started', 'Under review', 'Admitted', 'Rejected']
 $currentStatus = trim((string) ($_GET['status'] ?? ''));
 $searchQ = trim((string) ($_GET['q'] ?? ''));
 
-// ─── Update Status ───
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status']) && verify_csrf()) {
-    $appId = (int) ($_POST['app_id'] ?? 0);
-    $newStatus = trim((string) ($_POST['status'] ?? ''));
-    if ($appId > 0 && in_array($newStatus, $statusOptions, true)) {
-        try {
-            $stmt = $pdo->prepare("UPDATE applications SET status = :status WHERE id = :id");
-            $stmt->execute(['status' => $newStatus, 'id' => $appId]);
-
-            if ($newStatus === 'Admitted') {
-                $appStmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.phone AS parent_phone FROM applications a JOIN parents p ON p.id = a.parent_id WHERE a.id = :id");
-                $appStmt->execute(['id' => $appId]);
-                $app = $appStmt->fetch(PDO::FETCH_ASSOC);
-                if ($app && empty($app['student_id'])) {
-                    $nameParts = explode(' ', trim($app['student_name']), 2);
-                    $firstName = $nameParts[0];
-                    $lastName = $nameParts[1] ?? '';
-
-                    $cntStmt = $pdo->query("SELECT COUNT(*) AS cnt FROM students");
-                    $admissionNo = sprintf("ADM%04d", ((int) $cntStmt->fetch()['cnt']) + 1);
-
-                    $addrParts = array_filter([$app['address_line1'], $app['address_line2'], $app['village_city'] ?? $app['district'], $app['state'], $app['pin']]);
-                    $addr = implode(', ', $addrParts);
-
-                    $insStmt = $pdo->prepare("INSERT INTO students (admission_no, first_name, last_name, gender, dob, blood_group, phone, email, address) VALUES (:admission_no, :first_name, :last_name, :gender, :dob, :blood_group, :phone, :email, :address)");
-                    $insStmt->execute([
-                        'admission_no' => $admissionNo,
-                        'first_name' => $firstName,
-                        'last_name' => $lastName,
-                        'gender' => $app['gender'],
-                        'dob' => $app['dob'],
-                        'blood_group' => $app['blood_group'],
-                        'phone' => $app['contact_no'],
-                        'email' => $app['email'],
-                        'address' => $addr,
-                    ]);
-                    $studentId = (int) $pdo->lastInsertId();
-
-                    $sessionStmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'academic_year' LIMIT 1");
-                    $sessionStmt->execute();
-                    $sessionLabel = $sessionStmt->fetchColumn() ?: date('Y') . '-' . (date('y') + 1);
-
-                    $enrollStmt = $pdo->prepare("INSERT INTO student_enrollments (student_id, class_name, session_label, status, is_current) VALUES (:student_id, :class_name, :session_label, 'active', 1)");
-                    $enrollStmt->execute([
-                        'student_id' => $studentId,
-                        'class_name' => $app['class_sought'],
-                        'session_label' => $sessionLabel,
-                    ]);
-
-                    $updStmt = $pdo->prepare("UPDATE applications SET student_id = :student_id, admission_no = :admission_no WHERE id = :id");
-                    $updStmt->execute(['student_id' => $studentId, 'admission_no' => $admissionNo, 'id' => $appId]);
-                }
-            }
-
-            $success = 'Application status updated successfully.';
-        } catch (Exception $e) {
-            $error = 'Failed to update status: ' . $e->getMessage();
-        }
-    }
-}
-
 // ─── Delete Application ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_app']) && verify_csrf()) {
     $appId = (int) ($_POST['app_id'] ?? 0);
@@ -313,20 +252,14 @@ function statusBadge(string $s): string {
                                 <td><?= statusBadge($a['status']) ?></td>
                                 <td>
                                     <?php $payStatus = $a['payment_status'] ?? 'Pending'; ?>
-                                    <form method="post" onsubmit="return confirm('Update for <?= e($a['student_name']) ?>?')">
+                                    <form method="post" onsubmit="return confirm('Update payment for <?= e($a['student_name']) ?>?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
-                                        <input type="hidden" name="update_status" value="1">
                                         <input type="hidden" name="toggle_payment" value="1">
                                         <div class="row-actions">
-                                            <select name="status" title="Status">
-                                                <?php foreach ($statusOptions as $s): ?>
-                                                    <option value="<?= e($s) ?>" <?= $a['status'] === $s ? 'selected' : '' ?>><?= e($s) ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
                                             <select name="payment_status" title="Payment">
-                                                <option value="Pending" <?= $payStatus === 'Pending' ? 'selected' : '' ?>>💳 Pending</option>
-                                                <option value="Paid" <?= $payStatus === 'Paid' ? 'selected' : '' ?>>✅ Paid</option>
+                                                <option value="Pending" <?= $payStatus === 'Pending' ? 'selected' : '' ?>>Pending</option>
+                                                <option value="Paid" <?= $payStatus === 'Paid' ? 'selected' : '' ?>>Paid</option>
                                             </select>
                                             <button type="submit" class="btn-xs btn-xs-save">Save</button>
                                         </div>
