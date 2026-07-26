@@ -22,9 +22,6 @@ require_once(__DIR__ . '/config.php');
     </div>
     <div class="cta-btns">
         <a href="<?php echo SITE_URL; ?>" class="btn btn-outline-primary btn"><i class="fas fa-home"></i> Main Site</a>
-        <?php if (isset($_SESSION['parent_id'])): ?>
-            <a href="<?php echo SITE_URL; ?>/logout.php" class="btn btn-primary"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        <?php endif; ?>
     </div>
 </header>
 <main>
