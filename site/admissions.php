@@ -28,7 +28,7 @@ include('includes/header.php');
             <div class="step">
                 <div class="step-num"><?php echo $idx + 1; ?></div>
                 <h4><?php echo htmlspecialchars($step['title'] ?? ''); ?></h4>
-                <?php if (!empty($step['text'])): ?><p><?php echo htmlspecialchars($step['text'] ?? ''); ?></p><?php endif; ?>
+                <p><?php echo htmlspecialchars($step['text'] ?? ''); ?></p>
             </div>
         <?php endforeach; ?>
     </div>
