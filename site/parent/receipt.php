@@ -51,7 +51,7 @@ if (!$app) {
         <img src="<?= SITE_LOGO_URL ?>" alt="SIBA Public School" class="logo">
         <div>
             <h1>SIBA Public School</h1>
-            <p style="font-size:.8rem;opacity:.8;">WBBSE Affiliated &bull; Chapra, Nadia</p>
+            <p style="font-size:.8rem;opacity:.8;">WBBSE Affiliated &bull; Chapra, West Bengal</p>
         </div>
     </div>
     <div class="receipt-body">

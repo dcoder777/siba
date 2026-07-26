@@ -7,7 +7,7 @@ require_once(__DIR__ . '/config.php');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) . " | " . SITE_NAME : SITE_NAME; ?></title>
-    <meta name="description" content="SIBA Public School - Nurturing young minds for a brighter future. WBBSE Affiliated, upcoming Premium Bengali Medium School in Chapra, Nadia.">
+    <meta name="description" content="SIBA Public School - Nurturing young minds for a brighter future. WBBSE Affiliated, upcoming Premium Bengali Medium School in Chapra, West Bengal.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

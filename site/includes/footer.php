@@ -8,7 +8,7 @@
                     </a>
                     <div><h3 style="text-transform:none;color:white;font-size:1rem;letter-spacing:0;">SIBA Public School</h3></div>
                 </div>
-                <p>Nurturing young minds for a brighter future. WBBSE Affiliated, upcoming Premium Bengali Medium School in Chapra, Nadia.</p>
+                <p>Nurturing young minds for a brighter future. WBBSE Affiliated, upcoming Premium Bengali Medium School in Chapra, West Bengal.</p>
                 <div class="social-links">
                     <a href="https://www.facebook.com/profile.php?id=61576519440314" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
                     <a href="https://www.instagram.com/sibapublicschool/" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
