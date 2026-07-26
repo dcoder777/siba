@@ -644,6 +644,25 @@ $overallSummary = [
     ['label' => 'Payment Pending', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM applications WHERE payment_status = "Pending"')],
 ];
 
+// Payment status data for pie chart
+$paymentPaid = (int) scalar($pdo, 'SELECT COUNT(*) FROM applications WHERE payment_status = "Paid"');
+$paymentPending = (int) scalar($pdo, 'SELECT COUNT(*) FROM applications WHERE payment_status = "Pending"');
+
+// Applications by class
+$byClassRows = $pdo->query('SELECT class_sought AS label, COUNT(*) AS value FROM applications WHERE class_sought IS NOT NULL AND class_sought <> "" GROUP BY class_sought ORDER BY class_sought')->fetchAll();
+$byClassLabels = array_column($byClassRows, 'label');
+$byClassValues = array_map('intval', array_column($byClassRows, 'value'));
+
+// Applications by gender
+$byGenderRows = $pdo->query('SELECT gender AS label, COUNT(*) AS value FROM applications WHERE gender IS NOT NULL AND gender <> "" GROUP BY gender ORDER BY gender')->fetchAll();
+$byGenderLabels = array_column($byGenderRows, 'label');
+$byGenderValues = array_map('intval', array_column($byGenderRows, 'value'));
+
+// Applications by caste
+$byCasteRows = $pdo->query('SELECT caste AS label, COUNT(*) AS value FROM applications WHERE caste IS NOT NULL AND caste <> "" GROUP BY caste ORDER BY caste')->fetchAll();
+$byCasteLabels = array_column($byCasteRows, 'label');
+$byCasteValues = array_map('intval', array_column($byCasteRows, 'value'));
+
 $modulePayload = module_dashboard_payload($pdo, $module);
 $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
 ?>
@@ -742,26 +761,51 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
             <section class="panel" style="padding:1.25rem">
                 <div class="section-title">
                     <div>
-                        <h2>Application Snapshot</h2>
-                        <p>Key admission metrics at a glance.</p>
+                        <h2>Payment Status</h2>
+                        <p>Paid vs unpaid applications.</p>
                     </div>
                 </div>
-                <div class="kpi-grid">
-                    <?php foreach ($overallSummary as $item): ?>
-                        <?php $isCurrency = str_starts_with((string) $item['value'], 'Rs.'); ?>
-                        <div class="kpi-card">
-                            <div class="kpi-label"><?= e((string) $item['label']) ?></div>
-                            <div class="kpi-value<?= $isCurrency ? ' kpi-value-currency' : '' ?>"><?= e((string) $item['value']) ?></div>
-                        </div>
-                    <?php endforeach; ?>
+                <div style="max-width:360px;margin:0 auto;">
+                    <canvas id="chartPayment"></canvas>
                 </div>
             </section>
 
             <section class="panel" style="padding:1.25rem">
                 <div class="section-title">
                     <div>
+                        <h2>Applications by Class</h2>
+                        <p>Number of applications per class.</p>
+                    </div>
+                </div>
+                <canvas id="chartClass" height="100"></canvas>
+            </section>
+
+            <section class="panel" style="padding:1.25rem">
+                <div class="section-title">
+                    <div>
+                        <h2>Applications by Gender</h2>
+                        <p>Gender distribution of applicants.</p>
+                    </div>
+                </div>
+                <div style="max-width:400px;margin:0 auto;">
+                    <canvas id="chartGender"></canvas>
+                </div>
+            </section>
+
+            <section class="panel" style="padding:1.25rem">
+                <div class="section-title">
+                    <div>
+                        <h2>Applications by Caste</h2>
+                        <p>Caste distribution of applicants.</p>
+                    </div>
+                </div>
+                <canvas id="chartCaste" height="100"></canvas>
+            </section>
+
+            <section class="panel" style="padding:1.25rem">
+                <div class="section-title">
+                    <div>
                         <h2>Quick Actions</h2>
-                        <p>Jump directly to key admission tasks.</p>
                     </div>
                 </div>
                 <div class="module-chip-grid">
@@ -1535,5 +1579,65 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
     });
 })();
 </script>
+
+<?php if ($view === 'dashboard'): ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var paid = <?= json_encode($paymentPaid) ?>;
+    var pending = <?= json_encode($paymentPending) ?>;
+    if (document.getElementById('chartPayment')) {
+        new Chart(document.getElementById('chartPayment'), {
+            type: 'pie',
+            data: {
+                labels: ['Paid', 'Pending'],
+                datasets: [{ data: [paid, pending], backgroundColor: ['#22c55e', '#f59e0b'] }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    var classLabels = <?= json_encode($byClassLabels) ?>;
+    var classValues = <?= json_encode($byClassValues) ?>;
+    if (document.getElementById('chartClass')) {
+        new Chart(document.getElementById('chartClass'), {
+            type: 'bar',
+            data: {
+                labels: classLabels,
+                datasets: [{ label: 'Applications', data: classValues, backgroundColor: '#3b82f6' }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
+
+    var genderLabels = <?= json_encode($byGenderLabels) ?>;
+    var genderValues = <?= json_encode($byGenderValues) ?>;
+    if (document.getElementById('chartGender')) {
+        new Chart(document.getElementById('chartGender'), {
+            type: 'bar',
+            data: {
+                labels: genderLabels,
+                datasets: [{ label: 'Applications', data: genderValues, backgroundColor: '#8b5cf6' }]
+            },
+            options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
+
+    var casteLabels = <?= json_encode($byCasteLabels) ?>;
+    var casteValues = <?= json_encode($byCasteValues) ?>;
+    if (document.getElementById('chartCaste')) {
+        new Chart(document.getElementById('chartCaste'), {
+            type: 'bar',
+            data: {
+                labels: casteLabels,
+                datasets: [{ label: 'Applications', data: casteValues, backgroundColor: '#f59e0b' }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        });
+    }
+});
+</script>
+<?php endif; ?>
+
 </body>
 </html>
