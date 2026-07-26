@@ -13,7 +13,7 @@ if (!function_exists('env')) {
             if (file_exists($envPath)) {
                 $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
                 foreach ($lines as $line) {
-                    if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+                    if (substr(trim($line), 0, 1) === '#' || strpos($line, '=') === false) {
                         continue;
                     }
                     [$k, $v] = explode('=', $line, 2);
