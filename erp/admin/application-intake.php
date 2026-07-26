@@ -50,8 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $guardianName = trim((string) ($_POST['guardian_name'] ?? ''));
     $guardianOccupation = trim((string) ($_POST['guardian_occupation'] ?? ''));
     $familyIncome = trim((string) ($_POST['family_annual_income'] ?? ''));
-    $contactNo = trim((string) ($_POST['contact_no'] ?? ''));
-    $studentEmail = trim((string) ($_POST['student_email'] ?? ''));
+    $fatherAadhaarNo = trim((string) ($_POST['father_aadhaar_no'] ?? ''));
+    $motherAadhaarNo = trim((string) ($_POST['mother_aadhaar_no'] ?? ''));
+    $fatherVoterNo = trim((string) ($_POST['father_voter_no'] ?? ''));
+    $motherVoterNo = trim((string) ($_POST['mother_voter_no'] ?? ''));
     $addressLine1 = trim((string) ($_POST['address_line1'] ?? ''));
     $addressLine2 = trim((string) ($_POST['address_line2'] ?? ''));
     $postOffice = trim((string) ($_POST['post_office'] ?? ''));
@@ -81,6 +83,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
         try {
             $pdo->beginTransaction();
+
+            // Auto-migrate new columns
+            $migrations = [
+                "ALTER TABLE applications ADD COLUMN father_aadhaar_no VARCHAR(20) AFTER father_name",
+                "ALTER TABLE applications ADD COLUMN mother_aadhaar_no VARCHAR(20) AFTER mother_name",
+                "ALTER TABLE applications ADD COLUMN father_voter_no VARCHAR(30) AFTER father_occupation",
+                "ALTER TABLE applications ADD COLUMN mother_voter_no VARCHAR(30) AFTER mother_occupation",
+            ];
+            foreach ($migrations as $mig) {
+                try { $pdo->exec($mig); } catch (\Throwable $e) {}
+            }
 
             $check = $pdo->prepare("SELECT id FROM parents WHERE phone = :phone LIMIT 1");
             $check->execute(['phone' => $parentPhone]);
@@ -200,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $appCount = (int) $countStmt->fetch()['c'];
             $appNo = $prefix . str_pad((string) ($appCount + 1), 4, '0', STR_PAD_LEFT);
 
-            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, application_no, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, caste, disability, disability_details, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_occupation, family_annual_income, contact_no, email, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, photo, caste_cert, father_photo, mother_photo, father_aadhaar, mother_aadhaar, father_voter, mother_voter, disability_cert, guardian_signature, payment_method, payment_status, status, applied_at) VALUES (:parent_id, :application_no, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :caste, :disability, :disability_details, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :mother_name, :mother_occupation, :guardian_name, :guardian_occupation, :family_annual_income, :contact_no, :email, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, :photo, :caste_cert, :father_photo, :mother_photo, :father_aadhaar, :mother_aadhaar, :father_voter, :mother_voter, :disability_cert, :guardian_signature, :payment_method, :payment_status, 'Application started', NOW())");
+            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, application_no, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, caste, disability, disability_details, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, father_aadhaar_no, mother_name, mother_occupation, mother_aadhaar_no, guardian_name, guardian_occupation, family_annual_income, father_voter_no, mother_voter_no, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, photo, caste_cert, father_photo, mother_photo, father_aadhaar, mother_aadhaar, father_voter, mother_voter, disability_cert, guardian_signature, payment_method, payment_status, status, applied_at) VALUES (:parent_id, :application_no, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :caste, :disability, :disability_details, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :father_aadhaar_no, :mother_name, :mother_occupation, :mother_aadhaar_no, :guardian_name, :guardian_occupation, :family_annual_income, :father_voter_no, :mother_voter_no, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, :photo, :caste_cert, :father_photo, :mother_photo, :father_aadhaar, :mother_aadhaar, :father_voter, :mother_voter, :disability_cert, :guardian_signature, :payment_method, :payment_status, 'Application started', NOW())");
             $stmt->execute([
                 'parent_id' => $parentId, 'application_no' => $appNo, 'student_name' => $studentName, 'first_name' => $firstName,
                 'middle_name' => $middleName ?: null, 'last_name' => $lastName ?: null, 'dob' => $dob,
@@ -214,10 +227,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 'district' => $district ?: null, 'village_city' => $villageCity ?: null,
                 'pin' => $pin ?: null, 'state' => $state ?: null, 'country' => $country ?: null,
                 'father_name' => $fatherName, 'father_occupation' => $fatherOccupation ?: null,
+                'father_aadhaar_no' => $fatherAadhaarNo ?: null,
                 'mother_name' => $motherName, 'mother_occupation' => $motherOccupation ?: null,
+                'mother_aadhaar_no' => $motherAadhaarNo ?: null,
                 'guardian_name' => $guardianName ?: null, 'guardian_occupation' => $guardianOccupation ?: null,
-                'family_annual_income' => $familyIncome ?: null, 'contact_no' => $contactNo ?: null,
-                'email' => $studentEmail ?: null, 'address' => $combinedAddress ?: null,
+                'family_annual_income' => $familyIncome ?: null,
+                'father_voter_no' => $fatherVoterNo ?: null, 'mother_voter_no' => $motherVoterNo ?: null,
+                'address' => $combinedAddress ?: null,
                 'birth_cert' => $birthCert ?: null, 'aadhaar' => $aadhaarFile ?: null,
                 'leaving_cert' => $leavingCert ?: null, 'prev_marksheet' => $prevMarksheet ?: null,
                 'photo' => $photo ?: null, 'caste_cert' => $casteCert ?: null,
@@ -555,6 +571,26 @@ HTML;
                         <label for="father_occupation">Father's Occupation</label>
                         <input id="father_occupation" name="father_occupation" type="text" value="<?= e($_POST['father_occupation'] ?? '') ?>">
                     </div>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="father_aadhaar_no">Father's Aadhaar Number</label>
+                            <input id="father_aadhaar_no" name="father_aadhaar_no" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12" value="<?= e($_POST['father_aadhaar_no'] ?? '') ?>">
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <label for="father_aadhaar">Father Aadhaar Copy</label>
+                            <input id="father_aadhaar" name="father_aadhaar" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="father_voter_no">Father's Voter ID Number</label>
+                            <input id="father_voter_no" name="father_voter_no" type="text" value="<?= e($_POST['father_voter_no'] ?? '') ?>">
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <label for="father_voter">Father Voter Card Copy</label>
+                            <input id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
+                    </div>
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                         <div style="flex:1;min-width:200px;">
                             <label for="mother_name">Mother's Name *</label>
@@ -573,6 +609,26 @@ HTML;
                     <div>
                         <label for="mother_occupation">Mother's Occupation</label>
                         <input id="mother_occupation" name="mother_occupation" type="text" value="<?= e($_POST['mother_occupation'] ?? '') ?>">
+                    </div>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="mother_aadhaar_no">Mother's Aadhaar Number</label>
+                            <input id="mother_aadhaar_no" name="mother_aadhaar_no" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12" value="<?= e($_POST['mother_aadhaar_no'] ?? '') ?>">
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <label for="mother_aadhaar">Mother Aadhaar Copy</label>
+                            <input id="mother_aadhaar" name="mother_aadhaar" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="mother_voter_no">Mother's Voter ID Number</label>
+                            <input id="mother_voter_no" name="mother_voter_no" type="text" value="<?= e($_POST['mother_voter_no'] ?? '') ?>">
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <label for="mother_voter">Mother Voter Card Copy</label>
+                            <input id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
                     </div>
                     <div>
                         <label for="guardian_name">Guardian Name <span style="font-weight:400;color:var(--text-light)">(if different)</span></label>
@@ -657,22 +713,6 @@ HTML;
                     <div>
                         <label for="caste_cert">Caste Certificate (if any)</label>
                         <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="father_aadhaar">Father Aadhaar Copy</label>
-                        <input id="father_aadhaar" name="father_aadhaar" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="mother_aadhaar">Mother Aadhaar Copy</label>
-                        <input id="mother_aadhaar" name="mother_aadhaar" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="father_voter">Father Voter Card Copy</label>
-                        <input id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="mother_voter">Mother Voter Card Copy</label>
-                        <input id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
                         <label for="disability_cert">Disability Certificate (if any)</label>

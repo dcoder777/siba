@@ -53,6 +53,10 @@ if ($cols->num_rows === 0) {
         "ADD COLUMN mother_voter VARCHAR(255) AFTER father_voter",
         "ADD COLUMN disability_cert VARCHAR(255) AFTER mother_voter",
         "ADD COLUMN guardian_signature VARCHAR(255) AFTER disability_cert",
+        "ADD COLUMN father_aadhaar_no VARCHAR(20) AFTER father_occupation",
+        "ADD COLUMN mother_aadhaar_no VARCHAR(20) AFTER mother_occupation",
+        "ADD COLUMN father_voter_no VARCHAR(30) AFTER father_aadhaar_no",
+        "ADD COLUMN mother_voter_no VARCHAR(30) AFTER mother_aadhaar_no",
     ];
     foreach ($migrateCols as $stmt) {
         try {
