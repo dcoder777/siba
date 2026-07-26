@@ -591,10 +591,6 @@ HTML;
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="student_email">Student Email</label>
-                        <input id="student_email" name="student_email" type="email" value="<?= e($_POST['student_email'] ?? '') ?>">
-                    </div>
                 </div>
             </section>
 
