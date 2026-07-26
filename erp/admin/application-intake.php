@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $pin = trim((string) ($_POST['pin'] ?? ''));
     $state = trim((string) ($_POST['state'] ?? ''));
     $country = trim((string) ($_POST['country'] ?? 'India'));
-    $paymentMethod = trim((string) ($_POST['payment_method'] ?? 'Online'));
+    $paymentMethod = trim((string) ($_POST['payment_method'] ?? 'Offline'));
 
     $errors = [];
     if ($parentName === '') $errors[] = 'Parent name is required.';
@@ -241,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 'father_aadhaar' => $fatherAadhaar ?: null, 'mother_aadhaar' => $motherAadhaar ?: null,
                 'father_voter' => $fatherVoter ?: null, 'mother_voter' => $motherVoter ?: null,
                 'disability_cert' => $disabilityCert ?: null, 'guardian_signature' => $guardianSig ?: null,
-                'payment_method' => $paymentMethod, 'payment_status' => $paymentMethod === 'Offline' ? 'Paid' : 'Pending',
+                'payment_method' => $paymentMethod, 'payment_status' => 'Pending',
             ]);
 
             $pdo->commit();
@@ -734,8 +734,7 @@ HTML;
                     <div>
                         <label for="payment_method">Payment Method</label>
                         <select id="payment_method" name="payment_method">
-                            <option value="Online" <?= ($_POST['payment_method'] ?? 'Online') === 'Online' ? 'selected' : '' ?>>Online (Pending)</option>
-                            <option value="Offline" <?= ($_POST['payment_method'] ?? '') === 'Offline' ? 'selected' : '' ?>>Offline (Paid – cash/cheque/dd)</option>
+                            <option value="Offline" selected>Offline (Cash/Cheque)</option>
                         </select>
                     </div>
                 </div>
