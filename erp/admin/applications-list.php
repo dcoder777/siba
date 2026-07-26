@@ -161,6 +161,9 @@ function statusBadge(string $s): string {
             <a class="nav-link" href="events-manager.php">
                 <span class="sidebar-icon">📅</span><span>Events & News</span>
             </a>
+            <a class="nav-link" href="gallery-manager.php">
+                <span class="sidebar-icon">🖼</span><span>Gallery</span>
+            </a>
         </div>
 
         <?php foreach ($menus as $menuKey => $menu): ?>

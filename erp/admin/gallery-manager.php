@@ -1,0 +1,328 @@
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/bootstrap.php';
+require_admin_login();
+
+$user = admin_user();
+$isSuperAdmin = ($user['role'] ?? '') === 'admin';
+$explicitModules = fetch_user_module_access($pdo, (int) $user['id']);
+$userRoles = fetch_user_roles($pdo, (int) $user['id'], (string) ($user['role'] ?? 'admin'));
+$menus = menu_for_roles($userRoles, $explicitModules);
+$entityMap = entity_config();
+$error = '';
+$success = '';
+
+$pdo->exec("CREATE TABLE IF NOT EXISTS gallery (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    image_file VARCHAR(500) NOT NULL,
+    category VARCHAR(100) DEFAULT 'General',
+    sort_order INT DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)");
+
+$action = $_GET['action'] ?? 'list';
+
+$uploadDir = __DIR__ . '/../../site/uploads/gallery/';
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0755, true);
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
+    if ($action === 'add' || $action === 'edit') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $title = trim((string) ($_POST['title'] ?? ''));
+        $description = trim((string) ($_POST['description'] ?? ''));
+        $category = trim((string) ($_POST['category'] ?? 'General'));
+        $active = isset($_POST['is_active']) ? 1 : 0;
+
+        if ($title === '') {
+            $error = 'Title is required.';
+        } else {
+            $imageFile = '';
+            if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
+                $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+                if (in_array($_FILES['image_file']['type'], $allowed)) {
+                    $imageFile = time() . '_gal_' . basename($_FILES['image_file']['name']);
+                    move_uploaded_file($_FILES['image_file']['tmp_name'], $uploadDir . $imageFile);
+                } else {
+                    $error = 'Only JPG, PNG, WebP images are allowed.';
+                }
+            }
+
+            if ($error === '') {
+                if ($id > 0) {
+                    if ($imageFile !== '') {
+                        $stmt = $pdo->prepare("UPDATE gallery SET title=?, description=?, image_file=?, category=?, is_active=? WHERE id=?");
+                        $stmt->execute([$title, $description, $imageFile, $category, $active, $id]);
+                    } else {
+                        $stmt = $pdo->prepare("UPDATE gallery SET title=?, description=?, category=?, is_active=? WHERE id=?");
+                        $stmt->execute([$title, $description, $category, $active, $id]);
+                    }
+                    $success = 'Gallery item updated successfully.';
+                } else {
+                    if ($imageFile === '') {
+                        $error = 'Please select an image to upload.';
+                    } else {
+                        $maxSort = $pdo->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM gallery");
+                        $maxSort->execute();
+                        $nextSort = (int) $maxSort->fetchColumn();
+                        $stmt = $pdo->prepare("INSERT INTO gallery (title, description, image_file, category, sort_order, is_active) VALUES (?,?,?,?,?,?)");
+                        $stmt->execute([$title, $description, $imageFile, $category, $nextSort, $active]);
+                        $success = 'Gallery item added successfully.';
+                    }
+                }
+                $action = 'list';
+            }
+        }
+    }
+
+    if ($action === 'delete' && isset($_POST['id'])) {
+        $id = (int) $_POST['id'];
+        $row = $pdo->prepare("SELECT image_file FROM gallery WHERE id=?");
+        $row->execute([$id]);
+        $img = $row->fetchColumn();
+        if ($img && file_exists($uploadDir . $img)) {
+            unlink($uploadDir . $img);
+        }
+        $pdo->prepare("DELETE FROM gallery WHERE id=?")->execute([$id]);
+        $success = 'Gallery item deleted successfully.';
+        $action = 'list';
+    }
+
+    if ($action === 'reorder' && isset($_POST['ids'])) {
+        $ids = (array) $_POST['ids'];
+        foreach ($ids as $i => $id) {
+            $pdo->prepare("UPDATE gallery SET sort_order=? WHERE id=?")->execute([$i, (int) $id]);
+        }
+        $success = 'Order updated.';
+        $action = 'list';
+    }
+}
+
+$editRow = null;
+if ($action === 'edit' && isset($_GET['id'])) {
+    $stmt = $pdo->prepare("SELECT * FROM gallery WHERE id=?");
+    $stmt->execute([(int) $_GET['id']]);
+    $editRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$editRow) {
+        $error = 'Record not found.';
+        $action = 'list';
+    }
+}
+
+$galleryCount = $pdo->query("SELECT COUNT(*) FROM gallery")->fetchColumn();
+$rows = $pdo->query("SELECT * FROM gallery ORDER BY sort_order ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+$categories = $pdo->query("SELECT DISTINCT category FROM gallery ORDER BY category")->fetchAll(PDO::FETCH_COLUMN);
+if (empty($categories)) $categories = ['General'];
+
+$isEdit = $action === 'edit' && $editRow;
+$row = $editRow ?? [];
+?><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Gallery Manager — SIBA ERP Admin</title>
+    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <style>
+        .gallery-table { width:100%; border-collapse:collapse; }
+        .gallery-table th, .gallery-table td { padding:0.6rem 0.75rem; text-align:left; border-bottom:1px solid #e5e7eb; font-size:0.88rem; }
+        .gallery-table th { font-weight:600; color:var(--text-light); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; }
+        .gallery-table tr:hover td { background:#f9fafb; }
+        .gallery-thumb { width:60px; height:60px; border-radius:8px; object-fit:cover; border:1px solid #e5e7eb; }
+        .tag { display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.75rem; font-weight:600; background:#dbeafe; color:#1e40af; }
+    </style>
+</head>
+<body>
+<div class="admin-layout">
+    <aside class="sidebar" style="display:flex;flex-direction:column;">
+        <div class="brand-block stack" style="gap:.6rem;padding:1.2rem 1rem;">
+            <span class="eyebrow" style="background:rgba(255,255,255,.1);color:#effff5">SIBA ERP</span>
+            <div class="brand-copy">
+                <h2 style="font-size:1.7rem;color:#fff">Administration</h2>
+                <p><?= e((string) $user['name']) ?> signed in as <?= e((string) $user['role']) ?>.</p>
+            </div>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Core</div>
+            <a class="nav-link" href="index.php">
+                <span class="sidebar-icon">◫</span><span>Main Dashboard</span><span class="nav-tag">Overview</span>
+            </a>
+            <?php if ($isSuperAdmin): ?>
+                <a class="nav-link" href="index.php?view=user-access">
+                    <span class="sidebar-icon">⚙</span><span>User Access</span><span class="nav-tag">Control</span>
+                </a>
+            <?php endif; ?>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Admissions</div>
+            <a class="nav-link" href="application-intake.php">
+                <span class="sidebar-icon">📋</span><span>Application Intake</span><span class="nav-tag">New</span>
+            </a>
+            <a class="nav-link" href="applications-list.php">
+                <span class="sidebar-icon">📂</span><span>Applications</span><span class="nav-tag">List</span>
+            </a>
+            <a class="nav-link" href="parents-list.php">
+                <span class="sidebar-icon">👤</span><span>Parents</span>
+            </a>
+            <a class="nav-link" href="events-manager.php">
+                <span class="sidebar-icon">📅</span><span>Events & News</span>
+            </a>
+            <a class="nav-link active" href="gallery-manager.php">
+                <span class="sidebar-icon">🖼</span><span>Gallery</span>
+            </a>
+        </div>
+        <?php foreach ($menus as $menuKey => $menu): ?>
+            <div class="nav-group">
+                <div class="nav-title"><?= e((string) $menu['label']) ?></div>
+                <a class="nav-link" href="index.php?view=module&amp;module=<?= e((string) $menuKey) ?>">
+                    <span class="sidebar-icon">▣</span>
+                    <span><?= e((string) $menu['label']) ?> Dashboard</span>
+                    <span class="nav-tag"><?= count($menu['entities'] ?? []) ?> views</span>
+                </a>
+                <?php foreach (($menu['entities'] ?? []) as $menuEntity): ?>
+                    <a class="nav-link" href="index.php?module=<?= e((string) $menuKey) ?>&amp;entity=<?= e((string) $menuEntity) ?>">
+                        <span class="sidebar-icon">•</span>
+                        <span><?= e((string) $entityMap[$menuEntity]['label']) ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endforeach; ?>
+        <div class="nav-group" style="margin-top:auto;">
+            <a class="btn btn-soft" style="width:100%" href="logout.php">Logout</a>
+        </div>
+    </aside>
+
+    <main class="admin-main stack">
+        <section class="hero-banner" style="margin-bottom:1rem;">
+            <div class="toolbar">
+                <div class="stack" style="gap:.55rem">
+                    <span class="eyebrow">Site Content</span>
+                    <h1>Gallery Manager</h1>
+                    <p>Upload and manage gallery images displayed on the school website.</p>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                    <a class="btn" href="?action=add">+ Add Image</a>
+                </div>
+            </div>
+        </section>
+
+        <?php if ($error): ?>
+            <div class="notice error"><p><?= e($error) ?></p></div>
+        <?php endif; ?>
+        <?php if ($success): ?>
+            <div class="notice success"><p><?= e($success) ?></p></div>
+        <?php endif; ?>
+
+        <?php if ($action === 'add' || ($action === 'edit' && $editRow)): ?>
+            <section class="panel" style="padding:1.5rem;">
+                <div class="section-title" style="margin-bottom:1.25rem">
+                    <h2><?= $isEdit ? 'Edit' : 'Add' ?> Gallery Image</h2>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                    <?php if ($isEdit): ?>
+                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
+                    <?php endif; ?>
+
+                    <div class="field-grid">
+                        <div class="full-col">
+                            <label for="title">Title *</label>
+                            <input id="title" name="title" type="text" required value="<?= e($row['title'] ?? '') ?>">
+                        </div>
+                        <div class="full-col">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="2" style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-family:inherit;font-size:0.88rem;"><?= e($row['description'] ?? '') ?></textarea>
+                        </div>
+                        <div>
+                            <label for="category">Category</label>
+                            <input id="category" name="category" type="text" value="<?= e($row['category'] ?? 'General') ?>" list="catList">
+                            <datalist id="catList">
+                                <?php foreach ($categories as $cat): ?>
+                                    <option value="<?= e($cat) ?>">
+                                <?php endforeach; ?>
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="image_file">Image * <?= $isEdit ? '(leave blank to keep current)' : '' ?></label>
+                            <input id="image_file" name="image_file" type="file" accept="image/*" <?= $isEdit ? '' : 'required' ?> style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
+                        <?php if ($isEdit && ($row['image_file'] ?? '')): ?>
+                        <div class="full-col">
+                            <label>Current Image</label>
+                            <img src="../../site/uploads/gallery/<?= rawurlencode($row['image_file']) ?>" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb;">
+                        </div>
+                        <?php endif; ?>
+                        <div>
+                            <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.5rem;">
+                                <input type="checkbox" name="is_active" value="1" <?= $isEdit ? (($row['is_active'] ?? 1) ? 'checked' : '') : 'checked' ?>>
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                    <div class="action-row" style="margin-top:1.5rem;">
+                        <button type="submit" class="btn"><?= $isEdit ? 'Update' : 'Upload' ?></button>
+                        <a href="gallery-manager.php" class="btn btn-soft">Cancel</a>
+                    </div>
+                </form>
+            </section>
+        <?php else: ?>
+            <section class="panel" style="padding:1.25rem;">
+                <?php if (count($rows) === 0): ?>
+                    <p style="text-align:center;padding:2rem;color:var(--text-light);">No gallery images yet. Click "+ Add Image" to upload one.</p>
+                <?php else: ?>
+                <form method="post">
+                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="action" value="reorder">
+                    <table class="gallery-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th style="width:70px;">Image</th>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th style="width:60px;">Active</th>
+                                <th style="width:140px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $i = 1; foreach ($rows as $r): ?>
+                            <tr>
+                                <td style="color:var(--text-light);font-size:0.8rem;"><?= $i++ ?></td>
+                                <td><img class="gallery-thumb" src="../../site/uploads/gallery/<?= rawurlencode($r['image_file']) ?>" alt="<?= e($r['title']) ?>"></td>
+                                <td>
+                                    <strong><?= e((string) ($r['title'] ?? '')) ?></strong>
+                                    <?php if ($r['description']): ?>
+                                        <br><small style="color:#64748b;"><?= e(mb_strimwidth($r['description'], 0, 60, '...')) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td><span class="tag"><?= e((string) ($r['category'] ?? 'General')) ?></span></td>
+                                <td><?= ($r['is_active'] ?? 0) ? '✓' : '✗' ?></td>
+                                <td>
+                                    <a class="btn btn-sm" href="?action=edit&id=<?= (int) $r['id'] ?>">Edit</a>
+                                    <form method="post" style="display:inline;" onsubmit="return confirm('Delete this image?')">
+                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
+                                        <button type="submit" class="btn btn-sm btn-soft" style="color:#ef4444;">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </form>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
+    </main>
+</div>
+</body>
+</html>
