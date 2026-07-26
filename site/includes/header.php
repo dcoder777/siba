@@ -38,6 +38,7 @@ require_once(__DIR__ . '/config.php');
             <li><a href="<?php echo SITE_URL; ?>/academics.php" <?php echo (basename($_SERVER['PHP_SELF'])=='academics.php')?'class="active"':''; ?>>Academics</a></li>
             <li><a href="<?php echo SITE_URL; ?>/admissions.php" <?php echo (basename($_SERVER['PHP_SELF'])=='admissions.php')?'class="active"':''; ?>>Admissions</a></li>
             <li><a href="<?php echo SITE_URL; ?>/events.php" <?php echo (basename($_SERVER['PHP_SELF'])=='events.php')?'class="active"':''; ?>>Events &amp; News</a></li>
+            <li><a href="<?php echo SITE_URL; ?>/gallery.php" <?php echo (basename($_SERVER['PHP_SELF'])=='gallery.php')?'class="active"':''; ?>>Gallery</a></li>
             <li><a href="<?php echo SITE_URL; ?>/contact.php" <?php echo (basename($_SERVER['PHP_SELF'])=='contact.php')?'class="active"':''; ?>>Contact</a></li>
         </ul>
     </nav>

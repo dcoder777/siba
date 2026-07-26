@@ -23,6 +23,7 @@
                     <li><a href="<?php echo SITE_URL; ?>/admissions.php"><i class="fas fa-chevron-right" style="font-size:0.7rem;margin-right:0.4rem;"></i>Admissions</a></li>
                     <li><a href="<?php echo SITE_URL; ?>/campus-life.php"><i class="fas fa-chevron-right" style="font-size:0.7rem;margin-right:0.4rem;"></i>Campus Life</a></li>
                     <li><a href="<?php echo SITE_URL; ?>/events.php"><i class="fas fa-chevron-right" style="font-size:0.7rem;margin-right:0.4rem;"></i>Events & News</a></li>
+                    <li><a href="<?php echo SITE_URL; ?>/gallery.php"><i class="fas fa-chevron-right" style="font-size:0.7rem;margin-right:0.4rem;"></i>Gallery</a></li>
                     <li><a href="<?php echo SITE_URL; ?>/privacy-policy.php"><i class="fas fa-chevron-right" style="font-size:0.7rem;margin-right:0.4rem;"></i>Privacy Policy</a></li>
                 </ul>
             </div>
