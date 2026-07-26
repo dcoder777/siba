@@ -51,9 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="hero-grid">
             <aside class="hero-panel stack" style="justify-content:center;grid-column:1/-1;max-width:440px;margin:0 auto;">
                 <div class="stack" style="gap:.45rem">
-                    <span class="eyebrow">Secure Sign In</span>
-                    <h2 style="font-size:2rem">Admin Login</h2>
-                    <p>Use your ERP credentials to enter the administration workspace.</p>
+                    <h2 style="font-size:1.6rem;text-align:center;">SIBA PUBLIC SCHOOL<br>MANAGEMENT SYSTEM</h2>
                 </div>
 
                 <form method="post" class="stack" style="margin-top:.8rem">

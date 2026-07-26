@@ -409,7 +409,7 @@ HTML;
                     </div>
                     <div>
                         <label for="parent_password" style="white-space:nowrap;">Password <span style="font-weight:400;color:var(--text-light)">(leave empty to auto-generate)</span></label>
-                        <input id="parent_password" name="parent_password" type="text" value="<?= e($_POST['parent_password'] ?? '') ?>" placeholder="Auto-generated if left blank">
+                        <input id="parent_password" name="parent_password" type="text" value="<?= e($_POST['parent_password'] ?? '') ?>" placeholder="Leave blank to auto-generate">
                     </div>
                 </div>
             </section>
@@ -467,9 +467,15 @@ HTML;
                         <label for="religion">Religion</label>
                         <input id="religion" name="religion" type="text" value="<?= e($_POST['religion'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="aadhaar_no">Aadhaar Number</label>
-                        <input id="aadhaar_no" name="aadhaar_no" type="text" value="<?= e($_POST['aadhaar_no'] ?? '') ?>">
+                    <div style="display:flex;gap:1rem;">
+                        <div style="flex:1;">
+                            <label for="aadhaar_no">Aadhaar Number</label>
+                            <input id="aadhaar_no" name="aadhaar_no" type="text" value="<?= e($_POST['aadhaar_no'] ?? '') ?>">
+                        </div>
+                        <div style="flex:1;">
+                            <label for="aadhaar_file">Aadhaar Card Copy</label>
+                            <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
                     </div>
                     <div>
                         <label for="caste">Caste</label>
@@ -607,10 +613,6 @@ HTML;
                     <p>Accepted formats: JPG, PNG, PDF</p>
                 </div>
                 <div class="field-grid">
-                    <div>
-                        <label for="aadhaar_file">Student Aadhaar Card Copy</label>
-                        <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf">
-                    </div>
                     <div>
                         <label for="birth_cert">Student Birth Certificate Copy</label>
                         <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
