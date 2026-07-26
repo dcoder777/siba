@@ -17,7 +17,9 @@ if (!$appId) {
     exit();
 }
 
-$stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id");
+try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+
+$stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id AND a.deleted_at IS NULL AND a.deleted_at IS NULL");
 $stmt->execute(['id' => $appId]);
 $app = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$app) {
@@ -73,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
 
-        $stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id");
+        $stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id AND a.deleted_at IS NULL");
         $stmt->execute(['id' => $appId]);
         $app = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -116,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
             $pdo->prepare("UPDATE applications SET student_id = :sid, admission_no = :ano WHERE id = :id")
                 ->execute(['sid' => $studentId, 'ano' => $admissionNo, 'id' => $appId]);
 
-            $stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id");
+            $stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id AND a.deleted_at IS NULL");
             $stmt->execute(['id' => $appId]);
             $app = $stmt->fetch(PDO::FETCH_ASSOC);
         }

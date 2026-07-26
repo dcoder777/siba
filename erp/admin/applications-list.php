@@ -18,13 +18,15 @@ $statusOptions = ['Application started', 'Under review', 'Admitted', 'Rejected']
 $currentStatus = trim((string) ($_GET['status'] ?? ''));
 $searchQ = trim((string) ($_GET['q'] ?? ''));
 
-// ─── Delete Application ───
+// ─── Auto-migrate ───
+try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+
+// ─── Delete Application (Soft Delete) ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_app']) && verify_csrf()) {
     $appId = (int) ($_POST['app_id'] ?? 0);
     if ($appId > 0) {
         try {
-            $pdo->prepare("DELETE FROM fees WHERE application_id = :id")->execute(['id' => $appId]);
-            $pdo->prepare("DELETE FROM applications WHERE id = :id")->execute(['id' => $appId]);
+            $pdo->prepare("UPDATE applications SET deleted_at = NOW() WHERE id = :id")->execute(['id' => $appId]);
             $success = 'Application deleted successfully.';
         } catch (Exception $e) {
             $error = 'Failed to delete application: ' . $e->getMessage();
@@ -47,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_payment']) && 
 }
 
 // ─── Fetch Applications ───
-$where = [];
+$where = ['a.deleted_at IS NULL'];
 $params = [];
 if ($currentStatus !== '') {
     $where[] = 'a.status = :status';

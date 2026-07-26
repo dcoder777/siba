@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS applications (
     guardian_signature VARCHAR(255),
     status ENUM('Application started', 'Under review', 'Admitted', 'Rejected') DEFAULT 'Application started',
     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (parent_id) REFERENCES parents(id) ON DELETE CASCADE
 );
 
