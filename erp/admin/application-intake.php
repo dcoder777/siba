@@ -503,22 +503,34 @@ HTML;
                             <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
                         </div>
                     </div>
-                    <div>
-                        <label for="caste">Caste</label>
-                        <select id="caste" name="caste">
-                            <option value="">— Select —</option>
-                            <?php foreach ($casteOptions as $opt): ?>
-                                <option value="<?= e($opt) ?>" <?= ($_POST['caste'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="caste">Caste</label>
+                            <select id="caste" name="caste">
+                                <option value="">— Select —</option>
+                                <?php foreach ($casteOptions as $opt): ?>
+                                    <option value="<?= e($opt) ?>" <?= ($_POST['caste'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <label for="caste_cert">Caste Certificate</label>
+                            <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
                     </div>
-                    <div>
-                        <label for="disability">Disability</label>
-                        <select id="disability" name="disability" onchange="document.getElementById('disabilityDetailsRow').style.display=this.value==='Yes'?'block':'none'">
-                            <option value="">— Select —</option>
-                            <option value="No" <?= ($_POST['disability'] ?? '') === 'No' ? 'selected' : '' ?>>No</option>
-                            <option value="Yes" <?= ($_POST['disability'] ?? '') === 'Yes' ? 'selected' : '' ?>>Yes</option>
-                        </select>
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="disability">Disability</label>
+                            <select id="disability" name="disability" onchange="document.getElementById('disabilityDetailsRow').style.display=this.value==='Yes'?'block':'none'">
+                                <option value="">— Select —</option>
+                                <option value="No" <?= ($_POST['disability'] ?? '') === 'No' ? 'selected' : '' ?>>No</option>
+                                <option value="Yes" <?= ($_POST['disability'] ?? '') === 'Yes' ? 'selected' : '' ?>>Yes</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <label for="disability_cert">Disability Certificate</label>
+                            <input id="disability_cert" name="disability_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
                     </div>
                     <div id="disabilityDetailsRow" style="display:<?= (($_POST['disability'] ?? '') === 'Yes') ? 'block' : 'none' ?>">
                         <label for="disability_details">Disability Details</label>
@@ -709,14 +721,6 @@ HTML;
                     <div>
                         <label for="birth_cert">Student Birth Certificate Copy</label>
                         <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="caste_cert">Caste Certificate (if any)</label>
-                        <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="disability_cert">Disability Certificate (if any)</label>
-                        <input id="disability_cert" name="disability_cert" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
                         <label for="guardian_signature">Guardian Signature</label>
