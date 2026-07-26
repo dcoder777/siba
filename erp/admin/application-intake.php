@@ -498,9 +498,15 @@ HTML;
                         <label for="disability_details">Disability Details</label>
                         <textarea id="disability_details" name="disability_details" rows="2" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;"><?= e($_POST['disability_details'] ?? '') ?></textarea>
                     </div>
-                    <div>
-                        <label for="previous_school">Previous School</label>
-                        <input id="previous_school" name="previous_school" type="text" value="<?= e($_POST['previous_school'] ?? '') ?>">
+                    <div style="display:flex;gap:1rem;">
+                        <div style="flex:1;">
+                            <label for="previous_school">Previous School</label>
+                            <input id="previous_school" name="previous_school" type="text" value="<?= e($_POST['previous_school'] ?? '') ?>">
+                        </div>
+                        <div style="flex:1;">
+                            <label for="leaving_cert">School Leaving Certificate / TC Copy</label>
+                            <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
                     </div>
                     <div>
                         <label for="previous_class">Previous Class</label>
@@ -616,10 +622,6 @@ HTML;
                     <div>
                         <label for="birth_cert">Student Birth Certificate Copy</label>
                         <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="leaving_cert">Previous School TC/LC Copy</label>
-                        <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
                         <label for="prev_marksheet">Previous Class Marksheet Copy</label>
