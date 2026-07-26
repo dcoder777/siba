@@ -202,17 +202,7 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                 <p><?= e((string) $user['name']) ?> signed in as <?= e((string) $user['role']) ?>.</p>
             </div>
         </div>
-        <div class="nav-group">
-            <div class="nav-title">Core</div>
-            <a class="nav-link" href="index.php">
-                <span class="sidebar-icon">◫</span><span>Main Dashboard</span><span class="nav-tag">Overview</span>
-            </a>
-            <?php if ($isSuperAdmin): ?>
-                <a class="nav-link" href="index.php?view=user-access">
-                    <span class="sidebar-icon">⚙</span><span>User Access</span><span class="nav-tag">Control</span>
-                </a>
-            <?php endif; ?>
-        </div>
+
         <div class="nav-group">
             <div class="nav-title">Admissions</div>
             <a class="nav-link" href="application-intake.php">

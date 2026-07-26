@@ -698,22 +698,6 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
         </div>
 
         <div class="nav-group">
-            <div class="nav-title">Core</div>
-            <a class="nav-link <?= $view === 'dashboard' ? 'active' : '' ?>" href="?view=dashboard">
-                <span class="sidebar-icon">◫</span>
-                <span>Main Dashboard</span>
-                <span class="nav-tag">Overview</span>
-            </a>
-            <?php if ($isSuperAdmin): ?>
-                <a class="nav-link <?= $view === 'user-access' ? 'active' : '' ?>" href="?view=user-access">
-                    <span class="sidebar-icon">⚙</span>
-                    <span>User Access</span>
-                    <span class="nav-tag">Control</span>
-                </a>
-            <?php endif; ?>
-        </div>
-
-        <div class="nav-group">
             <div class="nav-title">Admissions</div>
             <a class="nav-link" href="application-intake.php">
                 <span class="sidebar-icon">📋</span>

@@ -136,18 +136,6 @@ function statusBadge(string $s): string {
             </div>
         </div>
         <div class="nav-group">
-            <div class="nav-title">Core</div>
-            <a class="nav-link" href="index.php">
-                <span class="sidebar-icon">◫</span><span>Main Dashboard</span><span class="nav-tag">Overview</span>
-            </a>
-            <?php if ($isSuperAdmin): ?>
-                <a class="nav-link" href="index.php?view=user-access">
-                    <span class="sidebar-icon">⚙</span><span>User Access</span><span class="nav-tag">Control</span>
-                </a>
-            <?php endif; ?>
-        </div>
-
-        <div class="nav-group">
             <div class="nav-title">Admissions</div>
             <a class="nav-link" href="application-intake.php">
                 <span class="sidebar-icon">📋</span><span>Application Intake</span><span class="nav-tag">New</span>
