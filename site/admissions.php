@@ -64,22 +64,6 @@ include('includes/header.php');
     </div>
 </section>
 
-<section class="section section-alt">
-    <div class="section-title">
-        <span class="badge"><?php echo htmlspecialchars($data['docs_badge'] ?? ''); ?></span>
-        <h2><?php echo htmlspecialchars($data['docs_heading'] ?? ''); ?></h2>
-    </div>
-    <div class="grid grid-4">
-        <?php foreach (($data['docs'] ?? []) as $doc): ?>
-            <div class="card feature-card">
-                <div class="icon"><i class="fas fa-<?php echo htmlspecialchars($doc['icon'] ?? 'file'); ?>"></i></div>
-                <h3><?php echo htmlspecialchars($doc['title'] ?? ''); ?></h3>
-                <p><?php echo htmlspecialchars($doc['text'] ?? ''); ?></p>
-            </div>
-        <?php endforeach; ?>
-    </div>
-</section>
-
 <section class="section" style="background: var(--bg-color);" id="faq">
     <div class="section-title">
         <span class="badge"><?php echo htmlspecialchars($data['faq_badge'] ?? 'FAQ'); ?></span>
