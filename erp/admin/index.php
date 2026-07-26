@@ -638,34 +638,11 @@ if ($view === 'module' && $module === 'reports') {
 }
 
 $overallSummary = [
-    ['label' => 'Students', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM students')],
-    ['label' => 'Employees', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM employees')],
-    ['label' => 'Collections', 'value' => format_metric(scalar($pdo, 'SELECT COALESCE(SUM(amount), 0) FROM payments'), true)],
-    ['label' => 'Pending Leaves', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM leave_requests WHERE status = "pending"')],
+    ['label' => 'Total Applications', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM applications')],
+    ['label' => 'Pending', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM applications WHERE status = "Application started" OR status = "Under Review"')],
+    ['label' => 'Admitted', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM applications WHERE status = "Admitted"')],
+    ['label' => 'Payment Pending', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM applications WHERE payment_status = "Pending"')],
 ];
-
-$overallChart = [
-    'labels' => ['Students', 'Employees', 'Assignments', 'Payments', 'Hostel Boarders'],
-    'values' => [
-        (float) scalar($pdo, 'SELECT COUNT(*) FROM students'),
-        (float) scalar($pdo, 'SELECT COUNT(*) FROM employees'),
-        (float) scalar($pdo, 'SELECT COUNT(*) FROM assignments'),
-        (float) scalar($pdo, 'SELECT COUNT(*) FROM payments'),
-        (float) scalar($pdo, 'SELECT COUNT(*) FROM hostel_allocations WHERE status = "active"'),
-    ],
-];
-
-$crossInsights = [
-    ['label' => 'Students with pending fees', 'value' => (int) scalar($pdo, 'SELECT COUNT(DISTINCT student_id) FROM student_fee_dues WHERE status <> "paid"'), 'url' => '?module=finance&entity=student_fee_dues'],
-    ['label' => 'Hostel students on transport', 'value' => (int) scalar($pdo, 'SELECT COUNT(DISTINCT ha.student_id) FROM hostel_allocations ha JOIN transport_allocations ta ON ta.student_id = ha.student_id WHERE ha.status = "active" AND ta.status = "active"'), 'url' => '?module=operations&entity=hostel_allocations'],
-    ['label' => 'Assignment submissions received', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM assignment_submissions'), 'url' => '?module=academics&entity=assignment_submissions'],
-    ['label' => 'Payroll items generated', 'value' => (int) scalar($pdo, 'SELECT COUNT(*) FROM payroll_items'), 'url' => '?module=hr&entity=payroll_items'],
-];
-
-$dashboardModuleCharts = [];
-foreach (array_keys($menus) as $menuKey) {
-    $dashboardModuleCharts[$menuKey] = module_dashboard_payload($pdo, $menuKey);
-}
 
 $modulePayload = module_dashboard_payload($pdo, $module);
 $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
@@ -733,17 +710,17 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
             <div class="toolbar">
                 <div class="stack" style="gap:.55rem">
                     <span class="eyebrow">
-                        <?php if ($view === 'dashboard'): ?>Executive Dashboard<?php elseif ($view === 'module'): ?><?= e((string) $currentLabel) ?> Module<?php elseif ($view === 'entity' && $cfg): ?><?= e((string) $cfg['label']) ?> Records<?php else: ?>Access Management<?php endif; ?>
+                        <?php if ($view === 'dashboard'): ?>Admission Dashboard<?php elseif ($view === 'module'): ?><?= e((string) $currentLabel) ?> Module<?php elseif ($view === 'entity' && $cfg): ?><?= e((string) $cfg['label']) ?> Records<?php else: ?>Access Management<?php endif; ?>
                     </span>
                     <div>
                         <h1>
-                            <?php if ($view === 'dashboard'): ?>Modern school operations, all in one place.
+                            <?php if ($view === 'dashboard'): ?>Track and manage all admission applications.
                             <?php elseif ($view === 'module'): ?><?= e((string) $currentLabel) ?> dashboard with connected operational insight.
                             <?php elseif ($view === 'entity' && $cfg): ?><?= e((string) $cfg['label']) ?> management workspace.
                             <?php else: ?>Create users and assign module access precisely.<?php endif; ?>
                         </h1>
                         <p>
-                            <?php if ($view === 'dashboard'): ?>A cleaner control center for academic, financial, operational, and people data.
+                            <?php if ($view === 'dashboard'): ?>View application status, payment status, and manage admissions from one place.
                             <?php elseif ($view === 'module'): ?>Track the most relevant metrics for this module while keeping the rest of the ERP connected.
                             <?php elseif ($view === 'entity' && $cfg): ?>Search, edit, create, and manage records from a focused interface without leaving the module context.
                             <?php else: ?>Super Admin can create users and control exactly which modules each user is allowed to access.<?php endif; ?>
@@ -765,8 +742,8 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
             <section class="panel" style="padding:1.25rem">
                 <div class="section-title">
                     <div>
-                        <h2>Executive Snapshot</h2>
-                        <p>Key numbers across the full ERP with a cleaner visual hierarchy.</p>
+                        <h2>Application Snapshot</h2>
+                        <p>Key admission metrics at a glance.</p>
                     </div>
                 </div>
                 <div class="kpi-grid">
@@ -780,40 +757,26 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
                 </div>
             </section>
 
-            <section class="chart-shell">
-                <div class="panel" style="padding:1.25rem">
-                    <div class="section-title">
-                        <div>
-                            <h2>Interconnected Insights</h2>
-                            <p>Cross-module indicators that show how the system ties together operationally.</p>
-                        </div>
-                    </div>
-                    <div class="quick-link-grid">
-                        <?php foreach ($crossInsights as $insight): ?>
-                            <a class="quick-link" href="<?= e((string) $insight['url']) ?>">
-                                <strong><?= e((string) $insight['label']) ?></strong>
-                                <span class="kpi-value" style="font-size:1.55rem"><?= e((string) $insight['value']) ?></span>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </section>
-
             <section class="panel" style="padding:1.25rem">
                 <div class="section-title">
                     <div>
-                        <h2>Module Performance</h2>
-                        <p>Each module now gets its own chart directly on the main dashboard.</p>
+                        <h2>Quick Actions</h2>
+                        <p>Jump directly to key admission tasks.</p>
                     </div>
                 </div>
                 <div class="module-chip-grid">
-                    <?php foreach ($menus as $menuKey => $menu): ?>
-                        <a class="module-chip" href="?view=module&amp;module=<?= e((string) $menuKey) ?>" style="text-decoration:none">
-                            <strong><?= e((string) $menu['label']) ?></strong>
-                            <span><?= count($menu['entities'] ?? []) ?> entity views available</span>
-                            <div id="dashboardChart_<?= e((string) $menuKey) ?>" class="mini-chart"></div>
-                        </a>
-                    <?php endforeach; ?>
+                    <a class="module-chip" href="application-intake.php" style="text-decoration:none">
+                        <strong>New Application</strong>
+                        <span>Create a new admission application.</span>
+                    </a>
+                    <a class="module-chip" href="applications-list.php" style="text-decoration:none">
+                        <strong>All Applications</strong>
+                        <span>View and manage all applications.</span>
+                    </a>
+                    <a class="module-chip" href="parents-list.php" style="text-decoration:none">
+                        <strong>Parents</strong>
+                        <span>View registered parents.</span>
+                    </a>
                 </div>
             </section>
         <?php endif; ?>
