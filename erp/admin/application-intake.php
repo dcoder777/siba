@@ -556,6 +556,10 @@ HTML;
                             <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
                         </div>
                     </div>
+                    <div>
+                        <label for="birth_cert">Student Birth Certificate Copy</label>
+                        <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                    </div>
                 </div>
             </section>
 
@@ -659,6 +663,10 @@ HTML;
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    <div>
+                        <label for="guardian_signature">Guardian Signature</label>
+                        <input id="guardian_signature" name="guardian_signature" type="file" accept="image/*" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                    </div>
                 </div>
             </section>
 
@@ -708,23 +716,6 @@ HTML;
                     <div>
                         <label for="country">Country</label>
                         <input id="country" name="country" type="text" value="<?= e($_POST['country'] ?? 'India') ?>">
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel" style="padding:1.25rem">
-                <div class="section-title" style="margin-bottom:1rem;">
-                    <h2>Document Uploads</h2>
-                    <p>Accepted formats: JPG, PNG, PDF</p>
-                </div>
-                <div class="field-grid">
-                    <div>
-                        <label for="birth_cert">Student Birth Certificate Copy</label>
-                        <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="guardian_signature">Guardian Signature</label>
-                        <input id="guardian_signature" name="guardian_signature" type="file" accept="image/*,application/pdf">
                     </div>
                 </div>
             </section>
