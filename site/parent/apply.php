@@ -41,6 +41,18 @@ if ($cols->num_rows === 0) {
         "MODIFY COLUMN contact_no VARCHAR(15) NULL",
         "MODIFY COLUMN photo VARCHAR(255) NULL",
         "MODIFY COLUMN birth_cert VARCHAR(255) NULL",
+        "ADD COLUMN caste VARCHAR(20) AFTER photo",
+        "ADD COLUMN disability VARCHAR(10) AFTER caste",
+        "ADD COLUMN disability_details VARCHAR(255) AFTER disability",
+        "ADD COLUMN caste_cert VARCHAR(255) AFTER disability_details",
+        "ADD COLUMN father_photo VARCHAR(255) AFTER caste_cert",
+        "ADD COLUMN mother_photo VARCHAR(255) AFTER father_photo",
+        "ADD COLUMN father_aadhaar VARCHAR(255) AFTER mother_photo",
+        "ADD COLUMN mother_aadhaar VARCHAR(255) AFTER father_aadhaar",
+        "ADD COLUMN father_voter VARCHAR(255) AFTER mother_aadhaar",
+        "ADD COLUMN mother_voter VARCHAR(255) AFTER father_voter",
+        "ADD COLUMN disability_cert VARCHAR(255) AFTER mother_voter",
+        "ADD COLUMN guardian_signature VARCHAR(255) AFTER disability_cert",
     ];
     foreach ($migrateCols as $stmt) {
         try {
@@ -105,6 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
     $guardian_name    = $conn->real_escape_string(trim($_POST['guardian_name']));
     $guardian_occup   = $conn->real_escape_string(trim($_POST['guardian_occupation']));
     $income           = $conn->real_escape_string(trim($_POST['family_annual_income']));
+    $caste            = $conn->real_escape_string(trim($_POST['caste'] ?? ''));
+    $disability       = $conn->real_escape_string(trim($_POST['disability'] ?? ''));
+    $disability_det   = $conn->real_escape_string(trim($_POST['disability_details'] ?? ''));
     $terms            = isset($_POST['terms']) ? 1 : 0;
 
     if (empty($first_name)) {
@@ -129,6 +144,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
         $aadhaar_file = '';
         $leaving_cert = '';
         $prev_mark    = '';
+        $photo_file   = '';
+        $caste_cert   = '';
+        $father_photo = '';
+        $mother_photo = '';
+        $father_aadhaar = '';
+        $mother_aadhaar = '';
+        $father_voter = '';
+        $mother_voter = '';
+        $disability_cert = '';
+        $guardian_sig  = '';
+
+        $fileUpload = function(string $field, string $prefix) use ($allowed, $upload_path, &$error): string {
+            if (isset($_FILES[$field]) && $_FILES[$field]['error'] == 0) {
+                if (in_array($_FILES[$field]['type'], $allowed)) {
+                    $name = time() . '_' . $prefix . '_' . basename($_FILES[$field]['name']);
+                    move_uploaded_file($_FILES[$field]['tmp_name'], $upload_path . $name);
+                    return $name;
+                } else {
+                    $error = "$field must be JPG, PNG, or PDF.";
+                }
+            }
+            return '';
+        };
 
         // Birth certificate
         if (isset($_FILES['birth_cert']) && $_FILES['birth_cert']['error'] == 0) {
@@ -170,6 +208,106 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
             }
         }
 
+        // Student photo
+        if (!$error && isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
+            if (in_array($_FILES['photo']['type'], $allowed)) {
+                $photo_file = time() . '_ph_' . basename($_FILES['photo']['name']);
+                move_uploaded_file($_FILES['photo']['tmp_name'], $upload_path . $photo_file);
+            } else {
+                $error = "Student photo must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Caste certificate
+        if (!$error && isset($_FILES['caste_cert']) && $_FILES['caste_cert']['error'] == 0) {
+            if (in_array($_FILES['caste_cert']['type'], $allowed)) {
+                $caste_cert = time() . '_cc_' . basename($_FILES['caste_cert']['name']);
+                move_uploaded_file($_FILES['caste_cert']['tmp_name'], $upload_path . $caste_cert);
+            } else {
+                $error = "Caste certificate must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Father photo
+        if (!$error && isset($_FILES['father_photo']) && $_FILES['father_photo']['error'] == 0) {
+            if (in_array($_FILES['father_photo']['type'], $allowed)) {
+                $father_photo = time() . '_fp_' . basename($_FILES['father_photo']['name']);
+                move_uploaded_file($_FILES['father_photo']['tmp_name'], $upload_path . $father_photo);
+            } else {
+                $error = "Father photo must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Mother photo
+        if (!$error && isset($_FILES['mother_photo']) && $_FILES['mother_photo']['error'] == 0) {
+            if (in_array($_FILES['mother_photo']['type'], $allowed)) {
+                $mother_photo = time() . '_mp_' . basename($_FILES['mother_photo']['name']);
+                move_uploaded_file($_FILES['mother_photo']['tmp_name'], $upload_path . $mother_photo);
+            } else {
+                $error = "Mother photo must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Father aadhaar
+        if (!$error && isset($_FILES['father_aadhaar']) && $_FILES['father_aadhaar']['error'] == 0) {
+            if (in_array($_FILES['father_aadhaar']['type'], $allowed)) {
+                $father_aadhaar = time() . '_fa_' . basename($_FILES['father_aadhaar']['name']);
+                move_uploaded_file($_FILES['father_aadhaar']['tmp_name'], $upload_path . $father_aadhaar);
+            } else {
+                $error = "Father Aadhaar must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Mother aadhaar
+        if (!$error && isset($_FILES['mother_aadhaar']) && $_FILES['mother_aadhaar']['error'] == 0) {
+            if (in_array($_FILES['mother_aadhaar']['type'], $allowed)) {
+                $mother_aadhaar = time() . '_ma_' . basename($_FILES['mother_aadhaar']['name']);
+                move_uploaded_file($_FILES['mother_aadhaar']['tmp_name'], $upload_path . $mother_aadhaar);
+            } else {
+                $error = "Mother Aadhaar must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Father voter card
+        if (!$error && isset($_FILES['father_voter']) && $_FILES['father_voter']['error'] == 0) {
+            if (in_array($_FILES['father_voter']['type'], $allowed)) {
+                $father_voter = time() . '_fv_' . basename($_FILES['father_voter']['name']);
+                move_uploaded_file($_FILES['father_voter']['tmp_name'], $upload_path . $father_voter);
+            } else {
+                $error = "Father voter card must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Mother voter card
+        if (!$error && isset($_FILES['mother_voter']) && $_FILES['mother_voter']['error'] == 0) {
+            if (in_array($_FILES['mother_voter']['type'], $allowed)) {
+                $mother_voter = time() . '_mv_' . basename($_FILES['mother_voter']['name']);
+                move_uploaded_file($_FILES['mother_voter']['tmp_name'], $upload_path . $mother_voter);
+            } else {
+                $error = "Mother voter card must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Disability certificate
+        if (!$error && isset($_FILES['disability_cert']) && $_FILES['disability_cert']['error'] == 0) {
+            if (in_array($_FILES['disability_cert']['type'], $allowed)) {
+                $disability_cert = time() . '_dc_' . basename($_FILES['disability_cert']['name']);
+                move_uploaded_file($_FILES['disability_cert']['tmp_name'], $upload_path . $disability_cert);
+            } else {
+                $error = "Disability certificate must be JPG, PNG, or PDF.";
+            }
+        }
+
+        // Guardian signature
+        if (!$error && isset($_FILES['guardian_signature']) && $_FILES['guardian_signature']['error'] == 0) {
+            if (in_array($_FILES['guardian_signature']['type'], $allowed)) {
+                $guardian_sig = time() . '_gs_' . basename($_FILES['guardian_signature']['name']);
+                move_uploaded_file($_FILES['guardian_signature']['tmp_name'], $upload_path . $guardian_sig);
+            } else {
+                $error = "Guardian signature must be JPG, PNG, or PDF.";
+            }
+        }
+
         if (!$error) {
             $appNo = generateApplicationNo($conn);
             $payStatus = isset($_POST['submit_and_pay']) ? 'Pending' : 'Pending';
@@ -206,10 +344,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
                 guardian_name = '$guardian_name',
                 guardian_occupation = '$guardian_occup',
                 family_annual_income = '$income',
+                caste = '$caste',
+                disability = '$disability',
+                disability_details = '$disability_det',
                 birth_cert = '$birth_cert',
                 aadhaar = '$aadhaar_file',
                 leaving_cert = '$leaving_cert',
                 prev_marksheet = '$prev_mark',
+                photo = '$photo_file',
+                caste_cert = '$caste_cert',
+                father_photo = '$father_photo',
+                mother_photo = '$mother_photo',
+                father_aadhaar = '$father_aadhaar',
+                mother_aadhaar = '$mother_aadhaar',
+                father_voter = '$father_voter',
+                mother_voter = '$mother_voter',
+                disability_cert = '$disability_cert',
+                guardian_signature = '$guardian_sig',
                 status = 'Application started'";
 
             if ($conn->query($sql)) {
@@ -376,6 +527,32 @@ HTML;
 
             <div class="form-row">
                 <div class="form-group">
+                    <label>Caste</label>
+                    <select name="caste">
+                        <option value="">Select Caste</option>
+                        <?php foreach (['General','OBC','SC','ST','Other'] as $c): ?>
+                            <option value="<?php echo $c; ?>" <?php echo (($_POST['caste'] ?? '') == $c) ? 'selected' : ''; ?>><?php echo $c; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Disability</label>
+                    <select name="disability" id="disabilitySelect" onchange="document.getElementById('disabilityDetails').style.display=this.value==='Yes'?'block':'none'">
+                        <option value="">Select</option>
+                        <option value="No" <?php echo (($_POST['disability'] ?? '') == 'No') ? 'selected' : ''; ?>>No</option>
+                        <option value="Yes" <?php echo (($_POST['disability'] ?? '') == 'Yes') ? 'selected' : ''; ?>>Yes</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row" id="disabilityDetails" style="display:<?php echo (($_POST['disability'] ?? '') == 'Yes') ? 'block' : 'none'; ?>">
+                <div class="form-group">
+                    <label>Disability Details</label>
+                    <textarea name="disability_details" rows="2" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;"><?php echo htmlspecialchars($_POST['disability_details'] ?? ''); ?></textarea>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
                     <label>Previous School</label>
                     <input type="text" name="previous_school" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['previous_school'] ?? ''); ?>">
                 </div>
@@ -511,27 +688,77 @@ HTML;
 
     <!-- ===== SECTION 4: DOCUMENT UPLOADS ===== -->
     <div class="section-card">
-        <div class="section-head"><i class="fas fa-paperclip"></i> Student Document Upload</div>
+        <div class="section-head"><i class="fas fa-paperclip"></i> Required Documents</div>
         <div class="section-body">
-            <p style="margin-bottom:1rem;color:var(--text-light);font-size:0.9rem;">Accepted formats: JPG, PNG, PDF</p>
+            <p style="margin-bottom:1rem;color:var(--text-light);font-size:0.9rem;">Accepted formats: JPG, PNG, PDF. Files marked * are recommended.</p>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Aadhaar Card</label>
+                    <label>Student Aadhaar Card Copy *</label>
                     <input type="file" name="aadhaar_file" accept="image/*,application/pdf">
                 </div>
                 <div class="form-group">
-                    <label>Birth Certificate *</label>
-                    <input type="file" name="birth_cert" accept="image/*,application/pdf" required>
+                    <label>Student Birth Certificate Copy *</label>
+                    <input type="file" name="birth_cert" accept="image/*,application/pdf">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Previous School Leaving Certificate</label>
+                    <label>Previous School TC/LC Copy</label>
                     <input type="file" name="leaving_cert" accept="image/*,application/pdf">
                 </div>
                 <div class="form-group">
-                    <label>Previous Marksheet</label>
+                    <label>Previous Class Marksheet Copy</label>
                     <input type="file" name="prev_marksheet" accept="image/*,application/pdf">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Passport Size Photo of Student *</label>
+                    <input type="file" name="photo" accept="image/*,application/pdf">
+                </div>
+                <div class="form-group">
+                    <label>Caste Certificate (if any)</label>
+                    <input type="file" name="caste_cert" accept="image/*,application/pdf">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Passport Size Photo of Father *</label>
+                    <input type="file" name="father_photo" accept="image/*,application/pdf">
+                </div>
+                <div class="form-group">
+                    <label>Passport Size Photo of Mother *</label>
+                    <input type="file" name="mother_photo" accept="image/*,application/pdf">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Father Aadhaar Copy *</label>
+                    <input type="file" name="father_aadhaar" accept="image/*,application/pdf">
+                </div>
+                <div class="form-group">
+                    <label>Mother Aadhaar Copy *</label>
+                    <input type="file" name="mother_aadhaar" accept="image/*,application/pdf">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Father Voter Card Copy *</label>
+                    <input type="file" name="father_voter" accept="image/*,application/pdf">
+                </div>
+                <div class="form-group">
+                    <label>Mother Voter Card Copy *</label>
+                    <input type="file" name="mother_voter" accept="image/*,application/pdf">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Disability Certificate (if any)</label>
+                    <input type="file" name="disability_cert" accept="image/*,application/pdf">
+                </div>
+                <div class="form-group">
+                    <label>Guardian Signature *</label>
+                    <input type="file" name="guardian_signature" accept="image/*,application/pdf">
                 </div>
             </div>
         </div>

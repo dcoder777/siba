@@ -21,6 +21,7 @@ $classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Clas
 $genderOptions = ['Male', 'Female', 'Other'];
 $bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 $incomeOptions = ['Below 1 Lakh', '1 - 2.5 Lakhs', '2.5 - 5 Lakhs', '5 - 10 Lakhs', 'Above 10 Lakhs'];
+$casteOptions = ['General', 'OBC', 'SC', 'ST', 'Other'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $parentName = trim((string) ($_POST['parent_name'] ?? ''));
@@ -37,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $bloodGroup = trim((string) ($_POST['blood_group'] ?? ''));
     $religion = trim((string) ($_POST['religion'] ?? ''));
     $aadhaarNo = trim((string) ($_POST['aadhaar_no'] ?? ''));
+    $caste = trim((string) ($_POST['caste'] ?? ''));
+    $disability = trim((string) ($_POST['disability'] ?? ''));
+    $disabilityDetails = trim((string) ($_POST['disability_details'] ?? ''));
     $previousSchool = trim((string) ($_POST['previous_school'] ?? ''));
     $previousClass = trim((string) ($_POST['previous_class'] ?? ''));
     $fatherName = trim((string) ($_POST['father_name'] ?? ''));
@@ -121,6 +125,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $leavingCert = '';
             $prevMarksheet = '';
             $photo = '';
+            $casteCert = '';
+            $fatherPhoto = '';
+            $motherPhoto = '';
+            $fatherAadhaar = '';
+            $motherAadhaar = '';
+            $fatherVoter = '';
+            $motherVoter = '';
+            $disabilityCert = '';
+            $guardianSig = '';
             $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
 
             if (isset($_FILES['birth_cert']) && $_FILES['birth_cert']['error'] === UPLOAD_ERR_OK && in_array($_FILES['birth_cert']['type'], $allowed)) {
@@ -139,6 +152,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 $prevMarksheet = time() . '_pm_' . basename($_FILES['prev_marksheet']['name']);
                 move_uploaded_file($_FILES['prev_marksheet']['tmp_name'], $uploadDir . $prevMarksheet);
             }
+            if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK && in_array($_FILES['photo']['type'], $allowed)) {
+                $photo = time() . '_ph_' . basename($_FILES['photo']['name']);
+                move_uploaded_file($_FILES['photo']['tmp_name'], $uploadDir . $photo);
+            }
+            if (isset($_FILES['caste_cert']) && $_FILES['caste_cert']['error'] === UPLOAD_ERR_OK && in_array($_FILES['caste_cert']['type'], $allowed)) {
+                $casteCert = time() . '_cc_' . basename($_FILES['caste_cert']['name']);
+                move_uploaded_file($_FILES['caste_cert']['tmp_name'], $uploadDir . $casteCert);
+            }
+            if (isset($_FILES['father_photo']) && $_FILES['father_photo']['error'] === UPLOAD_ERR_OK && in_array($_FILES['father_photo']['type'], $allowed)) {
+                $fatherPhoto = time() . '_fp_' . basename($_FILES['father_photo']['name']);
+                move_uploaded_file($_FILES['father_photo']['tmp_name'], $uploadDir . $fatherPhoto);
+            }
+            if (isset($_FILES['mother_photo']) && $_FILES['mother_photo']['error'] === UPLOAD_ERR_OK && in_array($_FILES['mother_photo']['type'], $allowed)) {
+                $motherPhoto = time() . '_mp_' . basename($_FILES['mother_photo']['name']);
+                move_uploaded_file($_FILES['mother_photo']['tmp_name'], $uploadDir . $motherPhoto);
+            }
+            if (isset($_FILES['father_aadhaar']) && $_FILES['father_aadhaar']['error'] === UPLOAD_ERR_OK && in_array($_FILES['father_aadhaar']['type'], $allowed)) {
+                $fatherAadhaar = time() . '_fa_' . basename($_FILES['father_aadhaar']['name']);
+                move_uploaded_file($_FILES['father_aadhaar']['tmp_name'], $uploadDir . $fatherAadhaar);
+            }
+            if (isset($_FILES['mother_aadhaar']) && $_FILES['mother_aadhaar']['error'] === UPLOAD_ERR_OK && in_array($_FILES['mother_aadhaar']['type'], $allowed)) {
+                $motherAadhaar = time() . '_ma_' . basename($_FILES['mother_aadhaar']['name']);
+                move_uploaded_file($_FILES['mother_aadhaar']['tmp_name'], $uploadDir . $motherAadhaar);
+            }
+            if (isset($_FILES['father_voter']) && $_FILES['father_voter']['error'] === UPLOAD_ERR_OK && in_array($_FILES['father_voter']['type'], $allowed)) {
+                $fatherVoter = time() . '_fv_' . basename($_FILES['father_voter']['name']);
+                move_uploaded_file($_FILES['father_voter']['tmp_name'], $uploadDir . $fatherVoter);
+            }
+            if (isset($_FILES['mother_voter']) && $_FILES['mother_voter']['error'] === UPLOAD_ERR_OK && in_array($_FILES['mother_voter']['type'], $allowed)) {
+                $motherVoter = time() . '_mv_' . basename($_FILES['mother_voter']['name']);
+                move_uploaded_file($_FILES['mother_voter']['tmp_name'], $uploadDir . $motherVoter);
+            }
+            if (isset($_FILES['disability_cert']) && $_FILES['disability_cert']['error'] === UPLOAD_ERR_OK && in_array($_FILES['disability_cert']['type'], $allowed)) {
+                $disabilityCert = time() . '_dc_' . basename($_FILES['disability_cert']['name']);
+                move_uploaded_file($_FILES['disability_cert']['tmp_name'], $uploadDir . $disabilityCert);
+            }
+            if (isset($_FILES['guardian_signature']) && $_FILES['guardian_signature']['error'] === UPLOAD_ERR_OK && in_array($_FILES['guardian_signature']['type'], $allowed)) {
+                $guardianSig = time() . '_gs_' . basename($_FILES['guardian_signature']['name']);
+                move_uploaded_file($_FILES['guardian_signature']['tmp_name'], $uploadDir . $guardianSig);
+            }
 
             // Generate application number
             $year = date('Y');
@@ -147,12 +200,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $appCount = (int) $countStmt->fetch()['c'];
             $appNo = $prefix . str_pad((string) ($appCount + 1), 4, '0', STR_PAD_LEFT);
 
-            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, application_no, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_occupation, family_annual_income, contact_no, email, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, payment_method, payment_status, status, applied_at) VALUES (:parent_id, :application_no, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :mother_name, :mother_occupation, :guardian_name, :guardian_occupation, :family_annual_income, :contact_no, :email, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, :payment_method, :payment_status, 'Application started', NOW())");
+            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, application_no, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, caste, disability, disability_details, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_occupation, family_annual_income, contact_no, email, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, photo, caste_cert, father_photo, mother_photo, father_aadhaar, mother_aadhaar, father_voter, mother_voter, disability_cert, guardian_signature, payment_method, payment_status, status, applied_at) VALUES (:parent_id, :application_no, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :caste, :disability, :disability_details, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :mother_name, :mother_occupation, :guardian_name, :guardian_occupation, :family_annual_income, :contact_no, :email, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, :photo, :caste_cert, :father_photo, :mother_photo, :father_aadhaar, :mother_aadhaar, :father_voter, :mother_voter, :disability_cert, :guardian_signature, :payment_method, :payment_status, 'Application started', NOW())");
             $stmt->execute([
                 'parent_id' => $parentId, 'application_no' => $appNo, 'student_name' => $studentName, 'first_name' => $firstName,
                 'middle_name' => $middleName ?: null, 'last_name' => $lastName ?: null, 'dob' => $dob,
                 'gender' => $gender ?: null, 'religion' => $religion ?: null, 'blood_group' => $bloodGroup ?: null,
-                'aadhaar_no' => $aadhaarNo ?: null, 'previous_school' => $previousSchool ?: null,
+                'aadhaar_no' => $aadhaarNo ?: null, 'caste' => $caste ?: null, 'disability' => $disability ?: null,
+                'disability_details' => $disabilityDetails ?: null,
+                'previous_school' => $previousSchool ?: null,
                 'previous_class' => $previousClass ?: null, 'class_sought' => $classSought,
                 'address_line1' => $addressLine1 ?: null, 'address_line2' => $addressLine2 ?: null,
                 'post_office' => $postOffice ?: null, 'police_station' => $policeStation ?: null,
@@ -165,6 +220,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 'email' => $studentEmail ?: null, 'address' => $combinedAddress ?: null,
                 'birth_cert' => $birthCert ?: null, 'aadhaar' => $aadhaarFile ?: null,
                 'leaving_cert' => $leavingCert ?: null, 'prev_marksheet' => $prevMarksheet ?: null,
+                'photo' => $photo ?: null, 'caste_cert' => $casteCert ?: null,
+                'father_photo' => $fatherPhoto ?: null, 'mother_photo' => $motherPhoto ?: null,
+                'father_aadhaar' => $fatherAadhaar ?: null, 'mother_aadhaar' => $motherAadhaar ?: null,
+                'father_voter' => $fatherVoter ?: null, 'mother_voter' => $motherVoter ?: null,
+                'disability_cert' => $disabilityCert ?: null, 'guardian_signature' => $guardianSig ?: null,
                 'payment_method' => $paymentMethod, 'payment_status' => $paymentMethod === 'Offline' ? 'Paid' : 'Pending',
             ]);
 
@@ -412,6 +472,27 @@ HTML;
                         <input id="aadhaar_no" name="aadhaar_no" type="text" value="<?= e($_POST['aadhaar_no'] ?? '') ?>">
                     </div>
                     <div>
+                        <label for="caste">Caste</label>
+                        <select id="caste" name="caste">
+                            <option value="">— Select —</option>
+                            <?php foreach ($casteOptions as $opt): ?>
+                                <option value="<?= e($opt) ?>" <?= ($_POST['caste'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="disability">Disability</label>
+                        <select id="disability" name="disability" onchange="document.getElementById('disabilityDetailsRow').style.display=this.value==='Yes'?'block':'none'">
+                            <option value="">— Select —</option>
+                            <option value="No" <?= ($_POST['disability'] ?? '') === 'No' ? 'selected' : '' ?>>No</option>
+                            <option value="Yes" <?= ($_POST['disability'] ?? '') === 'Yes' ? 'selected' : '' ?>>Yes</option>
+                        </select>
+                    </div>
+                    <div id="disabilityDetailsRow" style="display:<?= (($_POST['disability'] ?? '') === 'Yes') ? 'block' : 'none' ?>">
+                        <label for="disability_details">Disability Details</label>
+                        <textarea id="disability_details" name="disability_details" rows="2" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;"><?= e($_POST['disability_details'] ?? '') ?></textarea>
+                    </div>
+                    <div>
                         <label for="previous_school">Previous School</label>
                         <input id="previous_school" name="previous_school" type="text" value="<?= e($_POST['previous_school'] ?? '') ?>">
                     </div>
@@ -475,6 +556,15 @@ HTML;
                     <h2>Address Details</h2>
                 </div>
                 <div class="field-grid" style="grid-template-columns:1fr;">
+                    <div>
+                        <label for="address_line1">Address Line 1</label>
+                        <input id="address_line1" name="address_line1" type="text" value="<?= e($_POST['address_line1'] ?? '') ?>">
+                    </div>
+                    <div>
+                        <label for="address_line2">Address Line 2</label>
+                        <input id="address_line2" name="address_line2" type="text" value="<?= e($_POST['address_line2'] ?? '') ?>">
+                    </div>
+                    <div>
                         <label for="post_office">Post Office</label>
                         <input id="post_office" name="post_office" type="text" value="<?= e($_POST['post_office'] ?? '') ?>">
                     </div>
@@ -518,20 +608,60 @@ HTML;
                 </div>
                 <div class="field-grid">
                     <div>
-                        <label for="aadhaar_file">Aadhaar Card</label>
+                        <label for="aadhaar_file">Student Aadhaar Card Copy</label>
                         <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
-                        <label for="birth_cert">Birth Certificate</label>
+                        <label for="birth_cert">Student Birth Certificate Copy</label>
                         <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
-                        <label for="leaving_cert">Previous School Leaving Certificate</label>
+                        <label for="leaving_cert">Previous School TC/LC Copy</label>
                         <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
-                        <label for="prev_marksheet">Previous Marksheet</label>
+                        <label for="prev_marksheet">Previous Class Marksheet Copy</label>
                         <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="photo">Passport Size Photo of Student</label>
+                        <input id="photo" name="photo" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="caste_cert">Caste Certificate (if any)</label>
+                        <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="father_photo">Passport Size Photo of Father</label>
+                        <input id="father_photo" name="father_photo" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="mother_photo">Passport Size Photo of Mother</label>
+                        <input id="mother_photo" name="mother_photo" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="father_aadhaar">Father Aadhaar Copy</label>
+                        <input id="father_aadhaar" name="father_aadhaar" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="mother_aadhaar">Mother Aadhaar Copy</label>
+                        <input id="mother_aadhaar" name="mother_aadhaar" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="father_voter">Father Voter Card Copy</label>
+                        <input id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="mother_voter">Mother Voter Card Copy</label>
+                        <input id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="disability_cert">Disability Certificate (if any)</label>
+                        <input id="disability_cert" name="disability_cert" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div>
+                        <label for="guardian_signature">Guardian Signature</label>
+                        <input id="guardian_signature" name="guardian_signature" type="file" accept="image/*,application/pdf">
                     </div>
                 </div>
             </section>

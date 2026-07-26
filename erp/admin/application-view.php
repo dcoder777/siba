@@ -38,10 +38,20 @@ $payStatusBadge = ($app['payment_status'] ?? 'Pending') === 'Paid'
     : '<span class="badge" style="background:#fef3c7;color:#92400e">Pending</span>';
 
 $docs = [
-    'Aadhaar Card' => $app['aadhaar'] ?? '',
-    'Birth Certificate' => $app['birth_cert'] ?? '',
-    'Leaving Certificate' => $app['leaving_cert'] ?? '',
+    'Student Aadhaar Card' => $app['aadhaar'] ?? '',
+    'Student Birth Certificate' => $app['birth_cert'] ?? '',
+    'Previous School TC/LC' => $app['leaving_cert'] ?? '',
     'Previous Marksheet' => $app['prev_marksheet'] ?? '',
+    'Student Photo' => $app['photo'] ?? '',
+    'Caste Certificate' => $app['caste_cert'] ?? '',
+    'Father Photo' => $app['father_photo'] ?? '',
+    'Mother Photo' => $app['mother_photo'] ?? '',
+    'Father Aadhaar' => $app['father_aadhaar'] ?? '',
+    'Mother Aadhaar' => $app['mother_aadhaar'] ?? '',
+    'Father Voter Card' => $app['father_voter'] ?? '',
+    'Mother Voter Card' => $app['mother_voter'] ?? '',
+    'Disability Certificate' => $app['disability_cert'] ?? '',
+    'Guardian Signature' => $app['guardian_signature'] ?? '',
 ];
 ?>
 <!DOCTYPE html>
@@ -155,6 +165,8 @@ $docs = [
                     <div class="detail-row"><span class="lbl">Religion</span><span class="val"><?= e($app['religion'] ?? '—') ?></span></div>
                     <div class="detail-row"><span class="lbl">Blood Group</span><span class="val"><?= e($app['blood_group'] ?? '—') ?></span></div>
                     <div class="detail-row"><span class="lbl">Aadhaar No.</span><span class="val"><?= e($app['aadhaar_no'] ?? '—') ?></span></div>
+                    <div class="detail-row"><span class="lbl">Caste</span><span class="val"><?= e($app['caste'] ?? '—') ?></span></div>
+                    <div class="detail-row"><span class="lbl">Disability</span><span class="val"><?= e($app['disability'] ?? '—') ?><?= ($app['disability'] ?? '') === 'Yes' && ($app['disability_details'] ?? '') ? ' (' . e($app['disability_details']) . ')' : '' ?></span></div>
                     <div class="detail-row"><span class="lbl">Previous School</span><span class="val"><?= e($app['previous_school'] ?? '—') ?></span></div>
                     <div class="detail-row"><span class="lbl">Previous Class</span><span class="val"><?= e($app['previous_class'] ?? '—') ?></span></div>
                     <div class="detail-row"><span class="lbl">Admission Class</span><span class="val"><strong><?= e($app['class_sought']) ?></strong></span></div>
@@ -210,7 +222,7 @@ $docs = [
             <div class="detail-card full-col">
                 <div class="head"><i class="fas fa-paperclip"></i> Uploaded Documents</div>
                 <div class="body">
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;">
                         <?php foreach ($docs as $label => $file): ?>
                             <div style="background:#f9f9f9;border-radius:8px;padding:.75rem 1rem;text-align:center;">
                                 <div style="font-size:.8rem;color:#64748b;margin-bottom:.3rem;"><?= $label ?></div>
