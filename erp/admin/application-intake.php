@@ -508,9 +508,15 @@ HTML;
                             <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
                         </div>
                     </div>
-                    <div>
-                        <label for="previous_class">Previous Class</label>
-                        <input id="previous_class" name="previous_class" type="text" value="<?= e($_POST['previous_class'] ?? '') ?>">
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="previous_class">Previous Class</label>
+                            <input id="previous_class" name="previous_class" type="text" value="<?= e($_POST['previous_class'] ?? '') ?>">
+                        </div>
+                        <div style="flex:1;min-width:200px;">
+                            <label for="prev_marksheet">Previous Class Marksheet Copy</label>
+                            <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        </div>
                     </div>
                 </div>
             </section>
@@ -624,9 +630,6 @@ HTML;
                         <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
-                        <label for="prev_marksheet">Previous Class Marksheet Copy</label>
-                        <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf">
-                    </div>
                     <div>
                         <label for="photo">Passport Size Photo of Student</label>
                         <input id="photo" name="photo" type="file" accept="image/*,application/pdf">
