@@ -16,7 +16,7 @@ $(document).ready(function () {
     
     // Close mobile menu when clicking outside
     $(document).on('click', function (e) {
-        if (!$(e.target).closest('nav').length && $('.nav-links').hasClass('active')) {
+        if (!$(e.target).closest('nav').length && !$(e.target).closest('.nav-links').length && !$(e.target).closest('.mobile-menu-toggle').length && $('.nav-links').hasClass('active')) {
             $('.nav-links').removeClass('active');
             $('.mobile-menu-toggle i').removeClass('fa-times').addClass('fa-bars');
         }
