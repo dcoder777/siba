@@ -13,38 +13,13 @@ declare(strict_types=1);
 <div class="content-wrap welcome-shell">
     <section class="surface-card hero-card">
         <div class="hero-grid">
-            <div class="hero-panel stack">
-                <span class="eyebrow">School ERP Platform</span>
+            <div class="hero-panel stack" style="justify-content:center;align-items:center;text-align:center;">
                 <div class="stack" style="gap:.8rem">
-                    <h1 style="font-size:3rem">A modern control center for academics, operations, finance, and people.</h1>
-                    <p>
-                        SIBA Public School ERP brings student records, fee management, attendance,
-                        examinations, transport, hostel operations, HR, payroll, and API-ready services
-                        into one connected workspace.
-                    </p>
+                    <h1 style="font-size:2.5rem;margin:0;">SIBA PUBLIC SCHOOL<br>MANAGEMENT SYSTEM</h1>
                 </div>
 
-                <div class="hero-actions">
-                    <a class="btn" href="./admin/login.php">Open Admin Login</a>
-                    <a class="btn btn-outline" href="./system-health.php">View System Dashboard</a>
-                </div>
-
-                <div class="kpi-grid" style="margin-top:.5rem">
-                    <div class="kpi-card">
-                        <div class="kpi-label">Unified Records</div>
-                        <div class="kpi-value">360°</div>
-                        <p>Student, staff, and operational data in one place.</p>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-label">API Ready</div>
-                        <div class="kpi-value">v1</div>
-                        <p>Prepared for mobile app integration and shared services.</p>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-label">Role Based</div>
-                        <div class="kpi-value">Secure</div>
-                        <p>Access control for admin, teacher, finance, and HR teams.</p>
-                    </div>
+                <div class="hero-actions" style="margin-top:1.5rem;">
+                    <a class="btn" href="./admin/login.php">Login to Dashboard</a>
                 </div>
             </div>
 
