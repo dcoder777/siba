@@ -116,8 +116,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
     $country          = $conn->real_escape_string(trim($_POST['country'] ?: 'India'));
     $father_name      = $conn->real_escape_string(trim($_POST['father_name']));
     $father_occup     = $conn->real_escape_string(trim($_POST['father_occupation']));
+    $father_aadhaar_no = $conn->real_escape_string(trim($_POST['father_aadhaar_no'] ?? ''));
+    $father_voter_no  = $conn->real_escape_string(trim($_POST['father_voter_no'] ?? ''));
     $mother_name      = $conn->real_escape_string(trim($_POST['mother_name']));
     $mother_occup     = $conn->real_escape_string(trim($_POST['mother_occupation']));
+    $mother_aadhaar_no = $conn->real_escape_string(trim($_POST['mother_aadhaar_no'] ?? ''));
+    $mother_voter_no  = $conn->real_escape_string(trim($_POST['mother_voter_no'] ?? ''));
     $guardian_name    = $conn->real_escape_string(trim($_POST['guardian_name']));
     $guardian_occup   = $conn->real_escape_string(trim($_POST['guardian_occupation']));
     $income           = $conn->real_escape_string(trim($_POST['family_annual_income']));
@@ -343,11 +347,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
                 country = '$country',
                 father_name = '$father_name',
                 father_occupation = '$father_occup',
+                father_aadhaar_no = '$father_aadhaar_no',
                 mother_name = '$mother_name',
                 mother_occupation = '$mother_occup',
+                mother_aadhaar_no = '$mother_aadhaar_no',
                 guardian_name = '$guardian_name',
                 guardian_occupation = '$guardian_occup',
                 family_annual_income = '$income',
+                father_voter_no = '$father_voter_no',
+                mother_voter_no = '$mother_voter_no',
                 caste = '$caste',
                 disability = '$disability',
                 disability_details = '$disability_det',
@@ -478,11 +486,23 @@ HTML;
     <div class="section-card">
         <div class="section-head"><i class="fas fa-child"></i> Student Information</div>
         <div class="section-body">
-            <div class="form-row">
-                <div class="form-group">
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                <div class="form-group" style="flex:1;min-width:200px;">
                     <label>First Name *</label>
                     <input type="text" name="first_name" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
                 </div>
+                <div style="flex:0 0 auto;">
+                    <label>Passport Size Photo</label>
+                    <div style="display:flex;gap:.8rem;align-items:flex-end;">
+                        <div id="photoPreview" style="width:100px;height:120px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                            <span style="font-size:.7rem;color:#94a3b8;text-align:center;">No Photo</span>
+                        </div>
+                        <input type="file" name="photo" accept="image/*,application/pdf" onchange="previewPassport(this,'photoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
                 <div class="form-group">
                     <label>Middle Name</label>
                     <input type="text" name="middle_name" value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>">
@@ -495,6 +515,18 @@ HTML;
 
             <div class="form-row">
                 <div class="form-group">
+                    <label>Admission Class *</label>
+                    <select name="admission_class" required>
+                        <option value="">Select Class</option>
+                        <?php foreach (['Play School','LKG','UKG'] as $cls): ?>
+                            <option value="<?php echo $cls; ?>" <?php echo (($_POST['admission_class'] ?? '') == $cls) ? 'selected' : ''; ?>><?php echo $cls; ?></option>
+                        <?php endforeach; ?>
+                        <?php foreach (range(1, 8) as $cls): ?>
+                            <option value="Class <?php echo $cls; ?>" <?php echo (($_POST['admission_class'] ?? '') == "Class $cls") ? 'selected' : ''; ?>>Class <?php echo $cls; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Date of Birth *</label>
                     <input type="date" name="dob" required value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>">
                 </div>
@@ -506,10 +538,6 @@ HTML;
                             <option value="<?php echo $g; ?>" <?php echo (($_POST['gender'] ?? '') == $g) ? 'selected' : ''; ?>><?php echo $g; ?></option>
                         <?php endforeach; ?>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label>Religion</label>
-                    <input type="text" name="religion" value="<?php echo htmlspecialchars($_POST['religion'] ?? ''); ?>">
                 </div>
             </div>
 
@@ -524,13 +552,24 @@ HTML;
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Aadhaar No.</label>
-                    <input type="text" name="aadhaar_no" placeholder="12-digit Aadhaar" maxlength="12" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['aadhaar_no'] ?? ''); ?>">
+                    <label>Religion</label>
+                    <input type="text" name="religion" value="<?php echo htmlspecialchars($_POST['religion'] ?? ''); ?>">
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
+            <div class="form-row" style="display:flex;gap:1rem;">
+                <div class="form-group" style="flex:1;">
+                    <label>Aadhaar Number</label>
+                    <input type="text" name="aadhaar_no" placeholder="12-digit Aadhaar" maxlength="12" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['aadhaar_no'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Aadhaar Card Copy</label>
+                    <input type="file" name="aadhaar_file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
+            </div>
+
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
                     <label>Caste</label>
                     <select name="caste">
                         <option value="">Select Caste</option>
@@ -539,7 +578,14 @@ HTML;
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Caste Certificate</label>
+                    <input type="file" name="caste_cert" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
+            </div>
+
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
                     <label>Disability</label>
                     <select name="disability" id="disabilitySelect" onchange="document.getElementById('disabilityDetails').style.display=this.value==='Yes'?'block':'none'">
                         <option value="">Select</option>
@@ -547,31 +593,44 @@ HTML;
                         <option value="Yes" <?php echo (($_POST['disability'] ?? '') == 'Yes') ? 'selected' : ''; ?>>Yes</option>
                     </select>
                 </div>
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Disability Certificate</label>
+                    <input type="file" name="disability_cert" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
             </div>
             <div class="form-row" id="disabilityDetails" style="display:<?php echo (($_POST['disability'] ?? '') == 'Yes') ? 'block' : 'none'; ?>">
                 <div class="form-group">
                     <label>Disability Details</label>
-                    <textarea name="disability_details" rows="2" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;"><?php echo htmlspecialchars($_POST['disability_details'] ?? ''); ?></textarea>
+                    <textarea name="disability_details" rows="2" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;"><?php echo htmlspecialchars($_POST['disability_details'] ?? ''); ?></textarea>
+                </div>
+            </div>
+
+            <div class="form-row" style="display:flex;gap:1rem;">
+                <div class="form-group" style="flex:1;">
+                    <label>Previous School</label>
+                    <input type="text" name="previous_school" value="<?php echo htmlspecialchars($_POST['previous_school'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>School Leaving Certificate / TC Copy</label>
+                    <input type="file" name="leaving_cert" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
+            </div>
+
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Previous Class</label>
+                    <input type="text" name="previous_class" placeholder="e.g. 5" value="<?php echo htmlspecialchars($_POST['previous_class'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Previous Class Marksheet Copy</label>
+                    <input type="file" name="prev_marksheet" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Previous School</label>
-                    <input type="text" name="previous_school" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['previous_school'] ?? ''); ?>">
-                </div>
-                <div class="form-group">
-                    <label>Previous Class</label>
-                    <input type="text" name="previous_class" placeholder="e.g. 5" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['previous_class'] ?? ''); ?>">
-                </div>
-                <div class="form-group">
-                    <label>Admission Class *</label>
-                    <select name="admission_class" required>
-                        <option value="">Select Class</option>
-                        <?php foreach (range(1, 8) as $cls): ?>
-                            <option value="Class <?php echo $cls; ?>" <?php echo (($_POST['admission_class'] ?? '') == "Class $cls") ? 'selected' : ''; ?>>Class <?php echo $cls; ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label>Student Birth Certificate Copy</label>
+                    <input type="file" name="birth_cert" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
                 </div>
             </div>
         </div>
@@ -639,29 +698,93 @@ HTML;
     <div class="section-card">
         <div class="section-head"><i class="fas fa-users"></i> Parent / Guardian Details</div>
         <div class="section-body">
-            <div class="form-row">
-                <div class="form-group">
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                <div class="form-group" style="flex:1;min-width:200px;">
                     <label>Father's Name *</label>
                     <input type="text" name="father_name" required value="<?php echo htmlspecialchars($_POST['father_name'] ?? ''); ?>">
                 </div>
+                <div style="flex:0 0 auto;">
+                    <label>Father's Photo</label>
+                    <div style="display:flex;gap:.8rem;align-items:flex-end;">
+                        <div id="fatherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                            <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
+                        </div>
+                        <input type="file" name="father_photo" accept="image/*" onchange="previewPassport(this,'fatherPhotoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group">
                     <label>Father's Occupation</label>
                     <input type="text" name="father_occupation" value="<?php echo htmlspecialchars($_POST['father_occupation'] ?? ''); ?>">
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Father's Aadhaar Number</label>
+                    <input type="text" name="father_aadhaar_no" maxlength="12" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['father_aadhaar_no'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Father Aadhaar Copy</label>
+                    <input type="file" name="father_aadhaar" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
+            </div>
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Father's Voter ID Number</label>
+                    <input type="text" name="father_voter_no" value="<?php echo htmlspecialchars($_POST['father_voter_no'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Father Voter Card Copy</label>
+                    <input type="file" name="father_voter" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
+            </div>
+
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                <div class="form-group" style="flex:1;min-width:200px;">
                     <label>Mother's Name *</label>
                     <input type="text" name="mother_name" required value="<?php echo htmlspecialchars($_POST['mother_name'] ?? ''); ?>">
                 </div>
+                <div style="flex:0 0 auto;">
+                    <label>Mother's Photo</label>
+                    <div style="display:flex;gap:.8rem;align-items:flex-end;">
+                        <div id="motherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                            <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
+                        </div>
+                        <input type="file" name="mother_photo" accept="image/*" onchange="previewPassport(this,'motherPhotoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
                 <div class="form-group">
                     <label>Mother's Occupation</label>
                     <input type="text" name="mother_occupation" value="<?php echo htmlspecialchars($_POST['mother_occupation'] ?? ''); ?>">
                 </div>
             </div>
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Mother's Aadhaar Number</label>
+                    <input type="text" name="mother_aadhaar_no" maxlength="12" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['mother_aadhaar_no'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Mother Aadhaar Copy</label>
+                    <input type="file" name="mother_aadhaar" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
+            </div>
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Mother's Voter ID Number</label>
+                    <input type="text" name="mother_voter_no" value="<?php echo htmlspecialchars($_POST['mother_voter_no'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="flex:1;min-width:200px;">
+                    <label>Mother Voter Card Copy</label>
+                    <input type="file" name="mother_voter" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                </div>
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
-                    <label>Guardian's Name</label>
+                    <label>Guardian's Name <span style="font-weight:400;color:var(--text-light);">(if different)</span></label>
                     <input type="text" name="guardian_name" value="<?php echo htmlspecialchars($_POST['guardian_name'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
@@ -669,106 +792,34 @@ HTML;
                     <input type="text" name="guardian_occupation" value="<?php echo htmlspecialchars($_POST['guardian_occupation'] ?? ''); ?>">
                 </div>
             </div>
-            <div class="form-group">
-                <label>Family Annual Income</label>
-                <select name="family_annual_income">
-                    <option value="">Select</option>
-                    <?php
-                    $incomes = [
-                        'Below ₹1,00,000',
-                        '₹1,00,001 – ₹2,50,000',
-                        '₹2,50,001 – ₹5,00,000',
-                        '₹5,00,001 – ₹10,00,000',
-                        'Above ₹10,00,000',
-                    ];
-                    foreach ($incomes as $inc):
-                    ?>
-                        <option value="<?php echo $inc; ?>" <?php echo (($_POST['family_annual_income'] ?? '') == $inc) ? 'selected' : ''; ?>><?php echo $inc; ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== SECTION 4: DOCUMENT UPLOADS ===== -->
-    <div class="section-card">
-        <div class="section-head"><i class="fas fa-paperclip"></i> Required Documents</div>
-        <div class="section-body">
-            <p style="margin-bottom:1rem;color:var(--text-light);font-size:0.9rem;">Accepted formats: JPG, PNG, PDF. Files marked * are recommended.</p>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Student Aadhaar Card Copy *</label>
-                    <input type="file" name="aadhaar_file" accept="image/*,application/pdf">
+                    <label>Family Annual Income</label>
+                    <select name="family_annual_income">
+                        <option value="">Select</option>
+                        <?php
+                        $incomes = [
+                            'Below ₹1,00,000',
+                            '₹1,00,001 – ₹2,50,000',
+                            '₹2,50,001 – ₹5,00,000',
+                            '₹5,00,001 – ₹10,00,000',
+                            'Above ₹10,00,000',
+                        ];
+                        foreach ($incomes as $inc):
+                        ?>
+                            <option value="<?php echo $inc; ?>" <?php echo (($_POST['family_annual_income'] ?? '') == $inc) ? 'selected' : ''; ?>><?php echo $inc; ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label>Student Birth Certificate Copy *</label>
-                    <input type="file" name="birth_cert" accept="image/*,application/pdf">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Previous School TC/LC Copy</label>
-                    <input type="file" name="leaving_cert" accept="image/*,application/pdf">
-                </div>
-                <div class="form-group">
-                    <label>Previous Class Marksheet Copy</label>
-                    <input type="file" name="prev_marksheet" accept="image/*,application/pdf">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Passport Size Photo of Student *</label>
-                    <input type="file" name="photo" accept="image/*,application/pdf">
-                </div>
-                <div class="form-group">
-                    <label>Caste Certificate (if any)</label>
-                    <input type="file" name="caste_cert" accept="image/*,application/pdf">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Passport Size Photo of Father *</label>
-                    <input type="file" name="father_photo" accept="image/*,application/pdf">
-                </div>
-                <div class="form-group">
-                    <label>Passport Size Photo of Mother *</label>
-                    <input type="file" name="mother_photo" accept="image/*,application/pdf">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Father Aadhaar Copy *</label>
-                    <input type="file" name="father_aadhaar" accept="image/*,application/pdf">
-                </div>
-                <div class="form-group">
-                    <label>Mother Aadhaar Copy *</label>
-                    <input type="file" name="mother_aadhaar" accept="image/*,application/pdf">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Father Voter Card Copy *</label>
-                    <input type="file" name="father_voter" accept="image/*,application/pdf">
-                </div>
-                <div class="form-group">
-                    <label>Mother Voter Card Copy *</label>
-                    <input type="file" name="mother_voter" accept="image/*,application/pdf">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Disability Certificate (if any)</label>
-                    <input type="file" name="disability_cert" accept="image/*,application/pdf">
-                </div>
-                <div class="form-group">
-                    <label>Guardian Signature *</label>
-                    <input type="file" name="guardian_signature" accept="image/*,application/pdf">
+                    <label>Guardian Signature</label>
+                    <input type="file" name="guardian_signature" accept="image/*" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===== SECTION 5: TERMS ===== -->
+    <!-- ===== SECTION 4: TERMS ===== -->
     <div class="section-card">
         <div class="section-body" style="padding:1rem 1.5rem;">
             <div style="display: flex; align-items: flex-start; gap: 0.85rem;">
@@ -836,6 +887,17 @@ $(document).ready(function(){
         $('#termsModal').removeClass('active');
     });
 });
+
+function previewPassport(input, previewId) {
+    var box = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            box.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
 </script>
 
 <?php include('../includes/portal_footer.php'); ?>
