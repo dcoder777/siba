@@ -419,11 +419,21 @@ HTML;
                     <h2>Student Details</h2>
                     <p>Enter the student's details for the admission application.</p>
                 </div>
-                <div class="field-grid" style="grid-template-columns:1fr;">
-                    <div>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                    <div style="flex:1;min-width:200px;">
                         <label for="student_name">First name *</label>
                         <input id="student_name" name="student_name" type="text" required value="<?= e($_POST['student_name'] ?? '') ?>">
                     </div>
+                    <div style="flex:0 0 auto;">
+                        <label for="photo">Passport Size Photo</label>
+                        <div style="display:flex;gap:.8rem;align-items:flex-end;">
+                            <div id="photoPreview" style="width:100px;height:120px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                                <span style="font-size:.7rem;color:#94a3b8;text-align:center;">No Photo</span>
+                            </div>
+                            <input id="photo" name="photo" type="file" accept="image/*" onchange="previewPassport(this,'photoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                        </div>
+                    </div>
+                </div>
                     <div>
                         <label for="middle_name">Middle Name</label>
                         <input id="middle_name" name="middle_name" type="text" value="<?= e($_POST['middle_name'] ?? '') ?>">
@@ -630,11 +640,6 @@ HTML;
                         <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
-                    <div>
-                        <label for="photo">Passport Size Photo of Student</label>
-                        <input id="photo" name="photo" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
                         <label for="caste_cert">Caste Certificate (if any)</label>
                         <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
                     </div>
@@ -698,5 +703,17 @@ HTML;
         </form>
     </main>
 </div>
+<script>
+function previewPassport(input, previewId) {
+    var box = document.getElementById(previewId);
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            box.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;">';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
 </body>
 </html>
