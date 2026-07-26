@@ -48,7 +48,7 @@
         </div>
         <div class="footer-bottom">
             <span>&copy; <?php echo date('Y'); ?> SIBA Public School. All rights reserved.</span>
-            <span>Designed with <i class="fas fa-heart" style="color:#f87171;"></i> for better education</span>
+            <span>Designed by Sensark</span>
         </div>
     </footer>
     <script src="<?php echo SITE_URL; ?>/assets/js/main.js"></script>
