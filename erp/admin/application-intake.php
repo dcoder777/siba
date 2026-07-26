@@ -555,9 +555,20 @@ HTML;
                         <label for="father_occupation">Father's Occupation</label>
                         <input id="father_occupation" name="father_occupation" type="text" value="<?= e($_POST['father_occupation'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="mother_name">Mother's Name *</label>
-                        <input id="mother_name" name="mother_name" type="text" required value="<?= e($_POST['mother_name'] ?? '') ?>">
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="mother_name">Mother's Name *</label>
+                            <input id="mother_name" name="mother_name" type="text" required value="<?= e($_POST['mother_name'] ?? '') ?>">
+                        </div>
+                        <div style="flex:0 0 auto;">
+                            <label for="mother_photo">Mother's Photo</label>
+                            <div style="display:flex;gap:.8rem;align-items:flex-end;">
+                                <div id="motherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                                    <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
+                                </div>
+                                <input id="mother_photo" name="mother_photo" type="file" accept="image/*" onchange="previewPassport(this,'motherPhotoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label for="mother_occupation">Mother's Occupation</label>
@@ -653,10 +664,6 @@ HTML;
                     <div>
                         <label for="caste_cert">Caste Certificate (if any)</label>
                         <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="mother_photo">Passport Size Photo of Mother</label>
-                        <input id="mother_photo" name="mother_photo" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
                         <label for="father_aadhaar">Father Aadhaar Copy</label>
