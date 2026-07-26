@@ -536,9 +536,20 @@ HTML;
                     <h2>Parent / Guardian Details</h2>
                 </div>
                 <div class="field-grid" style="grid-template-columns:1fr;">
-                    <div>
-                        <label for="father_name">Father's Name *</label>
-                        <input id="father_name" name="father_name" type="text" required value="<?= e($_POST['father_name'] ?? '') ?>">
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+                        <div style="flex:1;min-width:200px;">
+                            <label for="father_name">Father's Name *</label>
+                            <input id="father_name" name="father_name" type="text" required value="<?= e($_POST['father_name'] ?? '') ?>">
+                        </div>
+                        <div style="flex:0 0 auto;">
+                            <label for="father_photo">Father's Photo</label>
+                            <div style="display:flex;gap:.8rem;align-items:flex-end;">
+                                <div id="fatherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                                    <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
+                                </div>
+                                <input id="father_photo" name="father_photo" type="file" accept="image/*" onchange="previewPassport(this,'fatherPhotoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label for="father_occupation">Father's Occupation</label>
@@ -642,10 +653,6 @@ HTML;
                     <div>
                         <label for="caste_cert">Caste Certificate (if any)</label>
                         <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
-                    </div>
-                    <div>
-                        <label for="father_photo">Passport Size Photo of Father</label>
-                        <input id="father_photo" name="father_photo" type="file" accept="image/*,application/pdf">
                     </div>
                     <div>
                         <label for="mother_photo">Passport Size Photo of Mother</label>
