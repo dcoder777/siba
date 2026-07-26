@@ -1,8 +1,5 @@
 -- Database Structure for SIBA Public School
 
-CREATE DATABASE IF NOT EXISTS siba_school;
-USE siba_school;
-
 -- Parents Table
 CREATE TABLE IF NOT EXISTS parents (
     id INT AUTO_INCREMENT PRIMARY KEY,
