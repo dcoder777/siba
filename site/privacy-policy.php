@@ -200,7 +200,7 @@ include('includes/header.php');
         <div class="pp-contact-box">
             <h2>Contact Us</h2>
             <p><strong>SIBA Public School</strong></p>
-            <p><i class="fas fa-map-marker-alt" style="margin-right:0.5rem;opacity:0.9;"></i> Bangaljhi, West Bengal 741123</p>
+            <p><i class="fas fa-map-marker-alt" style="margin-right:0.5rem;opacity:0.9;"></i> Bangaljhi, Chapra, West Bengal 741123</p>
             <p><i class="fas fa-phone" style="margin-right:0.5rem;opacity:0.9;"></i> +91-7501011996</p>
             <p><i class="fas fa-envelope" style="margin-right:0.5rem;opacity:0.9;"></i> info@sibapublicschool.com</p>
             <p><i class="fas fa-clock" style="margin-right:0.5rem;opacity:0.9;"></i> Mon – Fri: 7 am – 3 pm<br>Sat: 7 am – 1 pm</p>

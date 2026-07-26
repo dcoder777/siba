@@ -39,7 +39,7 @@
             <div class="footer-col">
                 <h3>Contact</h3>
                 <ul>
-                    <li style="margin-bottom:0.75rem;font-size:0.88rem;opacity:0.75;"><i class="fas fa-map-marker-alt" style="margin-right:0.5rem;color:var(--accent-color);"></i> Bangaljhi, West Bengal 741123</li>
+                    <li style="margin-bottom:0.75rem;font-size:0.88rem;opacity:0.75;"><i class="fas fa-map-marker-alt" style="margin-right:0.5rem;color:var(--accent-color);"></i> Bangaljhi, Chapra, West Bengal 741123</li>
                     <li style="margin-bottom:0.75rem;font-size:0.88rem;opacity:0.75;"><i class="fas fa-phone" style="margin-right:0.5rem;color:var(--accent-color);"></i> +91-7501011996</li>
                     <li style="margin-bottom:0.75rem;font-size:0.88rem;opacity:0.75;"><i class="fas fa-envelope" style="margin-right:0.5rem;color:var(--accent-color);"></i>info@sibapublicschool.com</li>
                     <li style="font-size:0.88rem;opacity:0.75;"><i class="fas fa-clock" style="margin-right:0.5rem;color:var(--accent-color);"></i> Mon – Fri: 7 am – 3 pm <br> Sat: 7 am – 1 pm</li>
