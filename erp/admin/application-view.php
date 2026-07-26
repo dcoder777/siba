@@ -221,22 +221,6 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                 <span class="sidebar-icon">🖼</span><span>Gallery</span>
             </a>
         </div>
-        <?php foreach ($menus as $menuKey => $menu): ?>
-            <div class="nav-group">
-                <div class="nav-title"><?= e((string) $menu['label']) ?></div>
-                <a class="nav-link" href="index.php?view=module&amp;module=<?= e((string) $menuKey) ?>">
-                    <span class="sidebar-icon">▣</span>
-                    <span><?= e((string) $menu['label']) ?> Dashboard</span>
-                    <span class="nav-tag"><?= count($menu['entities'] ?? []) ?> views</span>
-                </a>
-                <?php foreach (($menu['entities'] ?? []) as $menuEntity): ?>
-                    <a class="nav-link" href="index.php?module=<?= e((string) $menuKey) ?>&amp;entity=<?= e((string) $menuEntity) ?>">
-                        <span class="sidebar-icon">•</span>
-                        <span><?= e((string) $entityMap[$menuEntity]['label']) ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endforeach; ?>
         <div class="nav-group" style="margin-top:auto;">
             <a class="btn btn-soft" style="width:100%" href="logout.php">Logout</a>
         </div>

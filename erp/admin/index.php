@@ -723,23 +723,6 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
             </a>
         </div>
 
-        <?php foreach ($menus as $menuKey => $menu): ?>
-            <div class="nav-group">
-                <div class="nav-title"><?= e((string) $menu['label']) ?></div>
-                <a class="nav-link <?= $view === 'module' && $module === $menuKey ? 'active' : '' ?>" href="?view=module&amp;module=<?= e((string) $menuKey) ?>">
-                    <span class="sidebar-icon">▣</span>
-                    <span><?= e((string) $menu['label']) ?> Dashboard</span>
-                    <span class="nav-tag"><?= count($menu['entities'] ?? []) ?> views</span>
-                </a>
-                <?php foreach (($menu['entities'] ?? []) as $menuEntity): ?>
-                    <a class="nav-link <?= $view === 'entity' && $entity === $menuEntity ? 'active' : '' ?>" href="?module=<?= e((string) $menuKey) ?>&amp;entity=<?= e((string) $menuEntity) ?>">
-                        <span class="sidebar-icon">•</span>
-                        <span><?= e((string) $entityMap[$menuEntity]['label']) ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endforeach; ?>
-
         <div class="nav-group">
             <a class="btn btn-soft" style="width:100%" href="logout.php">Logout</a>
         </div>
