@@ -115,12 +115,16 @@ function statusBadge(string $s): string {
         .app-table tbody tr:nth-child(even) td { background:#fafbfc; }
         .app-table tbody tr:hover td { background:#eff6ff; }
         .row-actions { display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; }
-        .row-actions select { padding:.22rem .25rem; font-size:.73rem; border:1px solid #cbd5e1; border-radius:4px; background:#fff; }
-        .row-actions .btn-xs { padding:.18rem .45rem; font-size:.72rem; border-radius:4px; border:1px solid transparent; cursor:pointer; }
+        .row-actions select { padding:.3rem .4rem; font-size:.78rem; border:1px solid #cbd5e1; border-radius:6px; background:#fff; min-height:auto; }
+        .row-actions .btn-xs { padding:.3rem .65rem; font-size:.75rem; border-radius:6px; border:1px solid transparent; cursor:pointer; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; }
         .row-actions .btn-xs-save { background:#1e293b; color:#fff; }
         .row-actions .btn-xs-save:hover { background:#334155; }
-        .row-links { display:flex; gap:.55rem; margin-top:.25rem; }
-        .row-links a, .row-links button { font-size:.73rem; background:none; border:none; cursor:pointer; padding:0; }
+        .row-links { display:flex; gap:.35rem; margin-top:.35rem; flex-wrap:wrap; }
+        .row-links a, .row-links button { font-size:.75rem; padding:.25rem .55rem; border-radius:6px; text-decoration:none; border:1px solid transparent; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; }
+        .row-links .link-view { background:#eff6ff; color:#2563eb; border-color:#bfdbfe; }
+        .row-links .link-view:hover { background:#dbeafe; }
+        .row-links .link-delete { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+        .row-links .link-delete:hover { background:#fee2e2; }
         .pagination { display:flex; gap:.5rem; align-items:center; margin-top:1rem; }
         .pagination a, .pagination span { padding:.35rem .7rem; border:1px solid #e2e8f0; border-radius:6px; text-decoration:none; font-size:.85rem; color:#334155; }
         .pagination a:hover { background:#f1f5f9; }
@@ -241,12 +245,12 @@ function statusBadge(string $s): string {
                                         </div>
                                     </form>
                                     <div class="row-links">
-                                        <a href="application-view.php?app_id=<?= (int) $a['id'] ?>" style="color:#2563eb;text-decoration:underline;">View</a>
+                                        <a href="application-view.php?app_id=<?= (int) $a['id'] ?>" class="link-view">View</a>
                                         <form method="post" style="display:inline;" onsubmit="return confirm('Delete <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
                                             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                             <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
                                             <input type="hidden" name="delete_app" value="1">
-                                            <button type="submit" style="color:#dc2626;text-decoration:underline;">Delete</button>
+                                            <button type="submit" class="link-delete">Delete</button>
                                         </form>
                                     </div>
                                 </td>
