@@ -133,7 +133,7 @@ include('includes/header.php');
 </section>
 
 <section style="padding:0; height:400px;">
-    <iframe src="https://www.google.com/maps?q=23.503188,88.553666&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3691.5!2d88.5535739!3d23.5031635!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f923ca371e3bdd%3A0x3434513072769727!2sSiba%20Public%20School!5e0!3m2!1sen!2sin!4v1722170000000!5m2!1sen!2sin" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
 </section>
 
 <?php include('includes/footer.php'); ?>
