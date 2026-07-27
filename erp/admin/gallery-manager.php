@@ -18,13 +18,17 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS gallery (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    image_file VARCHAR(500) NOT NULL,
+    image_file VARCHAR(500),
+    youtube_url VARCHAR(500),
     category VARCHAR(100) DEFAULT 'General',
     sort_order INT DEFAULT 0,
     is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
+
+// Auto-migrate: add youtube_url if missing
+try { $pdo->exec("ALTER TABLE gallery ADD COLUMN youtube_url VARCHAR(500) AFTER image_file"); } catch (\Throwable $e) {}
 
 $action = $_GET['action'] ?? 'list';
 
@@ -39,7 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         $title = trim((string) ($_POST['title'] ?? ''));
         $description = trim((string) ($_POST['description'] ?? ''));
         $category = trim((string) ($_POST['category'] ?? 'General'));
+        $youtubeUrl = trim((string) ($_POST['youtube_url'] ?? ''));
         $active = isset($_POST['is_active']) ? 1 : 0;
+
+        // Normalize YouTube URL to embed format
+        if ($youtubeUrl !== '') {
+            if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/', $youtubeUrl, $m)) {
+                $youtubeUrl = 'https://www.youtube.com/embed/' . $m[1];
+            }
+        }
 
         if ($title === '') {
             $error = 'Title is required.';
@@ -58,22 +70,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             if ($error === '') {
                 if ($id > 0) {
                     if ($imageFile !== '') {
-                        $stmt = $pdo->prepare("UPDATE gallery SET title=?, description=?, image_file=?, category=?, is_active=? WHERE id=?");
-                        $stmt->execute([$title, $description, $imageFile, $category, $active, $id]);
+                        $stmt = $pdo->prepare("UPDATE gallery SET title=?, description=?, image_file=?, youtube_url=?, category=?, is_active=? WHERE id=?");
+                        $stmt->execute([$title, $description, $imageFile, $youtubeUrl ?: null, $category, $active, $id]);
                     } else {
-                        $stmt = $pdo->prepare("UPDATE gallery SET title=?, description=?, category=?, is_active=? WHERE id=?");
-                        $stmt->execute([$title, $description, $category, $active, $id]);
+                        $stmt = $pdo->prepare("UPDATE gallery SET title=?, description=?, youtube_url=?, category=?, is_active=? WHERE id=?");
+                        $stmt->execute([$title, $description, $youtubeUrl ?: null, $category, $active, $id]);
                     }
                     $success = 'Gallery item updated successfully.';
                 } else {
-                    if ($imageFile === '') {
-                        $error = 'Please select an image to upload.';
+                    if ($imageFile === '' && $youtubeUrl === '') {
+                        $error = 'Please upload an image or enter a YouTube URL.';
                     } else {
                         $maxSort = $pdo->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM gallery");
                         $maxSort->execute();
                         $nextSort = (int) $maxSort->fetchColumn();
-                        $stmt = $pdo->prepare("INSERT INTO gallery (title, description, image_file, category, sort_order, is_active) VALUES (?,?,?,?,?,?)");
-                        $stmt->execute([$title, $description, $imageFile, $category, $nextSort, $active]);
+                        $stmt = $pdo->prepare("INSERT INTO gallery (title, description, image_file, youtube_url, category, sort_order, is_active) VALUES (?,?,?,?,?,?,?)");
+                        $stmt->execute([$title, $description, $imageFile ?: null, $youtubeUrl ?: null, $category, $nextSort, $active]);
                         $success = 'Gallery item added successfully.';
                     }
                 }
@@ -213,7 +225,7 @@ $row = $editRow ?? [];
                         </div>
                         <div class="full-col">
                             <label for="description">Description</label>
-                            <textarea id="description" name="description" rows="2" style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-family:inherit;font-size:0.88rem;"><?= e($row['description'] ?? '') ?></textarea>
+                            <textarea id="description" name="description" rows="3"><?= e($row['description'] ?? '') ?></textarea>
                         </div>
                         <div>
                             <label for="category">Category</label>
@@ -225,8 +237,12 @@ $row = $editRow ?? [];
                             </datalist>
                         </div>
                         <div>
-                            <label for="image_file">Image * <?= $isEdit ? '(leave blank to keep current)' : '' ?></label>
-                            <input id="image_file" name="image_file" type="file" accept="image/*" <?= $isEdit ? '' : 'required' ?> style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <label for="youtube_url">YouTube Video URL</label>
+                            <input id="youtube_url" name="youtube_url" type="url" placeholder="https://youtube.com/watch?v=..." value="<?= e($row['youtube_url'] ?? '') ?>">
+                        </div>
+                        <div>
+                            <label for="image_file">Image <?= $isEdit ? '(leave blank to keep current)' : ($youtubeUrl ? '' : '*') ?></label>
+                            <input id="image_file" name="image_file" type="file" accept="image/*" <?= ($isEdit || !empty($youtubeUrl)) ? '' : 'required' ?>>
                         </div>
                         <?php if ($isEdit && ($row['image_file'] ?? '')): ?>
                         <div class="full-col">
@@ -234,9 +250,9 @@ $row = $editRow ?? [];
                             <img src="../../site/uploads/gallery/<?= rawurlencode($row['image_file']) ?>" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb;">
                         </div>
                         <?php endif; ?>
-                        <div>
-                            <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.5rem;">
-                                <input type="checkbox" name="is_active" value="1" <?= $isEdit ? (($row['is_active'] ?? 1) ? 'checked' : '') : 'checked' ?>>
+                        <div class="full-col" style="margin-top:.5rem;">
+                            <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
+                                <input type="checkbox" name="is_active" value="1" <?= $isEdit ? (($row['is_active'] ?? 1) ? 'checked' : '') : 'checked' ?> style="width:auto;min-height:auto;accent-color:var(--primary-color);">
                                 Active
                             </label>
                         </div>
@@ -259,7 +275,7 @@ $row = $editRow ?? [];
                         <thead>
                             <tr>
                                 <th style="width:40px;">#</th>
-                                <th style="width:70px;">Image</th>
+                                <th style="width:70px;">Preview</th>
                                 <th>Title</th>
                                 <th>Category</th>
                                 <th style="width:60px;">Active</th>
@@ -270,7 +286,15 @@ $row = $editRow ?? [];
                             <?php $i = 1; foreach ($rows as $r): ?>
                             <tr>
                                 <td style="color:var(--text-light);font-size:0.8rem;"><?= $i++ ?></td>
-                                <td><img class="gallery-thumb" src="../../site/uploads/gallery/<?= rawurlencode($r['image_file']) ?>" alt="<?= e($r['title']) ?>"></td>
+                                <td>
+                                    <?php if (!empty($r['youtube_url'])): ?>
+                                        <div style="width:60px;height:60px;border-radius:8px;background:#ef4444;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;border:1px solid #e5e7eb;">▶</div>
+                                    <?php elseif (!empty($r['image_file'])): ?>
+                                        <img class="gallery-thumb" src="../../site/uploads/gallery/<?= rawurlencode($r['image_file']) ?>" alt="<?= e($r['title']) ?>">
+                                    <?php else: ?>
+                                        <div style="width:60px;height:60px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;border:1px solid #e5e7eb;">—</div>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <strong><?= e((string) ($r['title'] ?? '')) ?></strong>
                                     <?php if ($r['description']): ?>
