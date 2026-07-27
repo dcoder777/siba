@@ -396,7 +396,7 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                                         <?php else: ?>
                                             <span style="color:#999;font-size:.8rem;">Not uploaded</span>
                                         <?php endif; ?>
-                                        <input type="file" name="<?= $col ?>" accept="image/*,application/pdf" style="font-size:.75rem;width:100%;">
+                                        <input type="file" name="<?= $col ?>" accept="image/*,application/pdf" >
                                     </div>
                                 </div>
                             <?php endforeach; ?>

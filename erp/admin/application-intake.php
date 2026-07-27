@@ -400,7 +400,7 @@ HTML;
                     </div>
                     <div>
                         <label for="parent_password" style="white-space:nowrap;">Password <span style="font-weight:400;color:var(--text-light)">(leave empty to auto-generate)</span></label>
-                        <input id="parent_password" name="parent_password" type="text" value="<?= e($_POST['parent_password'] ?? '') ?>" placeholder="Leave blank to auto-generate">
+                        <input id="parent_password" name="parent_password" type="text" value="<?= e($_POST['parent_password'] ?? '') ?>" placeholder="Auto-generate if empty">
                     </div>
                 </div>
             </section>
@@ -421,7 +421,7 @@ HTML;
                             <div id="photoPreview" style="width:100px;height:120px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
                                 <span style="font-size:.7rem;color:#94a3b8;text-align:center;">No Photo</span>
                             </div>
-                            <input id="photo" name="photo" type="file" accept="image/*" onchange="previewPassport(this,'photoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                            <input id="photo" name="photo" type="file" accept="image/*" onchange="previewPassport(this,'photoPreview')">
                         </div>
                     </div>
                 </div>
@@ -475,7 +475,7 @@ HTML;
                         </div>
                         <div style="flex:1;">
                             <label for="aadhaar_file">Aadhaar Card Copy</label>
-                            <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;">
@@ -490,7 +490,7 @@ HTML;
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <label for="caste_cert">Caste Certificate</label>
-                            <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;">
@@ -504,7 +504,7 @@ HTML;
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <label for="disability_cert">Disability Certificate</label>
-                            <input id="disability_cert" name="disability_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="disability_cert" name="disability_cert" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div id="disabilityDetailsRow" style="display:<?= (($_POST['disability'] ?? '') === 'Yes') ? 'block' : 'none' ?>">
@@ -518,7 +518,7 @@ HTML;
                         </div>
                         <div style="flex:1;">
                             <label for="leaving_cert">School Leaving Certificate / TC Copy</label>
-                            <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;">
@@ -528,12 +528,12 @@ HTML;
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <label for="prev_marksheet">Previous Class Marksheet Copy</label>
-                            <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div>
                         <label for="birth_cert">Student Birth Certificate Copy</label>
-                        <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
                     </div>
                 </div>
             </section>
@@ -554,7 +554,7 @@ HTML;
                                 <div id="fatherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
                                     <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
                                 </div>
-                                <input id="father_photo" name="father_photo" type="file" accept="image/*" onchange="previewPassport(this,'fatherPhotoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                                <input id="father_photo" name="father_photo" type="file" accept="image/*" onchange="previewPassport(this,'fatherPhotoPreview')">
                             </div>
                         </div>
                     </div>
@@ -569,7 +569,7 @@ HTML;
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <label for="father_aadhaar">Father Aadhaar Copy</label>
-                            <input id="father_aadhaar" name="father_aadhaar" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="father_aadhaar" name="father_aadhaar" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;">
@@ -579,7 +579,7 @@ HTML;
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <label for="father_voter">Father Voter Card Copy</label>
-                            <input id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
@@ -593,7 +593,7 @@ HTML;
                                 <div id="motherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
                                     <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
                                 </div>
-                                <input id="mother_photo" name="mother_photo" type="file" accept="image/*" onchange="previewPassport(this,'motherPhotoPreview')" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;">
+                                <input id="mother_photo" name="mother_photo" type="file" accept="image/*" onchange="previewPassport(this,'motherPhotoPreview')">
                             </div>
                         </div>
                     </div>
@@ -608,7 +608,7 @@ HTML;
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <label for="mother_aadhaar">Mother Aadhaar Copy</label>
-                            <input id="mother_aadhaar" name="mother_aadhaar" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="mother_aadhaar" name="mother_aadhaar" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;">
@@ -618,7 +618,7 @@ HTML;
                         </div>
                         <div style="flex:1;min-width:200px;">
                             <label for="mother_voter">Mother Voter Card Copy</label>
-                            <input id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                            <input id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf">
                         </div>
                     </div>
                     <div>
@@ -640,7 +640,7 @@ HTML;
                     </div>
                     <div>
                         <label for="guardian_signature">Guardian Signature</label>
-                        <input id="guardian_signature" name="guardian_signature" type="file" accept="image/*" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;box-sizing:border-box;">
+                        <input id="guardian_signature" name="guardian_signature" type="file" accept="image/*">
                     </div>
                 </div>
             </section>
