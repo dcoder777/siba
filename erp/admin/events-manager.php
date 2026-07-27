@@ -159,6 +159,9 @@ $activeTab = $type;
             <a class="nav-link active" href="events-manager.php">
                 <span class="sidebar-icon">📅</span><span>Events & News</span>
             </a>
+            <a class="nav-link" href="gallery-manager.php">
+                <span class="sidebar-icon">🖼</span><span>Gallery</span>
+            </a>
         </div>
         <div class="nav-group" style="margin-top:auto;">
             <a class="btn btn-soft" style="width:100%" href="logout.php">Logout</a>
@@ -207,7 +210,7 @@ $activeTab = $type;
                         </div>
                         <div class="full-col">
                             <label for="text">Description</label>
-                            <textarea id="text" name="text" rows="3" style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-family:inherit;font-size:0.88rem;"><?= e($row['text'] ?? '') ?></textarea>
+                            <textarea id="text" name="text" rows="4"><?= e($row['text'] ?? '') ?></textarea>
                         </div>
                         <?php if ($type === 'event' || ($isEdit && ($row['type'] ?? '') === 'event')): ?>
                         <div>
@@ -235,9 +238,7 @@ $activeTab = $type;
                             <label for="color">Color</label>
                             <select id="color" name="color">
                                 <?php foreach ($colorOptions as $opt): ?>
-                                    <option value="<?= e($opt) ?>" <?= ($row['color'] ?? '#4b5563') === $opt ? 'selected' : '' ?>>
-                                        <?= e($opt) ?> <span style="display:inline-block;width:12px;height:12px;background:<?= e($opt) ?>;border-radius:50%;vertical-align:middle;"></span>
-                                    </option>
+                                    <option value="<?= e($opt) ?>" <?= ($row['color'] ?? '#4b5563') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -256,9 +257,9 @@ $activeTab = $type;
                             <input id="image" name="image" type="text" value="<?= e($row['image'] ?? '') ?>">
                         </div>
                         <?php endif; ?>
-                        <div>
-                            <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.5rem;">
-                                <input type="checkbox" name="is_active" value="1" <?= $isEdit ? (($row['is_active'] ?? 1) ? 'checked' : '') : 'checked' ?>>
+                        <div class="full-col" style="margin-top:.5rem;">
+                            <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
+                                <input type="checkbox" name="is_active" value="1" <?= $isEdit ? (($row['is_active'] ?? 1) ? 'checked' : '') : 'checked' ?> style="width:auto;min-height:auto;accent-color:var(--primary-color);">
                                 Active
                             </label>
                         </div>
