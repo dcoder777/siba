@@ -32,7 +32,7 @@ try { $pdo->exec("ALTER TABLE gallery ADD COLUMN youtube_url VARCHAR(500) AFTER 
 
 $action = $_GET['action'] ?? 'list';
 
-$uploadDir = __DIR__ . '/../../site/uploads/gallery/';
+$uploadDir = __DIR__ . '/../../uploads/gallery/';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0755, true);
 }
@@ -247,7 +247,7 @@ $row = $editRow ?? [];
                         <?php if ($isEdit && ($row['image_file'] ?? '')): ?>
                         <div class="full-col">
                             <label>Current Image</label>
-                            <img src="../../site/uploads/gallery/<?= rawurlencode($row['image_file']) ?>" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb;">
+                            <img src="../../uploads/gallery/<?= rawurlencode($row['image_file']) ?>" style="max-width:300px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb;">
                         </div>
                         <?php endif; ?>
                         <div class="full-col" style="margin-top:.5rem;">
@@ -290,7 +290,7 @@ $row = $editRow ?? [];
                                     <?php if (!empty($r['youtube_url'])): ?>
                                         <div style="width:60px;height:60px;border-radius:8px;background:#ef4444;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;border:1px solid #e5e7eb;">▶</div>
                                     <?php elseif (!empty($r['image_file'])): ?>
-                                        <img class="gallery-thumb" src="../../site/uploads/gallery/<?= rawurlencode($r['image_file']) ?>" alt="<?= e($r['title']) ?>">
+                                        <img class="gallery-thumb" src="../../uploads/gallery/<?= rawurlencode($r['image_file']) ?>" alt="<?= e($r['title']) ?>">
                                     <?php else: ?>
                                         <div style="width:60px;height:60px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;border:1px solid #e5e7eb;">—</div>
                                     <?php endif; ?>

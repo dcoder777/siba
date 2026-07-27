@@ -31,7 +31,7 @@ $success = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) {
-    $uploadDir = __DIR__ . '/../../site/uploads/docs/';
+    $uploadDir = __DIR__ . '/../../uploads/docs/';
     $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
 
     $fields = [
@@ -259,7 +259,7 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                     <div class="body">
                         <?php if ($app['photo']): ?>
                             <div style="text-align:center;margin-bottom:.75rem;">
-                                <img src="../../site/uploads/docs/<?= rawurlencode($app['photo']) ?>" alt="Photo" class="photo-thumb">
+                                <img src="../../uploads/docs/<?= rawurlencode($app['photo']) ?>" alt="Photo" class="photo-thumb">
                             </div>
                         <?php endif; ?>
                         <div class="field-row"><span class="lbl">Full Name *</span><span class="inp"><input type="text" name="student_name" required value="<?= e($app['student_name']) ?>"></span></div>
@@ -392,7 +392,7 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                                     <div class="doc-label"><?= $doc['label'] ?></div>
                                     <div class="doc-actions">
                                         <?php if ($doc['file']): ?>
-                                            <a href="../../site/uploads/docs/<?= rawurlencode($doc['file']) ?>" target="_blank" class="doc-link">View</a>
+                                            <a href="../../uploads/docs/<?= rawurlencode($doc['file']) ?>" target="_blank" class="doc-link">View</a>
                                         <?php else: ?>
                                             <span style="color:#999;font-size:.8rem;">Not uploaded</span>
                                         <?php endif; ?>

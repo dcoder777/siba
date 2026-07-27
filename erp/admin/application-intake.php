@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $combinedAddress = implode(', ', $addrParts);
 
             // File uploads
-            $uploadDir = __DIR__ . '/../../site/uploads/docs/';
+            $uploadDir = __DIR__ . '/../../uploads/docs/';
             $birthCert = '';
             $aadhaarFile = '';
             $leavingCert = '';
@@ -251,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
             $emailSent = false;
             $subject = 'Welcome to SIBA Public School – Your Parent Portal Credentials';
-            $loginUrl = 'http://localhost/siba/site/parent/login.php';
+            $loginUrl = 'http://localhost/siba/parent/login.php';
             $emailBody = <<<HTML
 <!doctype html>
 <html>
@@ -370,7 +370,7 @@ HTML;
                 </div>
                 <div class="cred-box">
                     <strong>Parent Login Credentials</strong><br>
-                    Portal: <a href="http://localhost/siba/site/parent/login.php">http://localhost/siba/site/parent/login.php</a><br>
+                    Portal: <a href="http://localhost/siba/parent/login.php">http://localhost/siba/parent/login.php</a><br>
                     Phone: <code><?= e($generatedPhone) ?></code><br>
                     Password: <code><?= e($generatedPassword) ?></code>
                 </div>

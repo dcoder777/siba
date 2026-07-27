@@ -351,12 +351,12 @@ tbody tr:hover{
 .field-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:1rem;
+    gap:1.5rem;
 }
 
 label{
     display:block;
-    margin-bottom:.35rem;
+    margin-bottom:.45rem;
     font-size:.84rem;
     color:#334155;
     font-weight:700;

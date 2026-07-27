@@ -7,3 +7,4 @@ deployment:
     - /bin/chmod 755 $DEPLOYPATH
     - /usr/bin/find $DEPLOYPATH -type d -exec /bin/chmod 755 {} +
     - /usr/bin/find $DEPLOYPATH -type f -exec /bin/chmod 644 {} +
+    - /bin/chmod 640 $DEPLOYPATH/erp/.env
