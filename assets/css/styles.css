@@ -153,6 +153,25 @@ nav ul.nav-links li a:hover, nav ul.nav-links li a.active {
     background: var(--primary-dark);
 }
 
+.mobile-menu-close {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1001;
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.mobile-menu-close:hover {
+    background: var(--primary-dark);
+}
+
 /* ============ HERO ============ */
 .hero {
     width: 100%;
@@ -803,6 +822,7 @@ table tbody td { padding: 0.9rem 1.25rem; font-size: 0.88rem; }
 
 @media(max-width: 968px) {
     .mobile-menu-toggle { display: block; }
+    .mobile-menu-close.active { display: block; }
     nav { position: static; flex: 0 0 auto; display: flex; align-items: center; }
     nav ul.nav-links { 
         display: none;

@@ -3,22 +3,30 @@ $(document).ready(function () {
     // ============ Mobile Menu Toggle ============
     $('.mobile-menu-toggle').on('click', function () {
         $('.nav-links').toggleClass('active');
+        $('.mobile-menu-close').toggleClass('active');
         $(this).find('i').toggleClass('fa-bars fa-times');
     });
+
+    // Close mobile menu
+    function closeMobileMenu() {
+        $('.nav-links').removeClass('active');
+        $('.mobile-menu-close').removeClass('active');
+        $('.mobile-menu-toggle i').removeClass('fa-times').addClass('fa-bars');
+    }
+
+    $('.mobile-menu-close').on('click', closeMobileMenu);
     
     // Close mobile menu when clicking a link
     $('.nav-links li a').on('click', function () {
         if ($(window).width() <= 968) {
-            $('.nav-links').removeClass('active');
-            $('.mobile-menu-toggle i').removeClass('fa-times').addClass('fa-bars');
+            closeMobileMenu();
         }
     });
     
     // Close mobile menu when clicking outside
     $(document).on('click', function (e) {
-        if (!$(e.target).closest('nav').length && !$(e.target).closest('.nav-links').length && !$(e.target).closest('.mobile-menu-toggle').length && $('.nav-links').hasClass('active')) {
-            $('.nav-links').removeClass('active');
-            $('.mobile-menu-toggle i').removeClass('fa-times').addClass('fa-bars');
+        if (!$(e.target).closest('nav').length && !$(e.target).closest('.nav-links').length && !$(e.target).closest('.mobile-menu-toggle').length && !$(e.target).closest('.mobile-menu-close').length && $('.nav-links').hasClass('active')) {
+            closeMobileMenu();
         }
     });
 

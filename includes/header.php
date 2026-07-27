@@ -32,6 +32,9 @@ require_once(__DIR__ . '/config.php');
         <button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
             <i class="fas fa-bars"></i>
         </button>
+        <button class="mobile-menu-close" aria-label="Close mobile menu">
+            <i class="fas fa-times"></i>
+        </button>
         <ul class="nav-links">
             <li><a href="<?php echo SITE_URL; ?>/index.php" <?php echo (basename($_SERVER['PHP_SELF'])=='index.php')?'class="active"':''; ?>>Home</a></li>
             <li><a href="<?php echo SITE_URL; ?>/about.php" <?php echo (basename($_SERVER['PHP_SELF'])=='about.php')?'class="active"':''; ?>>About Us</a></li>
