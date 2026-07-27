@@ -5,6 +5,44 @@ require_once('includes/cms.php');
 $cms = cmsGetPage($conn, 'contact');
 $pageTitle = $cms['title'];
 $data = $cms['data'];
+
+$success = '';
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name    = $conn->real_escape_string(trim($_POST['name'] ?? ''));
+    $phone   = $conn->real_escape_string(trim($_POST['phone'] ?? ''));
+    $email   = $conn->real_escape_string(trim($_POST['email'] ?? ''));
+    $subject = $conn->real_escape_string(trim($_POST['subject'] ?? ''));
+    $message = $conn->real_escape_string(trim($_POST['message'] ?? ''));
+
+    if ($name === '' || $phone === '' || $subject === '' || $message === '') {
+        $error = 'Please fill in all required fields.';
+    } else {
+        $conn->query("CREATE TABLE IF NOT EXISTS contact_submissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(150) NOT NULL,
+            phone VARCHAR(15) NOT NULL,
+            email VARCHAR(100),
+            subject VARCHAR(100),
+            message TEXT NOT NULL,
+            status ENUM('New','Read','Replied','Closed') DEFAULT 'New',
+            admin_note TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+
+        $stmt = $conn->prepare("INSERT INTO contact_submissions (name, phone, email, subject, message) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param('sssss', $name, $phone, $email, $subject, $message);
+        if ($stmt->execute()) {
+            $success = 'Your enquiry has been submitted. We will get back to you shortly!';
+        } else {
+            $error = 'Something went wrong. Please try again.';
+        }
+        $stmt->close();
+    }
+}
+
 include('includes/header.php');
 ?>
 
@@ -45,33 +83,45 @@ include('includes/header.php');
 
         <div class="form-card">
             <h3 style="color: var(--primary-color); margin-bottom: 1.5rem; font-size: 1.3rem;"><i class="fas fa-paper-plane"></i> &nbsp;<?php echo htmlspecialchars($data['form_heading'] ?? 'Send Us an Enquiry'); ?></h3>
-            <form>
+
+            <?php if ($success): ?>
+                <div style="background:#d1fae5;border:1px solid #a7f3d0;color:#065f46;padding:1rem;border-radius:8px;margin-bottom:1rem;">
+                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success); ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($error): ?>
+                <div style="background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:1rem;border-radius:8px;margin-bottom:1rem;">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Your Name *</label>
-                        <input type="text" placeholder="Full name" required>
+                        <input type="text" name="name" placeholder="Full name" required>
                     </div>
                     <div class="form-group">
                         <label>Phone Number *</label>
-                        <input type="tel" placeholder="10-digit mobile" required>
+                        <input type="tel" name="phone" placeholder="10-digit mobile" maxlength="10" required>
                     </div>
                 </div>
                 <div class="form-group">
                     <label>Email Address</label>
-                    <input type="email" placeholder="your@email.com">
+                    <input type="email" name="email" placeholder="your@email.com">
                 </div>
                 <div class="form-group">
                     <label>Subject *</label>
-                    <select required>
+                    <select name="subject" required>
                         <option value="">Select a topic</option>
                         <?php foreach (($data['form_topics'] ?? []) as $topic): ?>
-                            <option><?php echo htmlspecialchars($topic); ?></option>
+                            <option value="<?php echo htmlspecialchars($topic); ?>"><?php echo htmlspecialchars($topic); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Message *</label>
-                    <textarea placeholder="Write your message here..." rows="5" required></textarea>
+                    <textarea name="message" placeholder="Write your message here..." rows="5" required></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
                     <i class="fas fa-paper-plane"></i> Send Message
