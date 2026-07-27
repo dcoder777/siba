@@ -803,17 +803,17 @@ table tbody td { padding: 0.9rem 1.25rem; font-size: 0.88rem; }
 
 @media(max-width: 968px) {
     .mobile-menu-toggle { display: block; }
-    nav { position: static; flex: 1; }
+    nav { position: static; flex: 0 0 auto; display: flex; align-items: center; }
     nav ul.nav-links { 
         display: none;
         position: fixed;
-        top: 75px;
+        top: 0;
         left: 0;
         right: 0;
         bottom: 0;
         background: white;
         flex-direction: column;
-        padding: 1rem;
+        padding: 5rem 1rem 1rem;
         box-shadow: var(--shadow-md);
         gap: 0;
         z-index: 1000;
