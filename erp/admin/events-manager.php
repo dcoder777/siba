@@ -236,11 +236,14 @@ $activeTab = $type;
                         </div>
                         <div>
                             <label for="color">Color</label>
-                            <select id="color" name="color">
-                                <?php foreach ($colorOptions as $opt): ?>
-                                    <option value="<?= e($opt) ?>" <?= ($row['color'] ?? '#4b5563') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+                                <input id="color" name="color" type="color" value="<?= e($row['color'] ?? '#4b5563') ?>" style="width:44px;height:36px;padding:2px;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;background:transparent;">
+                                <div style="display:flex;gap:.3rem;flex-wrap:wrap;">
+                                    <?php foreach ($colorOptions as $opt): ?>
+                                        <button type="button" class="color-pick-btn" data-color="<?= e($opt) ?>" title="<?= e($opt) ?>" style="width:24px;height:24px;border-radius:50%;border:2px solid <?= ($row['color'] ?? '#4b5563') === $opt ? '#1e293b' : '#e5e7eb' ?>;background:<?= e($opt) ?>;cursor:pointer;padding:0;"></button>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
                         </div>
                         <?php endif; ?>
                         <?php if ($type === 'news' || ($isEdit && ($row['type'] ?? '') === 'news')): ?>
@@ -335,5 +338,15 @@ $activeTab = $type;
         <?php endif; ?>
     </main>
 </div>
+<script>
+document.querySelectorAll('.color-pick-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var colorInput = document.getElementById('color');
+        colorInput.value = this.dataset.color;
+        document.querySelectorAll('.color-pick-btn').forEach(function(b) { b.style.borderColor = '#e5e7eb'; });
+        this.style.borderColor = '#1e293b';
+    });
+});
+</script>
 </body>
 </html>
