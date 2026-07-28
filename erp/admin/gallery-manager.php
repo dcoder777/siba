@@ -38,7 +38,8 @@ if (!is_dir($uploadDir)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
-    if ($action === 'add' || $action === 'edit') {
+    $postAction = trim((string) ($_POST['action'] ?? ''));
+    if (($action === 'add' || $action === 'edit') && ($postAction === '' || $postAction === 'add' || $postAction === 'edit')) {
         $id = (int) ($_POST['id'] ?? 0);
         $title = trim((string) ($_POST['title'] ?? ''));
         $description = trim((string) ($_POST['description'] ?? ''));
@@ -94,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         }
     }
 
-    if ($action === 'delete' && isset($_POST['id'])) {
+    if ($postAction === 'delete' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
         $row = $pdo->prepare("SELECT image_file FROM gallery WHERE id=?");
         $row->execute([$id]);
@@ -107,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         $action = 'list';
     }
 
-    if ($action === 'reorder' && isset($_POST['ids'])) {
+    if ($postAction === 'reorder' && isset($_POST['ids'])) {
         $ids = (array) $_POST['ids'];
         foreach ($ids as $i => $id) {
             $pdo->prepare("UPDATE gallery SET sort_order=? WHERE id=?")->execute([$i, (int) $id]);

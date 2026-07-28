@@ -36,7 +36,8 @@ $action = $_GET['action'] ?? 'list';
 $type = $_GET['type'] ?? 'event';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
-    if ($action === 'add' || $action === 'edit') {
+    $postAction = trim((string) ($_POST['action'] ?? ''));
+    if (($action === 'add' || $action === 'edit') && ($postAction === '' || $postAction === 'add' || $postAction === 'edit')) {
         $id = (int) ($_POST['id'] ?? 0);
         $title = trim((string) ($_POST['title'] ?? ''));
         $text = trim((string) ($_POST['text'] ?? ''));
@@ -72,14 +73,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         }
     }
 
-    if ($action === 'delete' && isset($_POST['id'])) {
+    if ($postAction === 'delete' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
         $pdo->prepare("DELETE FROM events WHERE id=?")->execute([$id]);
         $success = 'Deleted successfully.';
         $action = 'list';
     }
 
-    if ($action === 'reorder' && isset($_POST['ids'])) {
+    if ($postAction === 'reorder' && isset($_POST['ids'])) {
         $ids = (array) $_POST['ids'];
         foreach ($ids as $i => $id) {
             $pdo->prepare("UPDATE events SET sort_order=? WHERE id=?")->execute([$i, (int) $id]);
