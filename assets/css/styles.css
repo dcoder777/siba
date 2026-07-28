@@ -245,7 +245,17 @@ nav ul.nav-links li a:hover, nav ul.nav-links li a.active {
     white-space: nowrap;
     letter-spacing: 0.08em;
 }
-.announcement-bar .ticker { font-size: 0.85rem; opacity: 0.9; }
+.announcement-bar .ticker {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    white-space: nowrap;
+    display: inline-block;
+    animation: marquee 12s linear infinite;
+}
+@keyframes marquee {
+    0%   { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
 
 /* ============ STATS BAR ============ */
 .stats-bar {
