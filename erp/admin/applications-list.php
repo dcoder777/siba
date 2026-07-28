@@ -80,9 +80,17 @@ if ($searchQ !== '') {
 }
 $whereSql = empty($where) ? '' : ' WHERE ' . implode(' AND ', $where);
 
-$countStmt = $pdo->prepare("SELECT COUNT(*) AS c FROM applications a LEFT JOIN parents p ON p.id = a.parent_id" . $whereSql);
-$countStmt->execute($params);
-$totalApps = (int) $countStmt->fetch()['c'];
+$debugInfo = '';
+try {
+    $countStmt = $pdo->prepare("SELECT COUNT(*) AS c FROM applications a LEFT JOIN parents p ON p.id = a.parent_id" . $whereSql);
+    $countStmt->execute($params);
+    $totalApps = (int) $countStmt->fetch()['c'];
+    $allCount = $pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
+    $deletedCount = $pdo->query("SELECT COUNT(*) FROM applications WHERE deleted_at IS NOT NULL")->fetchColumn();
+    $debugInfo = "Total: {$allCount}, Active: {$totalApps}, Soft-deleted: {$deletedCount}";
+} catch (\Throwable $e) {
+    $debugInfo = "Error: " . $e->getMessage();
+}
 
 $page = max(1, (int) ($_GET['p'] ?? 1));
 $limit = 25;
@@ -185,6 +193,9 @@ function statusBadge(string $s): string {
                     <span class="eyebrow">Admissions</span>
                     <h1>Manage Applications</h1>
                     <p>View, search, and update admission application statuses.</p>
+                    <?php if ($debugInfo): ?>
+                        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:.5rem .75rem;font-size:.8rem;color:#92400e;margin-top:.5rem;">DEBUG: <?= e($debugInfo) ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>
