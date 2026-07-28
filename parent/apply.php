@@ -837,7 +837,7 @@ HTML;
         <button type="submit" name="submit_application" class="btn btn-primary btn-lg">
             <i class="fas fa-paper-plane"></i> Submit Application
         </button>
-        <p style="font-size: 0.82rem; color: var(--text-light);">Submit your application now.</p>
+
     </div>
 
 </form>
