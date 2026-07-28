@@ -24,6 +24,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS events (
     icon VARCHAR(50) DEFAULT 'calendar',
     color VARCHAR(7) DEFAULT '#4b5563',
     image VARCHAR(500),
+    attachment VARCHAR(500),
     category VARCHAR(100),
     event_date DATE,
     sort_order INT DEFAULT 0,
@@ -31,6 +32,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS events (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
+try { $pdo->exec("ALTER TABLE events ADD COLUMN attachment VARCHAR(500) AFTER image"); } catch (\Throwable $e) {}
 
 $action = $_GET['action'] ?? 'list';
 $type = $_GET['type'] ?? 'event';
@@ -57,24 +59,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $eventDateVal = $eventDate !== '' ? $eventDate : null;
             $imageVal = $image !== '' ? $image : null;
 
-            if ($id > 0) {
-                $stmt = $pdo->prepare("UPDATE events SET type=?, title=?, text=?, day=?, month=?, icon=?, color=?, image=?, category=?, event_date=?, is_active=? WHERE id=?");
-                $stmt->execute([$type, $title, $text, $day, $month, $icon, $color, $imageVal, $category, $eventDateVal, $active, $id]);
-                $success = 'Updated successfully.';
-            } else {
-                $maxSort = $pdo->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM events");
-                $maxSort->execute();
-                $nextSort = (int) $maxSort->fetchColumn();
-                $stmt = $pdo->prepare("INSERT INTO events (type, title, text, day, month, icon, color, image, category, event_date, sort_order, is_active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
-                $stmt->execute([$type, $title, $text, $day, $month, $icon, $color, $imageVal, $category, $eventDateVal, $nextSort, $active]);
-                $success = 'Added successfully.';
+            $uploadDir = __DIR__ . '/../../uploads/events/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+            $attachmentVal = null;
+            if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($_FILES['attachment']['name'], PATHINFO_EXTENSION));
+                $allowed = ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','zip','rar','jpg','jpeg','png','mp4','webm'];
+                if (in_array($ext, $allowed, true)) {
+                    $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($_FILES['attachment']['name']));
+                    move_uploaded_file($_FILES['attachment']['tmp_name'], $uploadDir . $filename);
+                    $attachmentVal = $filename;
+                } else {
+                    $error = 'File type not allowed.';
+                }
             }
-            $action = 'list';
+
+            if ($error === '') {
+                if ($id > 0) {
+                    if ($attachmentVal === null) $attachmentVal = $row['attachment'] ?? null;
+                    $stmt = $pdo->prepare("UPDATE events SET type=?, title=?, text=?, day=?, month=?, icon=?, color=?, image=?, attachment=?, category=?, event_date=?, is_active=? WHERE id=?");
+                    $stmt->execute([$type, $title, $text, $day, $month, $icon, $color, $imageVal, $attachmentVal, $category, $eventDateVal, $active, $id]);
+                    $success = 'Updated successfully.';
+                } else {
+                    $maxSort = $pdo->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM events");
+                    $maxSort->execute();
+                    $nextSort = (int) $maxSort->fetchColumn();
+                    $stmt = $pdo->prepare("INSERT INTO events (type, title, text, day, month, icon, color, image, attachment, category, event_date, sort_order, is_active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                    $stmt->execute([$type, $title, $text, $day, $month, $icon, $color, $imageVal, $attachmentVal, $category, $eventDateVal, $nextSort, $active]);
+                    $success = 'Added successfully.';
+                }
+                $action = 'list';
+            }
         }
     }
 
     if ($postAction === 'delete' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
+        $delRow = $pdo->prepare("SELECT attachment FROM events WHERE id=?");
+        $delRow->execute([$id]);
+        $delAttach = $delRow->fetchColumn();
+        if ($delAttach && file_exists(__DIR__ . '/../../uploads/events/' . $delAttach)) {
+            unlink(__DIR__ . '/../../uploads/events/' . $delAttach);
+        }
         $pdo->prepare("DELETE FROM events WHERE id=?")->execute([$id]);
         $success = 'Deleted successfully.';
         $action = 'list';
@@ -197,7 +223,7 @@ $activeTab = $type;
                 <div class="section-title" style="margin-bottom:1.25rem">
                     <h2><?= $isEdit ? 'Edit' : 'Add' ?> <?= $type === 'event' ? 'Event' : 'News' ?></h2>
                 </div>
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                     <?php if ($isEdit): ?>
                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
@@ -261,6 +287,13 @@ $activeTab = $type;
                             <input id="image" name="image" type="text" value="<?= e($row['image'] ?? '') ?>">
                         </div>
                         <?php endif; ?>
+                        <div class="full-col">
+                            <label for="attachment">Attachment (PDF, DOC, Image, Video)</label>
+                            <input id="attachment" name="attachment" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.mp4,.webm">
+                            <?php if ($isEdit && !empty($row['attachment'])): ?>
+                                <small style="color:#64748b;">Current: <a href="<?= SITE_URL ?>/uploads/events/<?= e($row['attachment']) ?>" target="_blank"><?= e($row['attachment']) ?></a></small>
+                            <?php endif; ?>
+                        </div>
                         <div class="full-col" style="margin-top:.5rem;">
                             <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
                                 <input type="checkbox" name="is_active" value="1" <?= $isEdit ? (($row['is_active'] ?? 1) ? 'checked' : '') : 'checked' ?> style="width:auto;min-height:auto;accent-color:var(--primary-color);">

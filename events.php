@@ -91,6 +91,9 @@ include('includes/header.php');
                         <div class="event-body">
                             <h3><i class="fas fa-<?php echo htmlspecialchars($event['icon'] ?? 'calendar'); ?>" style="color:<?php echo htmlspecialchars($event['color'] ?? '#4b5563'); ?>;margin-right:.4rem;font-size:.85rem;"></i><?php echo htmlspecialchars($event['title']); ?></h3>
                             <p><?php echo htmlspecialchars($event['text'] ?? ''); ?></p>
+                            <?php if (!empty($event['attachment'])): ?>
+                                <a href="<?php echo SITE_URL; ?>/uploads/events/<?php echo rawurlencode($event['attachment']); ?>" download class="btn btn-sm" style="margin-top:.5rem;font-size:.78rem;display:inline-flex;align-items:center;gap:.3rem;background:var(--accent-color);color:#fff;padding:.35rem .75rem;border-radius:6px;text-decoration:none;"><i class="fas fa-download"></i> Download Attachment</a>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -120,6 +123,9 @@ include('includes/header.php');
                             <span class="news-category"><?php echo htmlspecialchars($item['category'] ?? 'Update'); ?></span>
                             <h3><?php echo htmlspecialchars($item['title']); ?></h3>
                             <p><?php echo htmlspecialchars($item['text'] ?? ''); ?></p>
+                            <?php if (!empty($item['attachment'])): ?>
+                                <a href="<?php echo SITE_URL; ?>/uploads/events/<?php echo rawurlencode($item['attachment']); ?>" download style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;color:var(--primary-color);font-weight:600;margin-top:.3rem;text-decoration:none;"><i class="fas fa-download"></i> Download Attachment</a>
+                            <?php endif; ?>
                             <?php if (!empty($item['event_date'])): ?>
                                 <div class="news-date"><i class="fas fa-calendar-alt"></i> <?php echo htmlspecialchars($item['event_date']); ?></div>
                             <?php endif; ?>
