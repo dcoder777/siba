@@ -18,16 +18,16 @@ $statusOptions = ['Application started', 'Under review', 'Admitted', 'Rejected']
 $currentStatus = trim((string) ($_GET['status'] ?? ''));
 $searchQ = trim((string) ($_GET['q'] ?? ''));
 
-// ─── Auto-migrate ───
-try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+// One-time: restore any soft-deleted applications
+try { $pdo->exec("UPDATE applications SET deleted_at = NULL WHERE deleted_at IS NOT NULL"); } catch (\Throwable $e) {}
 
-// ─── Delete Application (Soft Delete) ───
+// ─── Delete Application (Permanent) ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_app']) && verify_csrf()) {
     $appId = (int) ($_POST['app_id'] ?? 0);
     if ($appId > 0) {
         try {
-            $pdo->prepare("UPDATE applications SET deleted_at = NOW() WHERE id = :id")->execute(['id' => $appId]);
-            $success = 'Application deleted successfully.';
+            $pdo->prepare("DELETE FROM applications WHERE id = :id")->execute(['id' => $appId]);
+            $success = 'Application deleted permanently.';
         } catch (Exception $e) {
             $error = 'Failed to delete application: ' . $e->getMessage();
         }
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_payment']) && 
 }
 
 // ─── Fetch Applications ───
-$where = ['a.deleted_at IS NULL'];
+$where = [];
 $params = [];
 if ($currentStatus !== '') {
     $where[] = 'a.status = :status';
@@ -85,11 +85,8 @@ try {
     $countStmt = $pdo->prepare("SELECT COUNT(*) AS c FROM applications a LEFT JOIN parents p ON p.id = a.parent_id" . $whereSql);
     $countStmt->execute($params);
     $totalApps = (int) $countStmt->fetch()['c'];
-    $allCount = $pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
-    $deletedCount = $pdo->query("SELECT COUNT(*) FROM applications WHERE deleted_at IS NOT NULL")->fetchColumn();
-    $debugInfo = "Total: {$allCount}, Active: {$totalApps}, Soft-deleted: {$deletedCount}";
 } catch (\Throwable $e) {
-    $debugInfo = "Error: " . $e->getMessage();
+    $totalApps = 0;
 }
 
 $page = max(1, (int) ($_GET['p'] ?? 1));
@@ -193,9 +190,6 @@ function statusBadge(string $s): string {
                     <span class="eyebrow">Admissions</span>
                     <h1>Manage Applications</h1>
                     <p>View, search, and update admission application statuses.</p>
-                    <?php if ($debugInfo): ?>
-                        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:.5rem .75rem;font-size:.8rem;color:#92400e;margin-top:.5rem;">DEBUG: <?= e($debugInfo) ?></div>
-                    <?php endif; ?>
                 </div>
             </div>
         </section>
