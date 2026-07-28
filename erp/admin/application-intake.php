@@ -410,21 +410,11 @@ HTML;
                     <h2>Student Details</h2>
                     <p>Enter the student's details for the admission application.</p>
                 </div>
-                <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
-                    <div style="flex:1;min-width:200px;">
+                <div class="field-grid">
+                    <div>
                         <label for="student_name">First name *</label>
                         <input id="student_name" name="student_name" type="text" required value="<?= e($_POST['student_name'] ?? '') ?>">
                     </div>
-                    <div style="flex:0 0 auto;">
-                        <label for="photo">Passport Size Photo</label>
-                        <div style="display:flex;gap:.8rem;align-items:flex-end;">
-                            <div id="photoPreview" style="width:100px;height:120px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
-                                <span style="font-size:.7rem;color:#94a3b8;text-align:center;">No Photo</span>
-                            </div>
-                            <input id="photo" name="photo" type="file" accept="image/*" onchange="previewPassport(this,'photoPreview')">
-                        </div>
-                    </div>
-                </div>
                     <div>
                         <label for="middle_name">Middle Name</label>
                         <input id="middle_name" name="middle_name" type="text" value="<?= e($_POST['middle_name'] ?? '') ?>">
@@ -432,6 +422,17 @@ HTML;
                     <div>
                         <label for="last_name">Last Name</label>
                         <input id="last_name" name="last_name" type="text" value="<?= e($_POST['last_name'] ?? '') ?>">
+                    </div>
+                    <div style="display:flex;gap:.8rem;align-items:flex-end;grid-column:1/-1;">
+                        <div>
+                            <label for="photo">Passport Size Photo</label>
+                            <div style="display:flex;gap:.8rem;align-items:flex-end;">
+                                <div id="photoPreview" style="width:100px;height:120px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
+                                    <span style="font-size:.7rem;color:#94a3b8;text-align:center;">No Photo</span>
+                                </div>
+                                <input id="photo" name="photo" type="file" accept="image/*" onchange="previewPassport(this,'photoPreview')">
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label for="class_sought">Class Applying For *</label>
@@ -535,14 +536,13 @@ HTML;
                         <label for="birth_cert">Student Birth Certificate Copy</label>
                         <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
                     </div>
-                </div>
             </section>
 
             <section class="panel" style="padding:1.25rem">
                 <div class="section-title" style="margin-bottom:1rem;">
                     <h2>Parent / Guardian Details</h2>
                 </div>
-                <div class="field-grid" style="grid-template-columns:1fr;">
+                <div class="field-grid">
                     <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                         <div style="flex:1;min-width:200px;">
                             <label for="father_name">Father's Name *</label>
@@ -649,7 +649,7 @@ HTML;
                 <div class="section-title" style="margin-bottom:1rem;">
                     <h2>Address Details</h2>
                 </div>
-                <div class="field-grid" style="grid-template-columns:1fr;">
+                <div class="field-grid">
                     <div>
                         <label for="address_line1">Address Line 1</label>
                         <input id="address_line1" name="address_line1" type="text" value="<?= e($_POST['address_line1'] ?? '') ?>">
