@@ -6,6 +6,7 @@ require_admin_login();
 
 $user = admin_user();
 $isSuperAdmin = ($user['role'] ?? '') === 'admin';
+$isOwner = ($user['role'] ?? '') === 'owner';
 $explicitModules = fetch_user_module_access($pdo, (int) $user['id']);
 $userRoles = fetch_user_roles($pdo, (int) $user['id'], (string) ($user['role'] ?? 'admin'));
 $menus = menu_for_roles($userRoles, $explicitModules);
@@ -96,6 +97,19 @@ $totalPages = max(1, (int) ceil($total / $limit));
                 <span class="sidebar-icon">🖼</span><span>Gallery</span>
             </a>
         </div>
+        <?php if ($isOwner): ?>
+        <div class="nav-group">
+            <div class="nav-title">Administration</div>
+            <?php $pendingAdminCount = 0; try { $pendingAdminCount = (int) $pdo->query("SELECT COUNT(*) FROM admin_registrations WHERE status = 'pending'")->fetchColumn(); } catch (\Throwable $e) {} ?>
+            <a class="nav-link" href="admin-requests.php">
+                <span class="sidebar-icon">🔑</span>
+                <span>Admin Requests</span>
+                <?php if ($pendingAdminCount > 0): ?>
+                    <span class="nav-tag" style="background:#f59e0b;color:#fff;"><?= $pendingAdminCount ?></span>
+                <?php endif; ?>
+            </a>
+        </div>
+        <?php endif; ?>
         <div class="nav-group" style="margin-top:auto;">
             <a class="btn btn-soft" style="width:100%" href="logout.php">Logout</a>
         </div>

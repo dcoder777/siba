@@ -68,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="flash" style="background:#fdecea;border-color:#f3c8c5;color:#8f1c13"><?= e($error) ?></div>
                     <?php endif; ?>
                 </form>
+                <p style="text-align:center;margin-top:1rem;"><a href="register-admin.php" style="color:var(--primary-color);font-weight:600;font-size:.88rem;">Register as Admin &rarr;</a></p>
             </aside>
         </div>
     </section>
