@@ -280,5 +280,6 @@ function statusBadge(string $s): string {
         <?php endif; ?>
     </main>
 </div>
+<script src="../assets/erp.js"></script>
 </body>
 </html>

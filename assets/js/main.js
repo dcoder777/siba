@@ -1,5 +1,17 @@
 $(document).ready(function () {
 
+    // ============ Force uppercase on text inputs ============
+    $('input[type="text"], input[type="tel"], input[type="email"], select').on('input', function () {
+        var start = this.selectionStart, end = this.selectionEnd;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(start, end);
+    });
+    $('form').on('submit', function () {
+        $(this).find('input[type="text"], input[type="tel"], input[type="email"], select').each(function () {
+            this.value = this.value.toUpperCase();
+        });
+    });
+
     // ============ Mobile Menu Toggle ============
     $('.mobile-menu-toggle').on('click', function () {
         $('.nav-links').toggleClass('active');

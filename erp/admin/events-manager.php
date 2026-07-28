@@ -348,5 +348,6 @@ document.querySelectorAll('.color-pick-btn').forEach(function(btn) {
     });
 });
 </script>
+<script src="../assets/erp.js"></script>
 </body>
 </html>

@@ -511,6 +511,14 @@ footer {
     background: #fafafa;
     color: var(--text-color);
 }
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="search"],
+.form-group input:not([type]),
+.form-group select {
+    text-transform: uppercase;
+}
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {

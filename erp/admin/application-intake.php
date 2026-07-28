@@ -731,5 +731,6 @@ function previewPassport(input, previewId) {
     }
 }
 </script>
+<script src="../assets/erp.js"></script>
 </body>
 </html>

@@ -373,6 +373,9 @@ input,select,textarea{
     font:inherit;
     transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
+input[type="text"],input[type="email"],input[type="tel"],input[type="search"],input:not([type]),select{
+    text-transform:uppercase;
+}
 
 textarea{
     min-height:110px;

@@ -1639,5 +1639,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <?php endif; ?>
 
+<script src="../assets/erp.js"></script>
 </body>
 </html>

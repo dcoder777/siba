@@ -72,5 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </section>
 </div>
+<script src="../assets/erp.js"></script>
 </body>
 </html>

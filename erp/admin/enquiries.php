@@ -254,5 +254,6 @@ $counts = [
         <?php endif; ?>
     </main>
 </div>
+<script src="../assets/erp.js"></script>
 </body>
 </html>

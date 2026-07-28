@@ -176,5 +176,6 @@ $totalPages = max(1, (int) ceil($total / $limit));
         <?php endif; ?>
     </main>
 </div>
+<script src="../assets/erp.js"></script>
 </body>
 </html>
