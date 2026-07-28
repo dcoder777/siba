@@ -62,8 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_payment']) && 
 }
 
 // ─── Fetch Applications ───
-$showDeleted = isset($_GET['show_deleted']);
-$where = $showDeleted ? [] : ['a.deleted_at IS NULL'];
+$where = ['a.deleted_at IS NULL'];
 $params = [];
 if ($currentStatus !== '') {
     $where[] = 'a.status = :status';
@@ -81,19 +80,9 @@ if ($searchQ !== '') {
 }
 $whereSql = empty($where) ? '' : ' WHERE ' . implode(' AND ', $where);
 
-$debugInfo = '';
-try {
-    $countStmt = $pdo->prepare("SELECT COUNT(*) AS c FROM applications a LEFT JOIN parents p ON p.id = a.parent_id" . $whereSql);
-    $countStmt->execute($params);
-    $totalApps = (int) $countStmt->fetch()['c'];
-
-    // Debug: check total rows including soft-deleted
-    $allCount = $pdo->query("SELECT COUNT(*) FROM applications")->fetchColumn();
-    $deletedCount = $pdo->query("SELECT COUNT(*) FROM applications WHERE deleted_at IS NOT NULL")->fetchColumn();
-    $debugInfo = "Total: {$allCount}, Active: {$totalApps}, Soft-deleted: {$deletedCount}";
-} catch (\Throwable $e) {
-    $debugInfo = "Error: " . $e->getMessage();
-}
+$countStmt = $pdo->prepare("SELECT COUNT(*) AS c FROM applications a LEFT JOIN parents p ON p.id = a.parent_id" . $whereSql);
+$countStmt->execute($params);
+$totalApps = (int) $countStmt->fetch()['c'];
 
 $page = max(1, (int) ($_GET['p'] ?? 1));
 $limit = 25;
@@ -196,9 +185,6 @@ function statusBadge(string $s): string {
                     <span class="eyebrow">Admissions</span>
                     <h1>Manage Applications</h1>
                     <p>View, search, and update admission application statuses.</p>
-                    <?php if ($debugInfo): ?>
-                        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:.5rem .75rem;font-size:.8rem;color:#92400e;margin-top:.5rem;">DEBUG: <?= e($debugInfo) ?></div>
-                    <?php endif; ?>
                 </div>
             </div>
         </section>
@@ -220,7 +206,6 @@ function statusBadge(string $s): string {
             </select>
             <button type="submit" class="btn btn-primary">Filter</button>
             <a href="applications-list.php" class="btn btn-soft">Clear</a>
-            <a href="applications-list.php?show_deleted=1" class="btn btn-soft" style="<?= $showDeleted ? 'background:#fee2e2;color:#991b1b;' : '' ?>">Show Deleted</a>
             <span style="margin-left:auto;color:#64748b;font-size:.85rem;"><?= $totalApps ?> application<?= $totalApps !== 1 ? 's' : '' ?></span>
         </form>
 
@@ -244,16 +229,13 @@ function statusBadge(string $s): string {
                         <tr><td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No applications found.</td></tr>
                     <?php else: ?>
                         <?php foreach ($applications as $i => $a): ?>
-                                <tr style="<?= $a['deleted_at'] ? 'opacity:.55;background:#fef2f2;' : '' ?>">
+                                <tr>
                                 <td style="color:#94a3b8;"><?= $offset + $i + 1 ?></td>
                                 <td><code style="font-size:.8rem;"><?= e($a['application_no'] ?? '—') ?></code></td>
                                 <td>
                                     <strong><?= e($a['student_name']) ?></strong>
                                     <?php if ($a['admission_no']): ?>
                                         <br><small style="color:#64748b;"><?= e($a['admission_no']) ?></small>
-                                    <?php endif; ?>
-                                    <?php if ($a['deleted_at']): ?>
-                                        <br><small style="color:#dc2626;">Deleted: <?= e($a['deleted_at']) ?></small>
                                     <?php endif; ?>
                                 </td>
                                 <td><?= e($a['class_sought']) ?></td>
@@ -277,21 +259,12 @@ function statusBadge(string $s): string {
                                     </form>
                                     <div class="row-links">
                                         <a href="application-view.php?app_id=<?= (int) $a['id'] ?>" class="link-view">View</a>
-                                        <?php if ($a['deleted_at']): ?>
-                                            <form method="post" style="display:inline;" onsubmit="return confirm('Restore this application?')">
-                                                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                                <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
-                                                <input type="hidden" name="restore_app" value="1">
-                                                <button type="submit" class="link-view" style="background:#d1fae5;color:#065f46;border-color:#a7f3d0;">Restore</button>
-                                            </form>
-                                        <?php else: ?>
-                                            <form method="post" style="display:inline;" onsubmit="return confirm('Delete <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
-                                                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                                <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
-                                                <input type="hidden" name="delete_app" value="1">
-                                                <button type="submit" class="link-delete">Delete</button>
-                                            </form>
-                                        <?php endif; ?>
+                                        <form method="post" style="display:inline;" onsubmit="return confirm('Delete <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
+                                            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                            <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">
+                                            <input type="hidden" name="delete_app" value="1">
+                                            <button type="submit" class="link-delete">Delete</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
