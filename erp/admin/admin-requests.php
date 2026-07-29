@@ -133,17 +133,35 @@ $counts = [
         <div class="brand-block stack" style="gap:.6rem;padding:1.2rem 1rem;">
             <span class="eyebrow" style="background:rgba(255,255,255,.1);color:#effff5">SIBA ERP</span>
             <div class="brand-copy">
-                <h2 style="font-size:1.7rem;color:#fff">Owner Portal</h2>
-                <p><?= e((string) $user['name']) ?> — Owner</p>
+                <h2 style="font-size:1.7rem;color:#fff">Administration</h2>
+                <p><?= e((string) $user['name']) ?> signed in as <?= e((string) $user['role']) ?>.</p>
             </div>
         </div>
         <div class="nav-group">
-            <div class="nav-title">Management</div>
-            <a class="nav-link active" href="admin-requests.php">
-                <span class="sidebar-icon">🔑</span><span>Admin Requests</span><span class="nav-tag"><?= $counts['pending'] ?></span>
+            <div class="nav-title">Admissions</div>
+            <a class="nav-link" href="application-intake.php">
+                <span class="sidebar-icon">📋</span><span>Application Intake</span><span class="nav-tag">New</span>
             </a>
-            <a class="nav-link" href="index.php">
-                <span class="sidebar-icon">📊</span><span>Dashboard</span>
+            <a class="nav-link" href="applications-list.php">
+                <span class="sidebar-icon">📂</span><span>Applications</span><span class="nav-tag">List</span>
+            </a>
+            <a class="nav-link" href="parents-list.php">
+                <span class="sidebar-icon">👤</span><span>Parents</span>
+            </a>
+            <a class="nav-link" href="events-manager.php">
+                <span class="sidebar-icon">📅</span><span>Events & News</span>
+            </a>
+            <a class="nav-link" href="gallery-manager.php">
+                <span class="sidebar-icon">🖼</span><span>Gallery</span>
+            </a>
+            <a class="nav-link" href="enquiries.php">
+                <span class="sidebar-icon">📩</span><span>Enquiries</span>
+            </a>
+        </div>
+        <div class="nav-group">
+            <div class="nav-title">Administration</div>
+            <a class="nav-link active" href="admin-requests.php">
+                <span class="sidebar-icon">🔑</span><span>Admin Requests</span><span class="nav-tag" style="background:#f59e0b;color:#fff;"><?= $counts['pending'] ?></span>
             </a>
         </div>
         <div class="nav-group" style="margin-top:auto;">

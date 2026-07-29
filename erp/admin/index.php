@@ -718,6 +718,10 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
                 <span class="sidebar-icon">🖼</span>
                 <span>Gallery</span>
             </a>
+            <a class="nav-link" href="enquiries.php">
+                <span class="sidebar-icon">📩</span>
+                <span>Enquiries</span>
+            </a>
         </div>
 
         <?php if ($isOwner): ?>
