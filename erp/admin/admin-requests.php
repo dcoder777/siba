@@ -159,6 +159,12 @@ $counts = [
             </a>
         </div>
         <div class="nav-group">
+            <div class="nav-title">Finance</div>
+            <a class="nav-link" href="finance-dashboard.php">
+                <span class="sidebar-icon">📊</span><span>Finance Dashboard</span>
+            </a>
+        </div>
+        <div class="nav-group">
             <div class="nav-title">Administration</div>
             <a class="nav-link active" href="admin-requests.php">
                 <span class="sidebar-icon">🔑</span><span>Admin Requests</span><span class="nav-tag" style="background:#f59e0b;color:#fff;"><?= $counts['pending'] ?></span>

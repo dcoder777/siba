@@ -227,6 +227,14 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                 <span class="sidebar-icon">📩</span><span>Enquiries</span>
             </a>
         </div>
+
+        <div class="nav-group">
+            <div class="nav-title">Finance</div>
+            <a class="nav-link" href="finance-dashboard.php">
+                <span class="sidebar-icon">📊</span><span>Finance Dashboard</span>
+            </a>
+        </div>
+
         <?php if ($isOwner): ?>
         <div class="nav-group">
             <div class="nav-title">Administration</div>
