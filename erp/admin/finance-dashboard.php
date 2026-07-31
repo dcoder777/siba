@@ -7,50 +7,55 @@ $isOwner = ($user['role'] ?? '') === 'owner';
 $pdo = $GLOBALS['pdo'];
 $pageTitle = 'Finance Dashboard';
 
+// Guard: if finance tables are missing, show empty dashboard instead of 500
+function finance_scalar(PDO $pdo, string $sql, array $params = []): float
+{
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return (float) $stmt->fetchColumn();
+    } catch (Throwable) {
+        return 0.0;
+    }
+}
+
+function finance_rows(PDO $pdo, string $sql, array $params = []): array
+{
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    } catch (Throwable) {
+        return [];
+    }
+}
+
 // Today's Collection
-$stmt = $pdo->prepare("SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
-$stmt->execute();
-$todayCollection = (float) $stmt->fetchColumn();
+$todayCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
 
 // Monthly Collection
-$stmt = $pdo->prepare("SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE()) AND status = 'Active'");
-$stmt->execute();
-$monthlyCollection = (float) $stmt->fetchColumn();
+$monthlyCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE()) AND status = 'Active'");
 
 // Outstanding Fees
-$stmt = $pdo->prepare("SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active'");
-$stmt->execute();
-$outstandingFees = (float) $stmt->fetchColumn();
+$outstandingFees = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active'");
 
 // Total Expenses (monthly)
-$stmt = $pdo->prepare("SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status = 'Approved' AND MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())");
-$stmt->execute();
-$monthlyExpenses = (float) $stmt->fetchColumn();
+$monthlyExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status = 'Approved' AND MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())");
 
 // Total Income (monthly, non-fee)
-$stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM income_records WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())");
-$stmt->execute();
-$monthlyIncome = (float) $stmt->fetchColumn();
+$monthlyIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_records WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())");
 
 // Recent Transactions
-$stmt = $pdo->prepare("SELECT fc.*, COALESCE(s.first_name, fc.student_name) AS student_display FROM fee_collections fc LEFT JOIN students s ON s.id = fc.student_id WHERE fc.status = 'Active' ORDER BY fc.created_at DESC LIMIT 10");
-$stmt->execute();
-$recentTransactions = $stmt->fetchAll();
+$recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' ORDER BY fc.created_at DESC LIMIT 10");
 
 // Pending Dues (top 10)
-$stmt = $pdo->prepare("SELECT sfa.*, s.first_name, s.last_name, s.admission_no FROM student_fee_accounts sfa LEFT JOIN students s ON s.id = sfa.student_id WHERE sfa.status = 'active' AND sfa.balance > 0 ORDER BY sfa.balance DESC LIMIT 10");
-$stmt->execute();
-$pendingDues = $stmt->fetchAll();
+$pendingDues = finance_rows($pdo, "SELECT sfa.*, sfa.student_name AS student_display FROM student_fee_accounts sfa WHERE sfa.status = 'active' AND sfa.balance > 0 ORDER BY sfa.balance DESC LIMIT 10");
 
 // Fee collection count for sidebar badge
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
-$stmt->execute();
-$todayCount = (int) $stmt->fetchColumn();
+$todayCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
 
 // Expenses count for sidebar badge
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
-$stmt->execute();
-$pendingExpenseCount = (int) $stmt->fetchColumn();
+$pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -257,8 +262,8 @@ $pendingExpenseCount = (int) $stmt->fetchColumn();
                 <table class="app-table">
                     <thead>
                         <tr>
-                            <th>Admission No</th>
                             <th>Student Name</th>
+                            <th>Student</th>
                             <th>Total Fee</th>
                             <th>Total Paid</th>
                             <th>Balance</th>
@@ -271,8 +276,8 @@ $pendingExpenseCount = (int) $stmt->fetchColumn();
                         <?php else: ?>
                             <?php foreach ($pendingDues as $due): ?>
                                 <tr>
-                                    <td><?= e((string) ($due['admission_no'] ?? '—')) ?></td>
-                                    <td><strong><?= e((string) (($due['first_name'] ?? '') . ' ' . ($due['last_name'] ?? ''))) ?></strong></td>
+                                    <td><?= e((string) ($due['student_name'] ?? '—')) ?></td>
+                                    <td><strong><?= e((string) ($due['student_display'] ?? '—')) ?></strong></td>
                                     <td>Rs. <?= number_format((float) ($due['total_fee'] ?? 0), 2) ?></td>
                                     <td>Rs. <?= number_format((float) ($due['total_paid'] ?? 0), 2) ?></td>
                                     <td style="color:#ef4444;font-weight:600;">Rs. <?= number_format((float) ($due['balance'] ?? 0), 2) ?></td>

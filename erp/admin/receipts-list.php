@@ -8,6 +8,49 @@ $pdo = $GLOBALS['pdo'];
 $error = '';
 $success = '';
 
+// ── Auto-migrate finance tables if missing ──
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_collections (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        receipt_no VARCHAR(50) UNIQUE NOT NULL,
+        student_id INT,
+        student_name VARCHAR(200),
+        class_name VARCHAR(50),
+        academic_session VARCHAR(20),
+        total_amount DECIMAL(12,2) NOT NULL,
+        discount_amount DECIMAL(12,2) DEFAULT 0,
+        late_fee DECIMAL(12,2) DEFAULT 0,
+        net_amount DECIMAL(12,2) NOT NULL,
+        payment_mode ENUM('Cash','Cheque','UPI','Card','Bank Transfer') NOT NULL,
+        payment_date DATE NOT NULL,
+        cheque_no VARCHAR(50),
+        cheque_date DATE,
+        cheque_bank VARCHAR(100),
+        cheque_clearance ENUM('Pending','Cleared','Bounced') DEFAULT 'Pending',
+        transaction_ref VARCHAR(100),
+        collector_id INT,
+        collector_name VARCHAR(100),
+        notes TEXT,
+        status ENUM('Active','Cancelled','Void') DEFAULT 'Active',
+        cancelled_at TIMESTAMP NULL,
+        cancelled_by INT,
+        cancel_reason TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_collection_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fee_collection_id INT NOT NULL,
+        fee_head_id INT NOT NULL,
+        fee_head_name VARCHAR(100),
+        amount DECIMAL(10,2) NOT NULL,
+        is_advance TINYINT(1) DEFAULT 0,
+        FOREIGN KEY (fee_collection_id) REFERENCES fee_collections(id) ON DELETE CASCADE
+    )");
+} catch (Throwable $e) {
+    // ignore migration errors
+}
+
 // ── Handle Cancel ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['action'] ?? ''));
@@ -81,12 +124,12 @@ $page = max(1, (int) ($_GET['p'] ?? 1));
 $limit = 25;
 $offset = ($page - 1) * $limit;
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections fc LEFT JOIN students s ON s.id = fc.student_id" . $whereSql);
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections fc" . $whereSql);
 $stmt->execute($params);
 $total = (int) $stmt->fetchColumn();
 $totalPages = max(1, (int) ceil($total / $limit));
 
-$sql = "SELECT fc.*, COALESCE(s.first_name, fc.student_name) AS student_display, COALESCE(s.last_name, '') AS student_last FROM fee_collections fc LEFT JOIN students s ON s.id = fc.student_id" . $whereSql . " ORDER BY fc.payment_date DESC, fc.id DESC LIMIT :lim OFFSET :off";
+$sql = "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc" . $whereSql . " ORDER BY fc.payment_date DESC, fc.id DESC LIMIT :lim OFFSET :off";
 $listStmt = $pdo->prepare($sql);
 foreach ($params as $k => $v) $listStmt->bindValue(':' . $k, $v);
 $listStmt->bindValue(':lim', $limit, PDO::PARAM_INT);
@@ -100,18 +143,13 @@ $viewItems = [];
 $viewStudent = null;
 if (isset($_GET['view'])) {
     $vid = (int) $_GET['view'];
-    $stmt = $pdo->prepare("SELECT fc.*, COALESCE(s.first_name, fc.student_name) AS student_display, COALESCE(s.last_name, '') AS student_last FROM fee_collections fc LEFT JOIN students s ON s.id = fc.student_id WHERE fc.id = ?");
+    $stmt = $pdo->prepare("SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.id = ?");
     $stmt->execute([$vid]);
     $viewReceipt = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($viewReceipt) {
         $stmt = $pdo->prepare("SELECT fci.*, fh.name AS fee_head_name FROM fee_collection_items fci LEFT JOIN fee_heads fh ON fh.id = fci.fee_head_id WHERE fci.fee_collection_id = ?");
         $stmt->execute([$vid]);
         $viewItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if ((int) $viewReceipt['student_id'] > 0) {
-            $stmt = $pdo->prepare("SELECT s.*, se.class_name, se.session_label FROM students s LEFT JOIN student_enrollments se ON se.student_id = s.id AND se.is_current = 1 WHERE s.id = ?");
-            $stmt->execute([(int) $viewReceipt['student_id']]);
-            $viewStudent = $stmt->fetch(PDO::FETCH_ASSOC);
-        }
     }
 }
 
@@ -278,7 +316,7 @@ $pendingExpenseCount = (int) $stmt->fetchColumn();
                         <?php foreach ($receipts as $r): ?>
                             <tr>
                                 <td style="font-family:monospace;font-weight:600;"><?= e($r['receipt_no'] ?? '—') ?></td>
-                                <td><strong><?= e(trim(($r['student_display'] ?? '') . ' ' . ($r['student_last'] ?? ''))) ?></strong></td>
+                                <td><strong><?= e((string) ($r['student_display'] ?? '—')) ?></strong></td>
                                 <td><?= e($r['class_name'] ?? '—') ?></td>
                                 <td>Rs. <?= number_format((float) ($r['net_amount'] ?? 0), 2) ?></td>
                                 <td><span class="badge"><?= e($r['payment_mode'] ?? '—') ?></span></td>
@@ -345,9 +383,9 @@ $pendingExpenseCount = (int) $stmt->fetchColumn();
             <div class="receipt-details">
                 <div><strong>Receipt No:</strong> <?= e($viewReceipt['receipt_no'] ?? '—') ?></div>
                 <div><strong>Date:</strong> <?= e($viewReceipt['payment_date'] ?? '—') ?></div>
-                <div><strong>Student:</strong> <?= e(trim(($viewReceipt['student_display'] ?? '') . ' ' . ($viewReceipt['student_last'] ?? ''))) ?></div>
-                <div><strong>Class:</strong> <?= e($viewReceipt['class_name'] ?? ($viewStudent['class_name'] ?? '—')) ?></div>
-                <div><strong>Academic Session:</strong> <?= e($viewReceipt['academic_session'] ?? ($viewStudent['session_label'] ?? '—')) ?></div>
+                <div><strong>Student:</strong> <?= e((string) ($viewReceipt['student_display'] ?? '—')) ?></div>
+                <div><strong>Class:</strong> <?= e((string) ($viewReceipt['class_name'] ?? '—')) ?></div>
+                <div><strong>Academic Session:</strong> <?= e((string) ($viewReceipt['academic_session'] ?? '—')) ?></div>
                 <div><strong>Payment Mode:</strong> <?= e($viewReceipt['payment_mode'] ?? '—') ?></div>
             </div>
 

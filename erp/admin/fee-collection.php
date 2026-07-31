@@ -8,6 +8,116 @@ $pdo = $GLOBALS['pdo'];
 $error = '';
 $success = '';
 
+// ─── Auto-migrate finance tables if missing ───
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_collections (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        receipt_no VARCHAR(50) UNIQUE NOT NULL,
+        student_id INT,
+        student_name VARCHAR(200),
+        class_name VARCHAR(50),
+        academic_session VARCHAR(20),
+        total_amount DECIMAL(12,2) NOT NULL,
+        discount_amount DECIMAL(12,2) DEFAULT 0,
+        late_fee DECIMAL(12,2) DEFAULT 0,
+        net_amount DECIMAL(12,2) NOT NULL,
+        payment_mode ENUM('Cash','Cheque','UPI','Card','Bank Transfer') NOT NULL,
+        payment_date DATE NOT NULL,
+        cheque_no VARCHAR(50),
+        cheque_date DATE,
+        cheque_bank VARCHAR(100),
+        cheque_clearance ENUM('Pending','Cleared','Bounced') DEFAULT 'Pending',
+        transaction_ref VARCHAR(100),
+        collector_id INT,
+        collector_name VARCHAR(100),
+        notes TEXT,
+        status ENUM('Active','Cancelled','Void') DEFAULT 'Active',
+        cancelled_at TIMESTAMP NULL,
+        cancelled_by INT,
+        cancel_reason TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_collection_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fee_collection_id INT NOT NULL,
+        fee_head_id INT NOT NULL,
+        fee_head_name VARCHAR(100),
+        amount DECIMAL(10,2) NOT NULL,
+        is_advance TINYINT(1) DEFAULT 0,
+        FOREIGN KEY (fee_collection_id) REFERENCES fee_collections(id) ON DELETE CASCADE
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_collection_installments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fee_collection_id INT NOT NULL,
+        installment_id INT,
+        installment_no INT,
+        amount DECIMAL(10,2) NOT NULL,
+        FOREIGN KEY (fee_collection_id) REFERENCES fee_collections(id) ON DELETE CASCADE
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS student_fee_accounts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        student_id INT NOT NULL,
+        student_name VARCHAR(200) DEFAULT '',
+        class_name VARCHAR(50) DEFAULT '',
+        academic_session VARCHAR(20) NOT NULL,
+        fee_structure_id INT NOT NULL,
+        total_fee DECIMAL(12,2) DEFAULT 0,
+        total_paid DECIMAL(12,2) DEFAULT 0,
+        total_discount DECIMAL(12,2) DEFAULT 0,
+        total_late_fee DECIMAL(12,2) DEFAULT 0,
+        balance DECIMAL(12,2) DEFAULT 0,
+        status ENUM('active','closed','transferred') DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ledger_entries (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ledger_account_id INT NOT NULL,
+        entry_date DATE NOT NULL,
+        entry_type ENUM('journal','receipt','payment','expense','income','contra') NOT NULL,
+        reference_type VARCHAR(50),
+        reference_id INT,
+        description TEXT,
+        amount DECIMAL(12,2) NOT NULL,
+        direction ENUM('debit','credit') NOT NULL,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS cash_book (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        transaction_date DATE NOT NULL,
+        transaction_type ENUM('opening','receipt','payment','deposit','withdrawal','transfer_in','transfer_out') NOT NULL,
+        reference_type VARCHAR(50),
+        reference_id INT,
+        description TEXT,
+        amount DECIMAL(12,2) NOT NULL,
+        direction ENUM('debit','credit') NOT NULL,
+        balance DECIMAL(12,2) DEFAULT 0,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS bank_book (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        bank_account_id INT NOT NULL,
+        transaction_date DATE NOT NULL,
+        transaction_type ENUM('opening','receipt','payment','deposit','withdrawal','transfer_in','transfer_out','reconciliation') NOT NULL,
+        reference_type VARCHAR(50),
+        reference_id INT,
+        description TEXT,
+        amount DECIMAL(12,2) NOT NULL,
+        direction ENUM('debit','credit') NOT NULL,
+        balance DECIMAL(12,2) DEFAULT 0,
+        reconciled TINYINT(1) DEFAULT 0,
+        reconciliation_date DATE,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE CASCADE
+    )");
+} catch (Throwable $e) {
+    // ignore migration errors
+}
+
 // ─── Cancel Receipt ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_receipt']) && verify_csrf()) {
     $receiptId = (int) ($_POST['receipt_id'] ?? 0);
@@ -138,16 +248,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['collect_fee']) && ver
                 if ($newBalance < 0) {
                     $newBalance = 0;
                 }
-                $pdo->prepare("UPDATE student_fee_accounts SET total_paid = :paid, total_discount = :disc, total_late_fee = :lf, balance = :bal WHERE id = :id")
-                    ->execute(['paid' => $newPaid, 'disc' => $newDiscount, 'lf' => $newLateFee, 'bal' => $newBalance, 'id' => $feeAccount['id']]);
+                $pdo->prepare("UPDATE student_fee_accounts SET total_paid = :paid, total_discount = :disc, total_late_fee = :lf, balance = :bal, student_name = :sname, class_name = :cls WHERE id = :id")
+                    ->execute(['paid' => $newPaid, 'disc' => $newDiscount, 'lf' => $newLateFee, 'bal' => $newBalance, 'sname' => $student['student_name'], 'cls' => $student['class_sought'], 'id' => $feeAccount['id']]);
             } else {
                 $fsaStmt = $pdo->prepare("SELECT fsa.fee_structure_id FROM fee_structure_assignments fsa WHERE fsa.assign_type = 'class' AND fsa.assign_value = :class AND fsa.is_active = 1 LIMIT 1");
                 $fsaStmt->execute(['class' => $student['class_sought']]);
                 $fsaRow = $fsaStmt->fetch();
                 $fsId = $fsaRow ? (int) $fsaRow['fee_structure_id'] : 0;
                 $balanceAmt = $netAmount > $itemsTotal ? 0 : $itemsTotal - $netAmount;
-                $pdo->prepare("INSERT INTO student_fee_accounts (student_id, academic_session, fee_structure_id, total_fee, total_paid, total_discount, total_late_fee, balance, status) VALUES (:sid, :sess, :fsid, :tot, :paid, :disc, :lf, :bal, 'active')")
-                    ->execute(['sid' => $student['id'], 'sess' => $academicSession, 'fsid' => $fsId, 'tot' => $itemsTotal, 'paid' => $netAmount, 'disc' => $discountAmount, 'lf' => $lateFee, 'bal' => $itemsTotal - $netAmount]);
+                $pdo->prepare("INSERT INTO student_fee_accounts (student_id, student_name, class_name, academic_session, fee_structure_id, total_fee, total_paid, total_discount, total_late_fee, balance, status) VALUES (:sid, :sname, :cls, :sess, :fsid, :tot, :paid, :disc, :lf, :bal, 'active')")
+                    ->execute(['sid' => $student['id'], 'sname' => $student['student_name'], 'cls' => $student['class_sought'], 'sess' => $academicSession, 'fsid' => $fsId, 'tot' => $itemsTotal, 'paid' => $netAmount, 'disc' => $discountAmount, 'lf' => $lateFee, 'bal' => $itemsTotal - $netAmount]);
             }
 
             if ($paymentMode === 'Cash') {

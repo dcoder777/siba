@@ -36,7 +36,9 @@ $reportTitle = $reportTypes[$reportId];
 $headers = [];
 $rows = [];
 $totals = [];
+$reportError = '';
 
+try {
 switch ($reportId) {
     // ─── 1. Daily Collection ───
     case 1:
@@ -125,7 +127,7 @@ switch ($reportId) {
         $params = [];
         if ($fromDate) { $where .= " AND sfa.updated_at >= :frm"; $params['frm'] = $fromDate; }
         if ($toDate) { $where .= " AND sfa.updated_at <= :to"; $params['to'] = $toDate; }
-        $stmt = $pdo->prepare("SELECT sfa.*, s.admission_no, s.first_name, s.last_name FROM student_fee_accounts sfa LEFT JOIN students s ON s.id = sfa.student_id $where ORDER BY sfa.balance DESC");
+        $stmt = $pdo->prepare("SELECT sfa.*, sfa.student_name AS student_display, sfa.class_name FROM student_fee_accounts sfa $where ORDER BY sfa.balance DESC");
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $totals = [
@@ -145,7 +147,7 @@ switch ($reportId) {
         $params = [];
         if ($fromDate) { $where .= " AND sfa.updated_at >= :frm"; $params['frm'] = $fromDate; }
         if ($toDate) { $where .= " AND sfa.updated_at <= :to"; $params['to'] = $toDate; }
-        $stmt = $pdo->prepare("SELECT sfa.*, s.admission_no, s.first_name, s.last_name, se.class_name, (SELECT MAX(fc.payment_date) FROM fee_collections fc WHERE fc.student_id = sfa.student_id AND fc.status = 'Active') AS last_payment_date FROM student_fee_accounts sfa LEFT JOIN students s ON s.id = sfa.student_id LEFT JOIN student_enrollments se ON se.student_id = s.id AND se.is_current = 1 $where ORDER BY sfa.balance DESC");
+        $stmt = $pdo->prepare("SELECT sfa.*, sfa.student_name AS student_display, sfa.class_name, (SELECT MAX(fc.payment_date) FROM fee_collections fc WHERE fc.student_id = sfa.student_id AND fc.status = 'Active') AS last_payment_date FROM student_fee_accounts sfa $where ORDER BY sfa.balance DESC");
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $totals = [
@@ -225,6 +227,11 @@ switch ($reportId) {
             'debit' => array_sum(array_map(fn($r) => $r['direction'] === 'debit' ? (float) $r['amount'] : 0, $rows)),
         ];
         break;
+}
+} catch (Throwable $e) {
+    $reportError = 'Finance tables may not be set up yet. Run sql/finance_schema.sql to create them.';
+    $rows = [];
+    $totals = [];
 }
 
 // ── Handle CSV Export ──
@@ -393,7 +400,11 @@ $pendingExpenseCount = (int) $stmt->fetchColumn();
                 </div>
             </div>
 
-            <?php if (empty($rows)): ?>
+            <?php if ($reportError !== ''): ?>
+                <div style="padding:1rem;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;margin-bottom:1rem;">
+                    ⚠️ <?= e($reportError) ?>
+                </div>
+            <?php elseif (empty($rows)): ?>
                 <div style="text-align:center;padding:2rem;color:#94a3b8;">No data found for the selected criteria.</div>
             <?php else: ?>
                 <div style="overflow-x:auto;">

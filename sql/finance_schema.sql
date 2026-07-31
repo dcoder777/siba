@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS fee_structure_assignments (
 CREATE TABLE IF NOT EXISTS student_fee_accounts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
+    student_name VARCHAR(200) DEFAULT '',
+    class_name VARCHAR(50) DEFAULT '',
     academic_session VARCHAR(20) NOT NULL,
     fee_structure_id INT NOT NULL,
     total_fee DECIMAL(12,2) DEFAULT 0,
@@ -80,6 +82,14 @@ CREATE TABLE IF NOT EXISTS student_fee_accounts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- Compatibility: add student_name/class_name to student_fee_accounts if missing
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'student_fee_accounts' AND COLUMN_NAME = 'student_name');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE student_fee_accounts ADD COLUMN student_name VARCHAR(200) DEFAULT '''' AFTER student_id', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'student_fee_accounts' AND COLUMN_NAME = 'class_name');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE student_fee_accounts ADD COLUMN class_name VARCHAR(50) DEFAULT '''' AFTER student_name', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- Fee Collections
 CREATE TABLE IF NOT EXISTS fee_collections (
