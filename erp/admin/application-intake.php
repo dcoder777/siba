@@ -307,9 +307,6 @@ HTML;
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="../assets/erp-ui.css">
     <style>
-        .intake-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
-        .intake-grid .full-col { grid-column:1 / -1; }
-        @media (max-width:860px) { .intake-grid { grid-template-columns:1fr; } }
         .cred-box { background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:1rem 1.25rem; margin-bottom:1rem; }
         .cred-box strong { color:#2e7d32; }
         .cred-box code { background:#fff; padding:2px 8px; border-radius:4px; font-size:1rem; }
@@ -411,22 +408,22 @@ HTML;
                     <h2>Parent Account Details</h2>
                     <p>These credentials will be used by the parent to log into the parent portal.</p>
                 </div>
-                <div class="field-grid">
-                    <div>
-                        <label for="parent_name">Full Name *</label>
-                        <input id="parent_name" name="parent_name" type="text" required value="<?= e($_POST['parent_name'] ?? '') ?>">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="parent_name">Full Name *</label>
+                        <input class="form-control" id="parent_name" name="parent_name" type="text" required value="<?= e($_POST['parent_name'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="parent_email">Email Address *</label>
-                        <input id="parent_email" name="parent_email" type="email" required value="<?= e($_POST['parent_email'] ?? '') ?>">
+                    <div class="col-md-6">
+                        <label class="form-label" for="parent_email">Email Address *</label>
+                        <input class="form-control" id="parent_email" name="parent_email" type="email" required value="<?= e($_POST['parent_email'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="parent_phone">Phone Number *</label>
-                        <input id="parent_phone" name="parent_phone" type="tel" maxlength="10" required value="<?= e($_POST['parent_phone'] ?? '') ?>" placeholder="10-digit mobile number">
+                    <div class="col-md-6">
+                        <label class="form-label" for="parent_phone">Phone Number *</label>
+                        <input class="form-control" id="parent_phone" name="parent_phone" type="tel" maxlength="10" required value="<?= e($_POST['parent_phone'] ?? '') ?>" placeholder="10-digit mobile number">
                     </div>
-                    <div>
-                        <label for="parent_password" style="white-space:nowrap;">Password <span style="font-weight:400;color:var(--text-light)">(leave empty to auto-generate)</span></label>
-                        <input id="parent_password" name="parent_password" type="text" value="<?= e($_POST['parent_password'] ?? '') ?>" placeholder="Auto-generate if empty">
+                    <div class="col-md-6">
+                        <label class="form-label" for="parent_password">Password <span class="text-muted fw-normal">(leave empty to auto-generate)</span></label>
+                        <input class="form-control" id="parent_password" name="parent_password" type="text" value="<?= e($_POST['parent_password'] ?? '') ?>" placeholder="Auto-generate if empty">
                     </div>
                 </div>
             </section>
@@ -436,237 +433,214 @@ HTML;
                     <h2>Student Details</h2>
                     <p>Enter the student's details for the admission application.</p>
                 </div>
-                <div class="field-grid">
-                    <div>
-                        <label for="student_name">First name *</label>
-                        <input id="student_name" name="student_name" type="text" required value="<?= e($_POST['student_name'] ?? '') ?>">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="student_name">First name *</label>
+                        <input class="form-control" id="student_name" name="student_name" type="text" required value="<?= e($_POST['student_name'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="middle_name">Middle Name</label>
-                        <input id="middle_name" name="middle_name" type="text" value="<?= e($_POST['middle_name'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="middle_name">Middle Name</label>
+                        <input class="form-control" id="middle_name" name="middle_name" type="text" value="<?= e($_POST['middle_name'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="last_name">Last Name</label>
-                        <input id="last_name" name="last_name" type="text" value="<?= e($_POST['last_name'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="last_name">Last Name</label>
+                        <input class="form-control" id="last_name" name="last_name" type="text" value="<?= e($_POST['last_name'] ?? '') ?>">
                     </div>
-                    <div style="display:flex;gap:.8rem;align-items:flex-end;grid-column:1/-1;">
-                        <div>
-                            <label for="photo">Passport Size Photo</label>
-                            <div style="display:flex;gap:.8rem;align-items:flex-end;">
-                                <div id="photoPreview" style="width:100px;height:120px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
-                                    <span style="font-size:.7rem;color:#94a3b8;text-align:center;">No Photo</span>
-                                </div>
-                                <input id="photo" name="photo" type="file" accept="image/*" onchange="previewPassport(this,'photoPreview')">
+                    <div class="col-12">
+                        <label class="form-label" for="photo">Passport Size Photo</label>
+                        <div class="d-flex gap-3 align-items-end">
+                            <div id="photoPreview" style="width:100px;height:120px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;flex-shrink:0;">
+                                <span style="font-size:.7rem;color:#94a3b8;text-align:center;">No Photo</span>
                             </div>
+                            <input class="form-control" id="photo" name="photo" type="file" accept="image/*" onchange="previewPassport(this,'photoPreview')">
                         </div>
                     </div>
-                    <div>
-                        <label for="class_sought">Class Applying For *</label>
-                        <select id="class_sought" name="class_sought" required>
+                    <div class="col-md-4">
+                        <label class="form-label" for="class_sought">Class Applying For *</label>
+                        <select class="form-select" id="class_sought" name="class_sought" required>
                             <option value="">— Select Class —</option>
                             <?php foreach ($classOptions as $opt): ?>
                                 <option value="<?= e($opt) ?>" <?= ($_POST['class_sought'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="dob">Date of Birth *</label>
-                        <input id="dob" name="dob" type="date" required value="<?= e($_POST['dob'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="dob">Date of Birth *</label>
+                        <input class="form-control" id="dob" name="dob" type="date" required value="<?= e($_POST['dob'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="gender">Gender</label>
-                        <select id="gender" name="gender">
+                    <div class="col-md-4">
+                        <label class="form-label" for="gender">Gender</label>
+                        <select class="form-select" id="gender" name="gender">
                             <option value="">— Select —</option>
                             <?php foreach ($genderOptions as $opt): ?>
                                 <option value="<?= e($opt) ?>" <?= ($_POST['gender'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="blood_group">Blood Group</label>
-                        <select id="blood_group" name="blood_group">
+                    <div class="col-md-4">
+                        <label class="form-label" for="blood_group">Blood Group</label>
+                        <select class="form-select" id="blood_group" name="blood_group">
                             <option value="">— Select —</option>
                             <?php foreach ($bloodGroupOptions as $opt): ?>
                                 <option value="<?= e($opt) ?>" <?= ($_POST['blood_group'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="religion">Religion</label>
-                        <input id="religion" name="religion" type="text" value="<?= e($_POST['religion'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="religion">Religion</label>
+                        <input class="form-control" id="religion" name="religion" type="text" value="<?= e($_POST['religion'] ?? '') ?>">
                     </div>
-                    <div style="display:flex;gap:1rem;">
-                        <div style="flex:1;">
-                            <label for="aadhaar_no">Aadhaar Number</label>
-                            <input id="aadhaar_no" name="aadhaar_no" type="text" value="<?= e($_POST['aadhaar_no'] ?? '') ?>">
-                        </div>
-                        <div style="flex:1;">
-                            <label for="aadhaar_file">Aadhaar Card Copy</label>
-                            <input id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="aadhaar_no">Aadhaar Number</label>
+                        <input class="form-control" id="aadhaar_no" name="aadhaar_no" type="text" value="<?= e($_POST['aadhaar_no'] ?? '') ?>">
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="caste">Caste</label>
-                            <select id="caste" name="caste">
-                                <option value="">— Select —</option>
-                                <?php foreach ($casteOptions as $opt): ?>
-                                    <option value="<?= e($opt) ?>" <?= ($_POST['caste'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label for="caste_cert">Caste Certificate</label>
-                            <input id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="aadhaar_file">Aadhaar Card Copy</label>
+                        <input class="form-control" id="aadhaar_file" name="aadhaar_file" type="file" accept="image/*,application/pdf">
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="disability">Disability</label>
-                            <select id="disability" name="disability" onchange="document.getElementById('disabilityDetailsRow').style.display=this.value==='Yes'?'block':'none'">
-                                <option value="">— Select —</option>
-                                <option value="No" <?= ($_POST['disability'] ?? '') === 'No' ? 'selected' : '' ?>>No</option>
-                                <option value="Yes" <?= ($_POST['disability'] ?? '') === 'Yes' ? 'selected' : '' ?>>Yes</option>
-                            </select>
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label for="disability_cert">Disability Certificate</label>
-                            <input id="disability_cert" name="disability_cert" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="caste">Caste</label>
+                        <select class="form-select" id="caste" name="caste">
+                            <option value="">— Select —</option>
+                            <?php foreach ($casteOptions as $opt): ?>
+                                <option value="<?= e($opt) ?>" <?= ($_POST['caste'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
-                    <div id="disabilityDetailsRow" style="display:<?= (($_POST['disability'] ?? '') === 'Yes') ? 'block' : 'none' ?>">
-                        <label for="disability_details">Disability Details</label>
-                        <textarea id="disability_details" name="disability_details" rows="2" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;"><?= e($_POST['disability_details'] ?? '') ?></textarea>
+                    <div class="col-md-4">
+                        <label class="form-label" for="caste_cert">Caste Certificate</label>
+                        <input class="form-control" id="caste_cert" name="caste_cert" type="file" accept="image/*,application/pdf">
                     </div>
-                    <div style="display:flex;gap:1rem;">
-                        <div style="flex:1;">
-                            <label for="previous_school">Previous School</label>
-                            <input id="previous_school" name="previous_school" type="text" value="<?= e($_POST['previous_school'] ?? '') ?>">
-                        </div>
-                        <div style="flex:1;">
-                            <label for="leaving_cert">School Leaving Certificate / TC Copy</label>
-                            <input id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="disability">Disability</label>
+                        <select class="form-select" id="disability" name="disability" onchange="document.getElementById('disabilityDetailsRow').style.display=this.value==='Yes'?'block':'none'">
+                            <option value="">— Select —</option>
+                            <option value="No" <?= ($_POST['disability'] ?? '') === 'No' ? 'selected' : '' ?>>No</option>
+                            <option value="Yes" <?= ($_POST['disability'] ?? '') === 'Yes' ? 'selected' : '' ?>>Yes</option>
+                        </select>
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="previous_class">Previous Class</label>
-                            <input id="previous_class" name="previous_class" type="text" value="<?= e($_POST['previous_class'] ?? '') ?>">
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label for="prev_marksheet">Previous Class Marksheet Copy</label>
-                            <input id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="disability_cert">Disability Certificate</label>
+                        <input class="form-control" id="disability_cert" name="disability_cert" type="file" accept="image/*,application/pdf">
                     </div>
-                    <div>
-                        <label for="birth_cert">Student Birth Certificate Copy</label>
-                        <input id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
+                    <div id="disabilityDetailsRow" class="col-12" style="display:<?= (($_POST['disability'] ?? '') === 'Yes') ? 'block' : 'none' ?>">
+                        <label class="form-label" for="disability_details">Disability Details</label>
+                        <textarea class="form-control" id="disability_details" name="disability_details" rows="2"><?= e($_POST['disability_details'] ?? '') ?></textarea>
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="previous_school">Previous School</label>
+                        <input class="form-control" id="previous_school" name="previous_school" type="text" value="<?= e($_POST['previous_school'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="leaving_cert">School Leaving Certificate / TC Copy</label>
+                        <input class="form-control" id="leaving_cert" name="leaving_cert" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="previous_class">Previous Class</label>
+                        <input class="form-control" id="previous_class" name="previous_class" type="text" value="<?= e($_POST['previous_class'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="prev_marksheet">Previous Class Marksheet Copy</label>
+                        <input class="form-control" id="prev_marksheet" name="prev_marksheet" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="birth_cert">Student Birth Certificate Copy</label>
+                        <input class="form-control" id="birth_cert" name="birth_cert" type="file" accept="image/*,application/pdf">
+                    </div>
+                </div>
             </section>
 
             <section class="panel" style="padding:1.25rem">
                 <div class="section-title" style="margin-bottom:1rem;">
                     <h2>Parent / Guardian Details</h2>
                 </div>
-                <div class="field-grid">
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="father_name">Father's Name *</label>
-                            <input id="father_name" name="father_name" type="text" required value="<?= e($_POST['father_name'] ?? '') ?>">
-                        </div>
-                        <div style="flex:0 0 auto;">
-                            <label for="father_photo">Father's Photo</label>
-                            <div style="display:flex;gap:.8rem;align-items:flex-end;">
-                                <div id="fatherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
-                                    <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
-                                </div>
-                                <input id="father_photo" name="father_photo" type="file" accept="image/*" onchange="previewPassport(this,'fatherPhotoPreview')">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="father_name">Father's Name *</label>
+                        <input class="form-control" id="father_name" name="father_name" type="text" required value="<?= e($_POST['father_name'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="father_photo">Father's Photo</label>
+                        <div class="d-flex gap-3 align-items-end">
+                            <div id="fatherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;flex-shrink:0;">
+                                <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
                             </div>
+                            <input class="form-control" id="father_photo" name="father_photo" type="file" accept="image/*" onchange="previewPassport(this,'fatherPhotoPreview')">
                         </div>
                     </div>
-                    <div>
-                        <label for="father_occupation">Father's Occupation</label>
-                        <input id="father_occupation" name="father_occupation" type="text" value="<?= e($_POST['father_occupation'] ?? '') ?>">
+                    <div class="col-md-6">
+                        <label class="form-label" for="father_occupation">Father's Occupation</label>
+                        <input class="form-control" id="father_occupation" name="father_occupation" type="text" value="<?= e($_POST['father_occupation'] ?? '') ?>">
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="father_aadhaar_no">Father's Aadhaar Number</label>
-                            <input id="father_aadhaar_no" name="father_aadhaar_no" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12" value="<?= e($_POST['father_aadhaar_no'] ?? '') ?>">
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label for="father_aadhaar">Father Aadhaar Copy</label>
-                            <input id="father_aadhaar" name="father_aadhaar" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="father_aadhaar_no">Father's Aadhaar Number</label>
+                        <input class="form-control" id="father_aadhaar_no" name="father_aadhaar_no" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12" value="<?= e($_POST['father_aadhaar_no'] ?? '') ?>">
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="father_voter_no">Father's Voter ID Number</label>
-                            <input id="father_voter_no" name="father_voter_no" type="text" value="<?= e($_POST['father_voter_no'] ?? '') ?>">
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label for="father_voter">Father Voter Card Copy</label>
-                            <input id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="father_aadhaar">Father Aadhaar Copy</label>
+                        <input class="form-control" id="father_aadhaar" name="father_aadhaar" type="file" accept="image/*,application/pdf">
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="mother_name">Mother's Name *</label>
-                            <input id="mother_name" name="mother_name" type="text" required value="<?= e($_POST['mother_name'] ?? '') ?>">
-                        </div>
-                        <div style="flex:0 0 auto;">
-                            <label for="mother_photo">Mother's Photo</label>
-                            <div style="display:flex;gap:.8rem;align-items:flex-end;">
-                                <div id="motherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;">
-                                    <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
-                                </div>
-                                <input id="mother_photo" name="mother_photo" type="file" accept="image/*" onchange="previewPassport(this,'motherPhotoPreview')">
+                    <div class="col-md-6">
+                        <label class="form-label" for="father_voter_no">Father's Voter ID Number</label>
+                        <input class="form-control" id="father_voter_no" name="father_voter_no" type="text" value="<?= e($_POST['father_voter_no'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="father_voter">Father Voter Card Copy</label>
+                        <input class="form-control" id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="mother_name">Mother's Name *</label>
+                        <input class="form-control" id="mother_name" name="mother_name" type="text" required value="<?= e($_POST['mother_name'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="mother_photo">Mother's Photo</label>
+                        <div class="d-flex gap-3 align-items-end">
+                            <div id="motherPhotoPreview" style="width:80px;height:100px;border:2px solid #cbd5e1;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden;flex-shrink:0;">
+                                <span style="font-size:.65rem;color:#94a3b8;text-align:center;">No Photo</span>
                             </div>
+                            <input class="form-control" id="mother_photo" name="mother_photo" type="file" accept="image/*" onchange="previewPassport(this,'motherPhotoPreview')">
                         </div>
                     </div>
-                    <div>
-                        <label for="mother_occupation">Mother's Occupation</label>
-                        <input id="mother_occupation" name="mother_occupation" type="text" value="<?= e($_POST['mother_occupation'] ?? '') ?>">
+                    <div class="col-md-6">
+                        <label class="form-label" for="mother_occupation">Mother's Occupation</label>
+                        <input class="form-control" id="mother_occupation" name="mother_occupation" type="text" value="<?= e($_POST['mother_occupation'] ?? '') ?>">
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="mother_aadhaar_no">Mother's Aadhaar Number</label>
-                            <input id="mother_aadhaar_no" name="mother_aadhaar_no" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12" value="<?= e($_POST['mother_aadhaar_no'] ?? '') ?>">
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label for="mother_aadhaar">Mother Aadhaar Copy</label>
-                            <input id="mother_aadhaar" name="mother_aadhaar" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="mother_aadhaar_no">Mother's Aadhaar Number</label>
+                        <input class="form-control" id="mother_aadhaar_no" name="mother_aadhaar_no" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="12" value="<?= e($_POST['mother_aadhaar_no'] ?? '') ?>">
                     </div>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:200px;">
-                            <label for="mother_voter_no">Mother's Voter ID Number</label>
-                            <input id="mother_voter_no" name="mother_voter_no" type="text" value="<?= e($_POST['mother_voter_no'] ?? '') ?>">
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label for="mother_voter">Mother Voter Card Copy</label>
-                            <input id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf">
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="mother_aadhaar">Mother Aadhaar Copy</label>
+                        <input class="form-control" id="mother_aadhaar" name="mother_aadhaar" type="file" accept="image/*,application/pdf">
                     </div>
-                    <div>
-                        <label for="guardian_name">Guardian Name <span style="font-weight:400;color:var(--text-light)">(if different)</span></label>
-                        <input id="guardian_name" name="guardian_name" type="text" value="<?= e($_POST['guardian_name'] ?? '') ?>">
+                    <div class="col-md-6">
+                        <label class="form-label" for="mother_voter_no">Mother's Voter ID Number</label>
+                        <input class="form-control" id="mother_voter_no" name="mother_voter_no" type="text" value="<?= e($_POST['mother_voter_no'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="guardian_occupation">Guardian Occupation</label>
-                        <input id="guardian_occupation" name="guardian_occupation" type="text" value="<?= e($_POST['guardian_occupation'] ?? '') ?>">
+                    <div class="col-md-6">
+                        <label class="form-label" for="mother_voter">Mother Voter Card Copy</label>
+                        <input class="form-control" id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf">
                     </div>
-                    <div>
-                        <label for="family_annual_income">Family Annual Income</label>
-                        <select id="family_annual_income" name="family_annual_income">
+                    <div class="col-md-6">
+                        <label class="form-label" for="guardian_name">Guardian Name <span class="text-muted fw-normal">(if different)</span></label>
+                        <input class="form-control" id="guardian_name" name="guardian_name" type="text" value="<?= e($_POST['guardian_name'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="guardian_occupation">Guardian Occupation</label>
+                        <input class="form-control" id="guardian_occupation" name="guardian_occupation" type="text" value="<?= e($_POST['guardian_occupation'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="family_annual_income">Family Annual Income</label>
+                        <select class="form-select" id="family_annual_income" name="family_annual_income">
                             <option value="">— Select —</option>
                             <?php foreach ($incomeOptions as $opt): ?>
                                 <option value="<?= e($opt) ?>" <?= ($_POST['family_annual_income'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="guardian_signature">Guardian Signature</label>
-                        <input id="guardian_signature" name="guardian_signature" type="file" accept="image/*">
+                    <div class="col-md-6">
+                        <label class="form-label" for="guardian_signature">Guardian Signature</label>
+                        <input class="form-control" id="guardian_signature" name="guardian_signature" type="file" accept="image/*">
                     </div>
                 </div>
             </section>
@@ -675,38 +649,38 @@ HTML;
                 <div class="section-title" style="margin-bottom:1rem;">
                     <h2>Address Details</h2>
                 </div>
-                <div class="field-grid">
-                    <div>
-                        <label for="address_line1">Address Line 1</label>
-                        <input id="address_line1" name="address_line1" type="text" value="<?= e($_POST['address_line1'] ?? '') ?>">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="address_line1">Address Line 1</label>
+                        <input class="form-control" id="address_line1" name="address_line1" type="text" value="<?= e($_POST['address_line1'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="address_line2">Address Line 2</label>
-                        <input id="address_line2" name="address_line2" type="text" value="<?= e($_POST['address_line2'] ?? '') ?>">
+                    <div class="col-md-6">
+                        <label class="form-label" for="address_line2">Address Line 2</label>
+                        <input class="form-control" id="address_line2" name="address_line2" type="text" value="<?= e($_POST['address_line2'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="post_office">Post Office</label>
-                        <input id="post_office" name="post_office" type="text" value="<?= e($_POST['post_office'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="post_office">Post Office</label>
+                        <input class="form-control" id="post_office" name="post_office" type="text" value="<?= e($_POST['post_office'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="police_station">Police Station</label>
-                        <input id="police_station" name="police_station" type="text" value="<?= e($_POST['police_station'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="police_station">Police Station</label>
+                        <input class="form-control" id="police_station" name="police_station" type="text" value="<?= e($_POST['police_station'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="district">District</label>
-                        <input id="district" name="district" type="text" value="<?= e($_POST['district'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="district">District</label>
+                        <input class="form-control" id="district" name="district" type="text" value="<?= e($_POST['district'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="village_city">Village / City</label>
-                        <input id="village_city" name="village_city" type="text" value="<?= e($_POST['village_city'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="village_city">Village / City</label>
+                        <input class="form-control" id="village_city" name="village_city" type="text" value="<?= e($_POST['village_city'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="pin">PIN Code</label>
-                        <input id="pin" name="pin" type="text" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?= e($_POST['pin'] ?? '') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="pin">PIN Code</label>
+                        <input class="form-control" id="pin" name="pin" type="text" maxlength="10" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?= e($_POST['pin'] ?? '') ?>">
                     </div>
-                    <div>
-                        <label for="state">State</label>
-                        <select id="state" name="state">
+                    <div class="col-md-4">
+                        <label class="form-label" for="state">State</label>
+                        <select class="form-select" id="state" name="state">
                             <option value="">Select State</option>
                             <?php $states = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry']; ?>
                             <?php foreach ($states as $st): ?>
@@ -714,9 +688,9 @@ HTML;
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="country">Country</label>
-                        <input id="country" name="country" type="text" value="<?= e($_POST['country'] ?? 'India') ?>">
+                    <div class="col-md-4">
+                        <label class="form-label" for="country">Country</label>
+                        <input class="form-control" id="country" name="country" type="text" value="<?= e($_POST['country'] ?? 'India') ?>">
                     </div>
                 </div>
             </section>
@@ -726,10 +700,10 @@ HTML;
                     <h2>Payment</h2>
                     <p>Select the payment method for this application.</p>
                 </div>
-                <div class="field-grid">
-                    <div>
-                        <label for="payment_method">Payment Method</label>
-                        <select id="payment_method" name="payment_method">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="payment_method">Payment Method</label>
+                        <select class="form-select" id="payment_method" name="payment_method">
                             <option value="Offline" selected>Offline (Cash/Cheque)</option>
                         </select>
                     </div>
