@@ -174,6 +174,7 @@ try {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Receipts – SIBA ERP</title>
+    <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="../assets/erp-ui.css">
     <style>
         .app-filters { display:flex; gap:.75rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:1rem; }
@@ -221,9 +222,9 @@ try {
 <div class="admin-layout">
     <aside class="sidebar" style="display:flex;flex-direction:column;">
         <div class="brand-block stack" style="gap:.6rem;padding:1.2rem 1rem;">
-            <span class="eyebrow" style="background:rgba(255,255,255,.1);color:#effff5">SIBA ERP</span>
+            <span class="eyebrow">SIBA ERP</span>
             <div class="brand-copy">
-                <h2 style="font-size:1.7rem;color:#fff">Administration</h2>
+                <h2>Administration</h2>
                 <p><?= e((string) $user['name']) ?> signed in as <?= e((string) $user['role']) ?>.</p>
             </div>
         </div>
