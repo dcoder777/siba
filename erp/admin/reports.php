@@ -273,13 +273,21 @@ if ($export === 'csv') {
 }
 
 // Fee collection count for sidebar badge
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
-$stmt->execute();
-$todayCount = (int) $stmt->fetchColumn();
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
+    $stmt->execute();
+    $todayCount = (int) $stmt->fetchColumn();
+} catch (Throwable) {
+    $todayCount = 0;
+}
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
-$stmt->execute();
-$pendingExpenseCount = (int) $stmt->fetchColumn();
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
+    $stmt->execute();
+    $pendingExpenseCount = (int) $stmt->fetchColumn();
+} catch (Throwable) {
+    $pendingExpenseCount = 0;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

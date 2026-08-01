@@ -326,13 +326,21 @@ $cashTotal = (float) $pdo->query("SELECT COALESCE(SUM(CASE WHEN direction='credi
 $bankTotal = (float) $pdo->query("SELECT COALESCE(SUM(current_balance),0) FROM bank_accounts WHERE is_active = 1")->fetchColumn();
 
 // Fee collection count for sidebar badge
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
-$stmt->execute();
-$todayCount = (int) $stmt->fetchColumn();
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
+    $stmt->execute();
+    $todayCount = (int) $stmt->fetchColumn();
+} catch (Throwable) {
+    $todayCount = 0;
+}
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
-$stmt->execute();
-$pendingExpenseCount = (int) $stmt->fetchColumn();
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
+    $stmt->execute();
+    $pendingExpenseCount = (int) $stmt->fetchColumn();
+} catch (Throwable) {
+    $pendingExpenseCount = 0;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

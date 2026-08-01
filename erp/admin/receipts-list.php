@@ -98,12 +98,11 @@ if ($filterStatus !== '') {
     $params['status'] = $filterStatus;
 }
 if ($searchQ !== '') {
-    $where[] = '(fc.receipt_no LIKE :q1 OR fc.student_name LIKE :q2 OR COALESCE(s.first_name,\'\') LIKE :q3 OR COALESCE(s.last_name,\'\') LIKE :q4)';
+    $where[] = '(fc.receipt_no LIKE :q1 OR fc.student_name LIKE :q2 OR fc.class_name LIKE :q3)';
     $likeQ = '%' . $searchQ . '%';
     $params['q1'] = $likeQ;
     $params['q2'] = $likeQ;
     $params['q3'] = $likeQ;
-    $params['q4'] = $likeQ;
 }
 if ($filterMode !== '') {
     $where[] = 'fc.payment_mode = :mode';
@@ -154,13 +153,21 @@ if (isset($_GET['view'])) {
 }
 
 // Fee collection count for sidebar badge
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
-$stmt->execute();
-$todayCount = (int) $stmt->fetchColumn();
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
+    $stmt->execute();
+    $todayCount = (int) $stmt->fetchColumn();
+} catch (Throwable) {
+    $todayCount = 0;
+}
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
-$stmt->execute();
-$pendingExpenseCount = (int) $stmt->fetchColumn();
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
+    $stmt->execute();
+    $pendingExpenseCount = (int) $stmt->fetchColumn();
+} catch (Throwable) {
+    $pendingExpenseCount = 0;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
