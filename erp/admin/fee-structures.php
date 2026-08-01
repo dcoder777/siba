@@ -10,64 +10,95 @@ $success = '';
 
 $classOptions = ['Play School', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 
-// Auto-create tables
-$pdo->exec("CREATE TABLE IF NOT EXISTS fee_heads (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    is_mandatory TINYINT(1) DEFAULT 1,
-    sort_order INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)");
+// Auto-create tables (FK constraints omitted to avoid type mismatch with legacy tables)
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_heads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        is_mandatory TINYINT(1) DEFAULT 1,
+        sort_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
 
-$pdo->exec("CREATE TABLE IF NOT EXISTS fee_structures (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(200) NOT NULL,
-    academic_session VARCHAR(20) NOT NULL,
-    class_name VARCHAR(50),
-    total_amount DECIMAL(12,2) DEFAULT 0,
-    installment_enabled TINYINT(1) DEFAULT 0,
-    num_installments INT DEFAULT 1,
-    is_active TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)");
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_structures (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(200) NOT NULL,
+        academic_session VARCHAR(20) NOT NULL,
+        class_name VARCHAR(50),
+        total_amount DECIMAL(12,2) DEFAULT 0,
+        installment_enabled TINYINT(1) DEFAULT 0,
+        num_installments INT DEFAULT 1,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
 
-$pdo->exec("CREATE TABLE IF NOT EXISTS fee_structure_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    fee_structure_id INT NOT NULL,
-    fee_head_id INT NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    is_optional TINYINT(1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id) ON DELETE CASCADE,
-    FOREIGN KEY (fee_head_id) REFERENCES fee_heads(id) ON DELETE CASCADE
-)");
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_structure_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fee_structure_id BIGINT NOT NULL,
+        fee_head_id INT NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        is_optional TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
 
-$pdo->exec("CREATE TABLE IF NOT EXISTS fee_installments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    fee_structure_id INT NOT NULL,
-    installment_no INT NOT NULL,
-    title VARCHAR(100),
-    due_date DATE NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    late_fee_type ENUM('fixed','percentage') DEFAULT 'fixed',
-    late_fee_value DECIMAL(10,2) DEFAULT 0,
-    late_fee_grace_days INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id) ON DELETE CASCADE
-)");
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_installments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fee_structure_id BIGINT NOT NULL,
+        installment_no INT NOT NULL,
+        title VARCHAR(100),
+        due_date DATE NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        late_fee_type ENUM('fixed','percentage') DEFAULT 'fixed',
+        late_fee_value DECIMAL(10,2) DEFAULT 0,
+        late_fee_grace_days INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
 
-$pdo->exec("CREATE TABLE IF NOT EXISTS fee_structure_assignments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    fee_structure_id INT NOT NULL,
-    assign_type ENUM('class','section') NOT NULL,
-    assign_value VARCHAR(100) NOT NULL,
-    is_active TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id) ON DELETE CASCADE
-)");
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS fee_structure_assignments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fee_structure_id BIGINT NOT NULL,
+        assign_type ENUM('class','section') NOT NULL,
+        assign_value VARCHAR(100) NOT NULL,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
+
+// ─── Auto-migrate legacy fee_structures table if it has the old schema ───
+try {
+    $existingCols = array_map(static fn(array $r): string => (string) $r['Field'], $pdo->query("DESCRIBE fee_structures")->fetchAll());
+    $addCols = [
+        'name'              => "VARCHAR(200) NOT NULL DEFAULT 'Fee Structure'",
+        'total_amount'      => "DECIMAL(12,2) DEFAULT 0",
+        'installment_enabled' => "TINYINT(1) DEFAULT 0",
+        'num_installments'  => "INT DEFAULT 1",
+        'is_active'         => "TINYINT(1) DEFAULT 1",
+        'updated_at'        => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+    ];
+    foreach ($addCols as $col => $def) {
+        if (!in_array($col, $existingCols, true)) {
+            $pdo->exec("ALTER TABLE fee_structures ADD COLUMN {$col} {$def}");
+        }
+    }
+    // If legacy 'fee_head' exists but 'name' was just added, seed name from class_name + fee_head
+    if (in_array('fee_head', $existingCols, true) && !in_array('name', $existingCols, true)) {
+        $pdo->exec("UPDATE fee_structures SET name = CONCAT(class_name, ' - ', fee_head) WHERE name = 'Fee Structure'");
+    }
+    // fee_structures.id is BIGINT in legacy; keep as-is (INT vs BIGINT both fine for FK refs)
+} catch (Throwable $e) {
+    // ignore migration errors
+}
 
 $tab = in_array(trim((string) ($_GET['tab'] ?? '')), ['fee-heads', 'fee-structures', 'installments', 'assignments'], true)
     ? trim((string) $_GET['tab'])

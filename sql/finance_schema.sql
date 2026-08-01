@@ -29,19 +29,17 @@ CREATE TABLE IF NOT EXISTS fee_structures (
 -- Fee Structure Items (individual fee heads with amounts)
 CREATE TABLE IF NOT EXISTS fee_structure_items (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fee_structure_id INT NOT NULL,
+    fee_structure_id BIGINT NOT NULL,
     fee_head_id INT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     is_optional TINYINT(1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id) ON DELETE CASCADE,
-    FOREIGN KEY (fee_head_id) REFERENCES fee_heads(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Fee Installments
 CREATE TABLE IF NOT EXISTS fee_installments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fee_structure_id INT NOT NULL,
+    fee_structure_id BIGINT NOT NULL,
     installment_no INT NOT NULL,
     title VARCHAR(100),
     due_date DATE NOT NULL,
@@ -49,20 +47,18 @@ CREATE TABLE IF NOT EXISTS fee_installments (
     late_fee_type ENUM('fixed','percentage') DEFAULT 'fixed',
     late_fee_value DECIMAL(10,2) DEFAULT 0,
     late_fee_grace_days INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Fee Structure Assignments (to classes, sections, or individual students)
 CREATE TABLE IF NOT EXISTS fee_structure_assignments (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    fee_structure_id INT NOT NULL,
+    fee_structure_id BIGINT NOT NULL,
     assign_type ENUM('class','section','student') NOT NULL,
     assign_value VARCHAR(100) NOT NULL,
     student_id INT,
     is_active TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Student Fee Accounts (per-student fee ledger)

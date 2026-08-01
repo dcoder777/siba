@@ -44,8 +44,7 @@ try {
         fee_head_id INT NOT NULL,
         fee_head_name VARCHAR(100),
         amount DECIMAL(10,2) NOT NULL,
-        is_advance TINYINT(1) DEFAULT 0,
-        FOREIGN KEY (fee_collection_id) REFERENCES fee_collections(id) ON DELETE CASCADE
+        is_advance TINYINT(1) DEFAULT 0
     )");
 } catch (Throwable $e) {
     // ignore migration errors

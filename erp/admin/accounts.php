@@ -12,49 +12,54 @@ $success = '';
 $activeTab = max(1, min(4, (int) ($_GET['tab'] ?? 1)));
 
 // ── Ensure tables exist ──
-$pdo->exec("CREATE TABLE IF NOT EXISTS bank_accounts (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    account_name VARCHAR(100) NOT NULL,
-    bank_name VARCHAR(100) NOT NULL,
-    account_no VARCHAR(50) NOT NULL,
-    branch VARCHAR(100),
-    ifsc_code VARCHAR(20),
-    opening_balance DECIMAL(12,2) DEFAULT 0,
-    current_balance DECIMAL(12,2) DEFAULT 0,
-    is_active TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)");
-$pdo->exec("CREATE TABLE IF NOT EXISTS cash_book (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    transaction_date DATE NOT NULL,
-    transaction_type ENUM('opening','receipt','payment','deposit','withdrawal','transfer_in','transfer_out') NOT NULL,
-    reference_type VARCHAR(50),
-    reference_id INT,
-    description TEXT,
-    amount DECIMAL(12,2) NOT NULL,
-    direction ENUM('debit','credit') NOT NULL,
-    balance DECIMAL(12,2) DEFAULT 0,
-    created_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)");
-$pdo->exec("CREATE TABLE IF NOT EXISTS bank_book (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    bank_account_id INT NOT NULL,
-    transaction_date DATE NOT NULL,
-    transaction_type ENUM('opening','receipt','payment','deposit','withdrawal','transfer_in','transfer_out','reconciliation') NOT NULL,
-    reference_type VARCHAR(50),
-    reference_id INT,
-    description TEXT,
-    amount DECIMAL(12,2) NOT NULL,
-    direction ENUM('debit','credit') NOT NULL,
-    balance DECIMAL(12,2) DEFAULT 0,
-    reconciled TINYINT(1) DEFAULT 0,
-    reconciliation_date DATE,
-    created_by INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE CASCADE
-)");
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS bank_accounts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        account_name VARCHAR(100) NOT NULL,
+        bank_name VARCHAR(100) NOT NULL,
+        account_no VARCHAR(50) NOT NULL,
+        branch VARCHAR(100),
+        ifsc_code VARCHAR(20),
+        opening_balance DECIMAL(12,2) DEFAULT 0,
+        current_balance DECIMAL(12,2) DEFAULT 0,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS cash_book (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        transaction_date DATE NOT NULL,
+        transaction_type ENUM('opening','receipt','payment','deposit','withdrawal','transfer_in','transfer_out') NOT NULL,
+        reference_type VARCHAR(50),
+        reference_id INT,
+        description TEXT,
+        amount DECIMAL(12,2) NOT NULL,
+        direction ENUM('debit','credit') NOT NULL,
+        balance DECIMAL(12,2) DEFAULT 0,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS bank_book (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        bank_account_id INT NOT NULL,
+        transaction_date DATE NOT NULL,
+        transaction_type ENUM('opening','receipt','payment','deposit','withdrawal','transfer_in','transfer_out','reconciliation') NOT NULL,
+        reference_type VARCHAR(50),
+        reference_id INT,
+        description TEXT,
+        amount DECIMAL(12,2) NOT NULL,
+        direction ENUM('debit','credit') NOT NULL,
+        balance DECIMAL(12,2) DEFAULT 0,
+        reconciled TINYINT(1) DEFAULT 0,
+        reconciliation_date DATE,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+} catch (Throwable $e) {}
 
 // ── Helper: recalculate cash book balances ──
 function recalcCashBook(PDO $pdo): void

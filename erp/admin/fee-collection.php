@@ -111,8 +111,7 @@ try {
         reconciled TINYINT(1) DEFAULT 0,
         reconciliation_date DATE,
         created_by INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE CASCADE
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 } catch (Throwable $e) {
     // ignore migration errors
