@@ -20,9 +20,6 @@ declare(strict_types=1);
     .landing-right::before{content:"";position:absolute;top:-60px;right:-60px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.06)}
     .landing-right::after{content:"";position:absolute;bottom:-40px;right:50px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.05)}
     .landing-logo{width:52px;height:52px;border-radius:var(--radius-md);background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;box-shadow:0 4px 12px rgba(13,110,253,.3)}
-    .landing-features{display:grid;gap:.65rem}
-    .landing-feature{display:flex;align-items:flex-start;gap:.65rem;font-size:.9rem;color:var(--ink)}
-    .landing-feature .feat-dot{min-width:20px;width:20px;height:20px;border-radius:50%;background:#d4edda;color:#198754;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;margin-top:1px}
     .landing-footer{text-align:center;padding:1rem 2rem;color:var(--muted);font-size:.8rem;position:relative;z-index:1}
     .landing-footer a{color:var(--brand);text-decoration:none;font-weight:600}
     .landing-footer a:hover{text-decoration:underline}
@@ -34,7 +31,6 @@ declare(strict_types=1);
     .landing-cap span{font-size:.75rem;color:rgba(255,255,255,.7)}
     .landing-left h1{font-size:1.8rem;font-weight:800;color:var(--ink);line-height:1.25;letter-spacing:-0.02em}
     .landing-left h1 span{color:var(--brand)}
-    .landing-tagline{font-size:.95rem;color:var(--muted);line-height:1.55}
     </style>
 </head>
 <body class="landing-body">
@@ -45,25 +41,6 @@ declare(strict_types=1);
                 <div class="landing-logo">S</div>
                 <div>
                     <h1>SIBA Public School<br><span>Management Portal</span></h1>
-                </div>
-                <p class="landing-tagline">Streamline admissions, track finances, manage attendance, and run daily operations from one place.</p>
-                <div class="landing-features">
-                    <div class="landing-feature">
-                        <span class="feat-dot">&#10003;</span>
-                        <span><strong>End-to-end admissions</strong> &mdash; intake, tracking, parent communication</span>
-                    </div>
-                    <div class="landing-feature">
-                        <span class="feat-dot">&#10003;</span>
-                        <span><strong>Full finance module</strong> &mdash; fee collection, expenses, receipts &amp; reports</span>
-                    </div>
-                    <div class="landing-feature">
-                        <span class="feat-dot">&#10003;</span>
-                        <span><strong>Role-based access</strong> &mdash; super admin, module admins, and staff accounts</span>
-                    </div>
-                    <div class="landing-feature">
-                        <span class="feat-dot">&#10003;</span>
-                        <span><strong>Built for speed</strong> &mdash; lightweight, no bloat, works on any device</span>
-                    </div>
                 </div>
                 <a class="btn" href="./admin/login.php" style="font-size:.95rem;padding:.65rem 1.8rem;width:fit-content">Login to Dashboard</a>
             </div>
