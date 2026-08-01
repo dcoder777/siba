@@ -5,6 +5,7 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
 ?>
 <aside class="sidebar" style="display:flex;flex-direction:column;">
     <div class="brand-block stack" style="gap:.6rem;padding:1.2rem 1rem;">
+        <span class="brand-mark">S</span>
         <span class="eyebrow">SIBA ERP</span>
         <div class="brand-copy">
             <h2>Administration</h2>
