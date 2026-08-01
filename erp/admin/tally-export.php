@@ -306,6 +306,28 @@ try {
             </div>
         </div>
         <div class="nav-group">
+            <div class="nav-title">Admissions</div>
+            <a class="nav-link" href="application-intake.php">
+                <span class="sidebar-icon">📋</span><span>Application Intake</span><span class="nav-tag">New</span>
+            </a>
+            <a class="nav-link" href="applications-list.php">
+                <span class="sidebar-icon">📂</span><span>Applications</span><span class="nav-tag">List</span>
+            </a>
+            <a class="nav-link" href="parents-list.php">
+                <span class="sidebar-icon">👤</span><span>Parents</span>
+            </a>
+            <a class="nav-link" href="events-manager.php">
+                <span class="sidebar-icon">📅</span><span>Events & News</span>
+            </a>
+            <a class="nav-link" href="gallery-manager.php">
+                <span class="sidebar-icon">🖼</span><span>Gallery</span>
+            </a>
+            <a class="nav-link" href="enquiries.php">
+                <span class="sidebar-icon">📩</span><span>Enquiries</span>
+            </a>
+        </div>
+
+        <div class="nav-group">
             <div class="nav-title">Finance</div>
             <a class="nav-link" href="finance-dashboard.php"><span class="sidebar-icon">📊</span><span>Finance Dashboard</span></a>
             <a class="nav-link" href="fee-structures.php"><span class="sidebar-icon">🏗</span><span>Fee Structures</span></a>
