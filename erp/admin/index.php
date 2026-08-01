@@ -729,6 +729,27 @@ $currentLabel = $menus[$module]['label'] ?? ucfirst($module);
             <a class="nav-link" href="finance-dashboard.php">
                 <span class="sidebar-icon">📊</span><span>Finance Dashboard</span>
             </a>
+            <a class="nav-link" href="fee-structures.php">
+                <span class="sidebar-icon">🏗</span><span>Fee Structures</span>
+            </a>
+            <a class="nav-link" href="fee-collection.php">
+                <span class="sidebar-icon">💰</span><span>Fee Collection</span>
+            </a>
+            <a class="nav-link" href="receipts-list.php">
+                <span class="sidebar-icon">🧾</span><span>Receipts</span>
+            </a>
+            <a class="nav-link" href="expenses.php">
+                <span class="sidebar-icon">📤</span><span>Expenses</span>
+            </a>
+            <a class="nav-link" href="income.php">
+                <span class="sidebar-icon">📥</span><span>Income</span>
+            </a>
+            <a class="nav-link" href="accounts.php">
+                <span class="sidebar-icon">🏦</span><span>Accounts</span>
+            </a>
+            <a class="nav-link" href="reports.php">
+                <span class="sidebar-icon">📈</span><span>Reports</span>
+            </a>
         </div>
 
         <?php if ($isOwner): ?>
