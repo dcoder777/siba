@@ -130,51 +130,7 @@ $counts = [
 </head>
 <body>
 <div class="admin-layout">
-    <aside class="sidebar" style="display:flex;flex-direction:column;">
-        <div class="brand-block stack" style="gap:.6rem;padding:1.2rem 1rem;">
-            <span class="eyebrow">SIBA ERP</span>
-            <div class="brand-copy">
-                <h2>Administration</h2>
-                <p><?= e((string) $user['name']) ?> signed in as <?= e((string) $user['role']) ?>.</p>
-            </div>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Admissions</div>
-            <a class="nav-link" href="application-intake.php">
-                <span class="sidebar-icon">📋</span><span>Application Intake</span><span class="nav-tag">New</span>
-            </a>
-            <a class="nav-link" href="applications-list.php">
-                <span class="sidebar-icon">📂</span><span>Applications</span><span class="nav-tag">List</span>
-            </a>
-            <a class="nav-link" href="parents-list.php">
-                <span class="sidebar-icon">👤</span><span>Parents</span>
-            </a>
-            <a class="nav-link" href="events-manager.php">
-                <span class="sidebar-icon">📅</span><span>Events & News</span>
-            </a>
-            <a class="nav-link" href="gallery-manager.php">
-                <span class="sidebar-icon">🖼</span><span>Gallery</span>
-            </a>
-            <a class="nav-link" href="enquiries.php">
-                <span class="sidebar-icon">📩</span><span>Enquiries</span>
-            </a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Finance</div>
-            <a class="nav-link" href="finance-dashboard.php">
-                <span class="sidebar-icon">📊</span><span>Finance Dashboard</span>
-            </a>
-        </div>
-        <div class="nav-group">
-            <div class="nav-title">Administration</div>
-            <a class="nav-link active" href="admin-requests.php">
-                <span class="sidebar-icon">🔑</span><span>Admin Requests</span><span class="nav-tag" style="background:#f59e0b;color:#fff;"><?= $counts['pending'] ?></span>
-            </a>
-        </div>
-        <div class="nav-group" style="margin-top:auto;">
-            <a class="btn btn-soft" style="width:100%" href="logout.php">Logout</a>
-        </div>
-    </aside>
+    <?php $activePage = basename(__FILE__); include __DIR__ . '/_sidebar.php'; ?>
 
     <main class="admin-main stack" style="padding:1.5rem;">
         <section class="hero-banner" style="margin-bottom:1rem;">
@@ -266,5 +222,6 @@ $counts = [
     </main>
 </div>
 <script src="../assets/erp.js"></script>
+<?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
 </html>

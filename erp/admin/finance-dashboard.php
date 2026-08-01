@@ -90,87 +90,7 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
 </head>
 <body style="min-height:100vh;">
 <div class="admin-layout">
-    <aside class="sidebar" style="display:flex;flex-direction:column;">
-        <div class="brand-block stack" style="gap:.6rem;padding:1.2rem 1rem;">
-            <span class="eyebrow">SIBA ERP</span>
-            <div class="brand-copy">
-                <h2>Administration</h2>
-                <p><?= e((string) $user['name']) ?> signed in as <?= e((string) $user['role']) ?>.</p>
-            </div>
-        </div>
-
-        <div class="nav-group">
-            <div class="nav-title">Admissions</div>
-            <a class="nav-link" href="application-intake.php">
-                <span class="sidebar-icon">📋</span><span>Application Intake</span><span class="nav-tag">New</span>
-            </a>
-            <a class="nav-link" href="applications-list.php">
-                <span class="sidebar-icon">📂</span><span>Applications</span><span class="nav-tag">List</span>
-            </a>
-            <a class="nav-link" href="parents-list.php">
-                <span class="sidebar-icon">👤</span><span>Parents</span>
-            </a>
-            <a class="nav-link" href="events-manager.php">
-                <span class="sidebar-icon">📅</span><span>Events & News</span>
-            </a>
-            <a class="nav-link" href="gallery-manager.php">
-                <span class="sidebar-icon">🖼</span><span>Gallery</span>
-            </a>
-            <a class="nav-link" href="enquiries.php">
-                <span class="sidebar-icon">📩</span><span>Enquiries</span>
-            </a>
-        </div>
-
-        <div class="nav-group">
-            <div class="nav-title">Finance</div>
-            <a class="nav-link active" href="finance-dashboard.php">
-                <span class="sidebar-icon">📊</span><span>Finance Dashboard</span>
-            </a>
-            <a class="nav-link" href="fee-structures.php">
-                <span class="sidebar-icon">💰</span><span>Fee Structures</span>
-            </a>
-            <a class="nav-link" href="fee-collection.php">
-                <span class="sidebar-icon">💳</span><span>Fee Collection</span>
-                <?php if ($todayCount > 0): ?>
-                    <span class="nav-tag" style="background:#10b981;color:#fff;"><?= $todayCount ?></span>
-                <?php endif; ?>
-            </a>
-            <a class="nav-link" href="receipts-list.php">
-                <span class="sidebar-icon">🧾</span><span>Receipts</span>
-            </a>
-            <a class="nav-link" href="expenses.php">
-                <span class="sidebar-icon">📤</span><span>Expenses</span>
-                <?php if ($pendingExpenseCount > 0): ?>
-                    <span class="nav-tag" style="background:#f59e0b;color:#fff;"><?= $pendingExpenseCount ?></span>
-                <?php endif; ?>
-            </a>
-            <a class="nav-link" href="income.php">
-                <span class="sidebar-icon">📥</span><span>Income</span>
-            </a>
-            <a class="nav-link" href="accounts.php">
-                <span class="sidebar-icon">🏦</span><span>Accounts</span>
-            </a>
-            <a class="nav-link" href="reports.php">
-                <span class="sidebar-icon">📈</span><span>Reports</span>
-            </a>
-        </div>
-        <?php if ($isOwner): ?>
-        <div class="nav-group">
-            <div class="nav-title">Administration</div>
-            <?php $pendingAdminCount = 0; try { $pendingAdminCount = (int) $pdo->query("SELECT COUNT(*) FROM admin_registrations WHERE status = 'pending'")->fetchColumn(); } catch (\Throwable $e) {} ?>
-            <a class="nav-link" href="admin-requests.php">
-                <span class="sidebar-icon">🔑</span>
-                <span>Admin Requests</span>
-                <?php if ($pendingAdminCount > 0): ?>
-                    <span class="nav-tag" style="background:#f59e0b;color:#fff;"><?= $pendingAdminCount ?></span>
-                <?php endif; ?>
-            </a>
-        </div>
-        <?php endif; ?>
-        <div class="nav-group" style="margin-top:auto;">
-            <a class="btn btn-soft" style="width:100%" href="logout.php">Logout</a>
-        </div>
-    </aside>
+    <?php $activePage = basename(__FILE__); include __DIR__ . '/_sidebar.php'; ?>
 
     <main class="admin-main stack" style="padding:1.5rem;">
         <section class="hero-banner" style="margin-bottom:1rem;">
@@ -343,5 +263,6 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
     </main>
 </div>
 <script src="../assets/erp.js"></script>
+<?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
 </html>
