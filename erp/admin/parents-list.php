@@ -16,6 +16,23 @@ $success = '';
 
 $searchQ = trim((string) ($_GET['q'] ?? ''));
 
+// ─── Delete Parent (Permanent) ───
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_parent']) && verify_csrf()) {
+    $parentId = (int) ($_POST['parent_id'] ?? 0);
+    if ($parentId > 0) {
+        try {
+            $countStmt = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE parent_id = :id");
+            $countStmt->execute(['id' => $parentId]);
+            $appCount = (int) $countStmt->fetchColumn();
+            $stmt = $pdo->prepare("DELETE FROM parents WHERE id = :id");
+            $stmt->execute(['id' => $parentId]);
+            $success = 'Parent #' . $parentId . ' deleted permanently.' . ($appCount > 0 ? ' Associated applications were also removed.' : '');
+        } catch (Exception $e) {
+            $error = 'Failed to delete parent: ' . $e->getMessage();
+        }
+    }
+}
+
 $where = [];
 $params = [];
 if ($searchQ !== '') {
@@ -63,6 +80,8 @@ $totalPages = max(1, (int) ceil($total / $limit));
         .app-table th { text-align:left; padding:.65rem .5rem; border-bottom:2px solid #e2e8f0; color:#64748b; font-weight:600; white-space:nowrap; }
         .app-table td { padding:.65rem .5rem; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
         .app-table tr:hover td { background:#f8fafc; }
+        .link-delete { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; padding:.3rem .65rem; font-size:.75rem; border-radius:6px; cursor:pointer; font-weight:600; }
+        .link-delete:hover { background:#fee2e2; }
         .pagination { display:flex; gap:.5rem; align-items:center; margin-top:1rem; }
         .pagination a, .pagination span { padding:.35rem .7rem; border:1px solid #e2e8f0; border-radius:6px; text-decoration:none; font-size:.85rem; color:#334155; }
         .pagination a:hover { background:#f1f5f9; }
@@ -108,11 +127,12 @@ $totalPages = max(1, (int) ceil($total / $limit));
                         <th>Phone</th>
                         <th>Applications</th>
                         <th>Registered On</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($parents)): ?>
-                        <tr><td colspan="6" style="text-align:center;padding:2rem;color:#94a3b8;">No parents found.</td></tr>
+                        <tr><td colspan="7" style="text-align:center;padding:2rem;color:#94a3b8;">No parents found.</td></tr>
                     <?php else: ?>
                         <?php foreach ($parents as $i => $p): ?>
                             <tr>
@@ -122,6 +142,14 @@ $totalPages = max(1, (int) ceil($total / $limit));
                                 <td><?= e($p['phone']) ?></td>
                                 <td><a href="applications-list.php?q=<?= e($p['phone']) ?>" style="color:#2563eb;"><?= (int) $p['app_count'] ?> application<?= (int) $p['app_count'] !== 1 ? 's' : '' ?></a></td>
                                 <td style="white-space:nowrap;"><?= date('d-m-Y', strtotime($p['created_at'])) ?></td>
+                                <td>
+                                    <form method="post" style="display:inline;" onsubmit="return confirm('Delete parent <?= e($p['name'] ?? '#' . $p['id']) ?> (<?= e($p['phone']) ?>)? This will permanently remove their applications and cannot be undone.')">
+                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="parent_id" value="<?= (int) $p['id'] ?>">
+                                        <input type="hidden" name="delete_parent" value="1">
+                                        <button type="submit" class="link-delete">Delete</button>
+                                    </form>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>

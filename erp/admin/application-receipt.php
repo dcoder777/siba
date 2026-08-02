@@ -144,6 +144,9 @@ if ($download) {
     $pdf .= "trailer\n<< /Size " . $totalObjects . " /Root 1 0 R >>\nstartxref\n" . $xrefStart . "\n%%EOF\n";
 
     $appNoClean = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) ($app['application_no'] ?? ('SBA_' . $appId)));
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $appNoClean . '_receipt.pdf"');
     header('Content-Length: ' . strlen($pdf));
