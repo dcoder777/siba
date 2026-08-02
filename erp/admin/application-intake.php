@@ -325,7 +325,7 @@ function field_feedback(string $field, array $errors): string {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Admission Application — SIBA ERP Admin</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .cred-box { background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:1rem 1.25rem; margin-bottom:1rem; }
         .cred-box strong { color:#2e7d32; }

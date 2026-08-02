@@ -275,7 +275,7 @@ try {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Tally Export – SIBA ERP</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .export-options { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.25rem; }
         .export-options label { display:flex; align-items:center; gap:.4rem; padding:.5rem 1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; font-size:.85rem; font-weight:500; transition:background .15s,border-color .15s; }

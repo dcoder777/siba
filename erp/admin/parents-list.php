@@ -71,7 +71,7 @@ $totalPages = max(1, (int) ceil($total / $limit));
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Parents – SIBA ERP</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .app-filters { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
         .app-filters input { padding:.45rem .7rem; border:1px solid #cbd5e1; border-radius:6px; font-size:.875rem; }

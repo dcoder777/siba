@@ -248,7 +248,7 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Edit Application <?= e($app['application_no'] ?? '#' . $appId) ?> – SIBA ERP</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
         .detail-grid .full-col { grid-column:1 / -1; }

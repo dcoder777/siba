@@ -670,11 +670,15 @@ th.sortable::after{content:" ↕";font-size:.7rem;color:var(--muted)}
 
 .modal-backdrop.show{display:flex}
 
-.modal{
+.modal-backdrop .modal{
     position:relative;
     display:block;
+    top:auto;
+    left:auto;
     width:min(980px,100%);
+    height:auto;
     max-height:90vh;
+    margin:0;
     overflow:auto;
     padding:1.25rem;
     border-radius:var(--radius-lg);

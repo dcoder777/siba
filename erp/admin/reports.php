@@ -296,7 +296,7 @@ try {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Reports – SIBA ERP</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .app-filters { display:flex; gap:.75rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:1rem; }
         .app-filters label { font-size:.8rem; margin-bottom:.2rem; }

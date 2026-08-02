@@ -8,7 +8,7 @@ declare(strict_types=1);
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>SIBA Public School &mdash; ERP Management Portal</title>
     <link rel="stylesheet" href="./assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="./assets/erp-ui.css">
+    <link rel="stylesheet" href="./assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/assets/erp-ui.css'); ?>">
     <style>
     .landing-body{min-height:100vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#f0f4ff 0%,#f8fafc 40%)}
     .landing-main{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}

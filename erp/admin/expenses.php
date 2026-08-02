@@ -193,7 +193,7 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Expenses – SIBA ERP</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .tab-bar { display:flex; gap:0; margin-bottom:1.5rem; border-bottom:2px solid #e5e7eb; }
         .tab-bar a { padding:.6rem 1.5rem; font-size:.9rem; font-weight:500; color:var(--text-light); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-2px; }

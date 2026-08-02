@@ -112,7 +112,7 @@ $counts = [
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Admin Requests — SIBA ERP</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .req-table { width:100%; border-collapse:collapse; font-size:.88rem; }
         .req-table th { text-align:left; padding:.6rem .75rem; background:#f8fafc; border-bottom:2px solid #e2e8f0; color:#64748b; font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }

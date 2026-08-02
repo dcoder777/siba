@@ -147,7 +147,7 @@ $activeTab = $type;
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Events Manager — SIBA ERP Admin</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
         .events-table { width:100%; border-collapse:collapse; }
         .events-table th, .events-table td { padding:0.6rem 0.75rem; text-align:left; border-bottom:1px solid #e5e7eb; font-size:0.88rem; }
