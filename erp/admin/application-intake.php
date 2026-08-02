@@ -13,6 +13,7 @@ $userRoles = fetch_user_roles($pdo, (int) $user['id'], (string) ($user['role'] ?
 $menus = menu_for_roles($userRoles, $explicitModules);
 $entityMap = entity_config();
 $error = '';
+$errors = [];
 $success = '';
 $generatedPhone = '';
 $generatedPassword = '';
