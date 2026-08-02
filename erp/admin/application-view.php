@@ -35,7 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
     $uploadDir = __DIR__ . '/../../uploads/docs/';
     $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
 
-    $oldStatus = (string) ($app['status'] ?? '');
+    $oldStatus        = (string) ($app['status'] ?? '');
+    $oldPaymentStatus = (string) ($app['payment_status'] ?? '');
 
     $fields = [
         'student_name', 'dob', 'gender', 'religion', 'blood_group', 'aadhaar_no',
@@ -148,6 +149,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
         <tr><td><strong>Application No:</strong></td><td>{$appNo}</td></tr>
         <tr><td><strong>Previous Status:</strong></td><td>{$oldStatus}</td></tr>
         <tr><td><strong>New Status:</strong></td><td><strong>{$newStatus}</strong></td></tr>
+    </table>
+    <p>You can view the full application details in your parent portal.</p>
+    <p><a href="{$receiptUrl}" style="background:#1e293b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Download Application Receipt</a></p>
+    <p><a href="{$loginUrl}">Log in to the Parent Portal</a></p>
+    <p>Best regards,<br>SIBA Public School Administration</p>
+</body>
+</html>
+HTML;
+            $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibapublicschool.com\r\n";
+            try {
+                @mail($parentEmail, $subject, $body, $headers);
+            } catch (\Throwable) {}
+        }
+
+        $newPaymentStatus = (string) ($_POST['payment_status'] ?? $oldPaymentStatus);
+        if ($newPaymentStatus !== $oldPaymentStatus && !empty($app['parent_email'])) {
+            $parentEmail = $app['parent_email'];
+            $studentName = $app['student_name'] ?? '';
+            $appNo = $app['application_no'] ?? ('#' . $appId);
+            $receiptUrl = 'https://sibapublicschool.com/parent/receipt.php?app_id=' . $appId . '&download=1';
+            $loginUrl = 'https://sibapublicschool.com/parent/login.php';
+            $subject = 'SIBA Public School – Payment Status Update (' . $appNo . ')';
+            $body = <<<HTML
+<!doctype html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;padding:20px;color:#333;">
+    <h2>Payment Status Update – SIBA Public School</h2>
+    <p>Dear {$app['parent_name']},</p>
+    <p>The payment status for the admission application of <strong>{$studentName}</strong> has been updated.</p>
+    <table style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0;">
+        <tr><td><strong>Application No:</strong></td><td>{$appNo}</td></tr>
+        <tr><td><strong>Previous Payment Status:</strong></td><td>{$oldPaymentStatus}</td></tr>
+        <tr><td><strong>New Payment Status:</strong></td><td><strong>{$newPaymentStatus}</strong></td></tr>
     </table>
     <p>You can view the full application details in your parent portal.</p>
     <p><a href="{$receiptUrl}" style="background:#1e293b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Download Application Receipt</a></p>
