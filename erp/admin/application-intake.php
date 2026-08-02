@@ -84,9 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         $passwordHash = password_hash($parentPassword, PASSWORD_DEFAULT);
 
         try {
-            $pdo->beginTransaction();
-
-            // Auto-migrate new columns
+            // Auto-migrate new columns (DDL implicitly commits; run outside the transaction)
             $migrations = [
                 "ALTER TABLE applications ADD COLUMN father_aadhaar_no VARCHAR(20) AFTER father_name",
                 "ALTER TABLE applications ADD COLUMN mother_aadhaar_no VARCHAR(20) AFTER mother_name",
@@ -96,6 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             foreach ($migrations as $mig) {
                 try { $pdo->exec($mig); } catch (\Throwable $e) {}
             }
+
+            $pdo->beginTransaction();
 
             $check = $pdo->prepare("SELECT id FROM parents WHERE phone = :phone LIMIT 1");
             $check->execute(['phone' => $parentPhone]);
@@ -289,10 +289,10 @@ HTML;
             }
             $generatedAppNo = $appNo;
         } catch (\RuntimeException $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
+            try { if ($pdo->inTransaction()) $pdo->rollBack(); } catch (\Throwable) {}
             $error = $e->getMessage();
         } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
+            try { if ($pdo->inTransaction()) $pdo->rollBack(); } catch (\Throwable) {}
             $error = 'An unexpected error occurred: ' . $e->getMessage();
         }
     } else {
