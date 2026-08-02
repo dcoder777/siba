@@ -536,6 +536,31 @@ footer {
 }
 .form-group textarea { resize: vertical; min-height: 80px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* Admission form: highlight required fields */
+#applyForm .form-group input:required,
+#applyForm .form-group select:required,
+#applyForm .form-group textarea:required {
+    border-color: #ef9a9a;
+    background: #fff7f7;
+}
+#applyForm .form-group input:required:focus,
+#applyForm .form-group select:required:focus,
+#applyForm .form-group textarea:required:focus {
+    border-color: var(--secondary-color);
+    background: #fff;
+}
+#applyForm .req-star { color: #dc2626; font-weight: 800; }
+#applyForm .req-note {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 1rem;
+}
+
 .form-section-title {
     font-size: 0.9rem;
     font-weight: 700;

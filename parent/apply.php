@@ -482,13 +482,15 @@ HTML;
     <?php if (!$submittedApp): ?>
     <form method="POST" enctype="multipart/form-data" id="applyForm">
 
+    <div class="req-note"><i class="fas fa-asterisk" style="color:#dc2626;font-size:.7rem;vertical-align:middle;"></i> Fields marked with an asterisk (<span class="req-star">*</span>) are required.</div>
+
     <!-- ===== SECTION 1: STUDENT DETAILS ===== -->
     <div class="section-card">
         <div class="section-head"><i class="fas fa-child"></i> Student Information</div>
         <div class="section-body">
             <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                 <div class="form-group" style="flex:1;min-width:200px;">
-                    <label>First Name *</label>
+                    <label>First Name <span class="req-star">*</span></label>
                     <input type="text" name="first_name" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
                 </div>
                 <div style="flex:0 0 auto;">
@@ -515,7 +517,7 @@ HTML;
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Admission Class *</label>
+                    <label>Admission Class <span class="req-star">*</span></label>
                     <select name="admission_class" required>
                         <option value="">Select Class</option>
                         <?php foreach (['Play School','LKG','UKG'] as $cls): ?>
@@ -527,11 +529,11 @@ HTML;
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Date of Birth *</label>
+                    <label>Date of Birth <span class="req-star">*</span></label>
                     <input type="date" name="dob" required value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
-                    <label>Gender *</label>
+                    <label>Gender <span class="req-star">*</span></label>
                     <select name="gender" required>
                         <option value="">Select Gender</option>
                         <?php foreach (['Male','Female','Other'] as $g): ?>
@@ -642,7 +644,7 @@ HTML;
         <div class="section-body">
             <div class="form-row">
                 <div class="form-group">
-                    <label>Address Line 1 *</label>
+                    <label>Address Line 1 <span class="req-star">*</span></label>
                     <input type="text" name="address_line1" placeholder="House/Flat No., Street" required value="<?php echo htmlspecialchars($_POST['address_line1'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
@@ -662,21 +664,21 @@ HTML;
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>District *</label>
+                    <label>District <span class="req-star">*</span></label>
                     <input type="text" name="district" required value="<?php echo htmlspecialchars($_POST['district'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
-                    <label>Village / City *</label>
+                    <label>Village / City <span class="req-star">*</span></label>
                     <input type="text" name="village_city" required value="<?php echo htmlspecialchars($_POST['village_city'] ?? ''); ?>">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>PIN Code *</label>
+                    <label>PIN Code <span class="req-star">*</span></label>
                     <input type="text" name="pin" placeholder="6-digit PIN" maxlength="6" required inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['pin'] ?? ''); ?>">
                 </div>
                 <div class="form-group">
-                    <label>State *</label>
+                    <label>State <span class="req-star">*</span></label>
                     <select name="state" required>
                         <option value="">Select State</option>
                         <?php
@@ -687,7 +689,7 @@ HTML;
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Country *</label>
+                    <label>Country <span class="req-star">*</span></label>
                     <input type="text" name="country" value="<?php echo htmlspecialchars($_POST['country'] ?? 'India'); ?>" required>
                 </div>
             </div>
@@ -700,7 +702,7 @@ HTML;
         <div class="section-body">
             <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                 <div class="form-group" style="flex:1;min-width:200px;">
-                    <label>Father's Name *</label>
+                    <label>Father's Name <span class="req-star">*</span></label>
                     <input type="text" name="father_name" required value="<?php echo htmlspecialchars($_POST['father_name'] ?? ''); ?>">
                 </div>
                 <div style="flex:0 0 auto;">
@@ -742,7 +744,7 @@ HTML;
 
             <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                 <div class="form-group" style="flex:1;min-width:200px;">
-                    <label>Mother's Name *</label>
+                    <label>Mother's Name <span class="req-star">*</span></label>
                     <input type="text" name="mother_name" required value="<?php echo htmlspecialchars($_POST['mother_name'] ?? ''); ?>">
                 </div>
                 <div style="flex:0 0 auto;">
