@@ -402,7 +402,7 @@ if (isset($_GET['edit_installment'])) {
                             <td>
                                 <div style="display:flex;gap:.4rem;">
                                     <a class="btn btn-sm btn-soft" href="?tab=fee-heads&edit_head=<?= (int) $fh['id'] ?>">Edit</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete fee head &quot;<?= e($fh['name']) ?>&quot;? This may affect structures using it.')">
+                                    <form method="post" class="inline-form" action="?tab=fee-heads" onsubmit="return confirm('Delete fee head &quot;<?= e($fh['name']) ?>&quot;? This may affect structures using it.')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="action" value="delete_fee_head">
                                         <input type="hidden" name="id" value="<?= (int) $fh['id'] ?>">
@@ -423,7 +423,7 @@ if (isset($_GET['edit_installment'])) {
             <div class="modal">
                 <div class="modal-head">
                     <h2><?= $editHead ? 'Edit Fee Head' : 'Add Fee Head' ?></h2>
-                    <button type="button" class="icon-btn" onclick="this.closest('.modal-backdrop').classList.remove('show')">&times;</button>
+                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
                 </div>
                 <form method="post">
                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
@@ -500,7 +500,7 @@ if (isset($_GET['edit_installment'])) {
                                 <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
                                     <a class="btn btn-sm btn-soft" href="?tab=fee-structures&structure_id=<?= (int) $fs['id'] ?>">Manage Items</a>
                                     <a class="btn btn-sm btn-soft" href="?tab=fee-structures&edit_structure=<?= (int) $fs['id'] ?>">Edit</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete fee structure &quot;<?= e($fs['name']) ?>&quot;? All items, installments and assignments will be removed.')">
+                                    <form method="post" class="inline-form" action="?tab=fee-structures" onsubmit="return confirm('Delete fee structure &quot;<?= e($fs['name']) ?>&quot;? All items, installments and assignments will be removed.')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="action" value="delete_fee_structure">
                                         <input type="hidden" name="id" value="<?= (int) $fs['id'] ?>">
@@ -521,7 +521,7 @@ if (isset($_GET['edit_installment'])) {
             <div class="modal">
                 <div class="modal-head">
                     <h2><?= $editStructure ? 'Edit Fee Structure' : 'Add Fee Structure' ?></h2>
-                    <button type="button" class="icon-btn" onclick="this.closest('.modal-backdrop').classList.remove('show')">&times;</button>
+                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
                 </div>
                 <form method="post">
                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
@@ -626,7 +626,7 @@ if (isset($_GET['edit_installment'])) {
                             <td>Rs. <?= number_format((float) $item['amount'], 2) ?></td>
                             <td><span class="badge <?= ($item['is_optional'] ?? 0) ? 'badge-optional' : 'badge-yes' ?>"><?= ($item['is_optional'] ?? 0) ? 'Optional' : 'Mandatory' ?></span></td>
                             <td>
-                                <form method="post" class="inline-form" onsubmit="return confirm('Remove this item?')">
+                                <form method="post" class="inline-form" action="?tab=fee-structures&structure_id=<?= $selStructureId ?>" onsubmit="return confirm('Remove this item?')">
                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                     <input type="hidden" name="action" value="delete_item">
                                     <input type="hidden" name="item_id" value="<?= (int) $item['id'] ?>">
@@ -718,7 +718,7 @@ if (isset($_GET['edit_installment'])) {
                                 <td>
                                     <div style="display:flex;gap:.4rem;">
                                         <a class="btn btn-sm btn-soft" href="?tab=installments&structure_id=<?= $selStructureId ?>&edit_installment=<?= (int) $inst['id'] ?>">Edit</a>
-                                        <form method="post" class="inline-form" onsubmit="return confirm('Delete this installment?')">
+                                        <form method="post" class="inline-form" action="?tab=installments&structure_id=<?= $selStructureId ?>" onsubmit="return confirm('Delete this installment?')">
                                             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                             <input type="hidden" name="action" value="delete_installment">
                                             <input type="hidden" name="id" value="<?= (int) $inst['id'] ?>">
@@ -760,7 +760,7 @@ if (isset($_GET['edit_installment'])) {
             <div class="modal">
                 <div class="modal-head">
                     <h2><?= $editInstallment ? 'Edit Installment' : 'Add Installment' ?></h2>
-                    <button type="button" class="icon-btn" onclick="this.closest('.modal-backdrop').classList.remove('show')">&times;</button>
+                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
                 </div>
                 <form method="post">
                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
@@ -877,7 +877,7 @@ if (isset($_GET['edit_installment'])) {
                             <td><strong><?= e($asgn['assign_value']) ?></strong></td>
                             <td><span class="badge <?= ($asgn['is_active'] ?? 1) ? 'badge-yes' : 'badge-no' ?>"><?= ($asgn['is_active'] ?? 1) ? 'Active' : 'Inactive' ?></span></td>
                             <td>
-                                <form method="post" class="inline-form" onsubmit="return confirm('Delete this assignment?')">
+                                <form method="post" class="inline-form" action="?tab=assignments&structure_id=<?= $selStructureId ?>" onsubmit="return confirm('Delete this assignment?')">
                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                     <input type="hidden" name="action" value="delete_assignment">
                                     <input type="hidden" name="id" value="<?= (int) $asgn['id'] ?>">
@@ -899,10 +899,18 @@ if (isset($_GET['edit_installment'])) {
     </main>
 </div>
 <script>
+function closeModal(backdrop) {
+    backdrop.classList.remove('show');
+    var url = new URL(window.location.href);
+    ['edit_head', 'edit_structure', 'edit_installment'].forEach(function(k) {
+        url.searchParams.delete(k);
+    });
+    history.replaceState(null, '', url.toString());
+}
 document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
     backdrop.addEventListener('click', function(e) {
         if (e.target === this) {
-            this.classList.remove('show');
+            closeModal(this);
         }
     });
 });
