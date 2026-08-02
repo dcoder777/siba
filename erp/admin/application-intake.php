@@ -256,17 +256,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $generatedPassword = $parentPassword;
 
             $emailSent = false;
-            $subject = 'Welcome to SIBA Public School – Your Parent Portal Credentials';
+            $subject = 'SIBA Public School – Application Submitted & Parent Portal Credentials';
             $loginUrl = $parentLoginUrl;
+            $receiptUrl = 'https://sibapublicschool.com/parent/receipt.php?app_id=' . $generatedAppId . '&download=1';
             $emailBody = <<<HTML
 <!doctype html>
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family:Arial,sans-serif;padding:20px;color:#333;">
-    <h2>Welcome to SIBA Public School</h2>
+    <h2>Application Submitted – SIBA Public School</h2>
     <p>Dear {$parentName},</p>
-    <p>A parent portal account has been created for you at <strong>SIBA Public School</strong>.</p>
-    <p>You can use the following credentials to log in and track your child's admission application status:</p>
+    <p>An admission application for <strong>{$studentName}</strong> has been submitted on your behalf.</p>
+    <table style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0;">
+        <tr><td><strong>Application No:</strong></td><td>{$appNo}</td></tr>
+        <tr><td><strong>Student Name:</strong></td><td>{$studentName}</td></tr>
+        <tr><td><strong>Class Applied:</strong></td><td>{$classSought}</td></tr>
+        <tr><td><strong>Status:</strong></td><td>Application started</td></tr>
+    </table>
+    <p><a href="{$receiptUrl}" style="background:#1e293b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Download Application Receipt</a></p>
+    <p>A parent portal account has been created for you. Use these credentials to log in and track your application status:</p>
     <table style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0;">
         <tr><td><strong>Portal URL:</strong></td><td><a href="{$loginUrl}">{$loginUrl}</a></td></tr>
         <tr><td><strong>Phone:</strong></td><td>{$parentPhone}</td></tr>
@@ -274,11 +282,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     </table>
     <p>Please keep this information safe. You can change your password after logging in.</p>
     <p>Best regards,<br>SIBA Public School Administration</p>
-<?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
 </html>
 HTML;
-            $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibaschool.com\r\n";
+            $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibapublicschool.com\r\n";
             try {
                 $emailSent = mail($parentEmail, $subject, $emailBody, $headers);
             } catch (\Throwable) {

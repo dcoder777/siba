@@ -386,7 +386,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
                 if ($parentEmail) {
                     $subject = "SIBA Public School – Application Submitted (#{$appNo})";
                     $loginUrl = SITE_URL . '/parent/login.php';
-                    $receiptUrl = SITE_URL . "/parent/receipt.php?app_id={$appId}";
+                    $receiptUrl = SITE_URL . "/parent/receipt.php?app_id={$appId}&download=1";
                     $message = <<<HTML
 <!doctype html>
 <html>
@@ -472,7 +472,7 @@ HTML;
                 <p style="color:#64748b;margin-bottom:1.5rem;">Please quote this Application No. in all correspondence with the school.</p>
                 <p style="color:#dc2626;font-weight:600;margin-bottom:1.5rem;">Note: Please contact the school to complete the admission process and make the payment.</p>
                 <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
-                    <a href="receipt.php?app_id=<?= $submittedApp['id'] ?>" class="btn btn-primary" target="_blank"><i class="fas fa-download"></i> Download Receipt</a>
+                    <a href="receipt.php?app_id=<?= $submittedApp['id'] ?>&download=1" class="btn btn-primary" target="_blank"><i class="fas fa-download"></i> Download Receipt</a>
                     <a href="dashboard.php" class="btn btn-outline-primary"><i class="fas fa-tachometer-alt"></i> Go to Dashboard</a>
                 </div>
             </div>

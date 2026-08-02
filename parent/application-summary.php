@@ -52,7 +52,7 @@ if (!$fullName) $fullName = $fullApp['student_name'];
         <p>Application No: <strong><?= htmlspecialchars($appNo) ?></strong></p>
     </div>
     <div class="no-print" style="display:flex;gap:.75rem;">
-        <a href="receipt.php?app_id=<?= $app_id ?>" class="btn btn-outline-primary" target="_blank"><i class="fas fa-receipt"></i> Print Receipt</a>
+        <a href="receipt.php?app_id=<?= $app_id ?>&download=1" class="btn btn-outline-primary" target="_blank"><i class="fas fa-receipt"></i> Download Receipt</a>
         <a href="dashboard.php" class="btn btn-outline-primary"><i class="fas fa-arrow-left"></i> Dashboard</a>
     </div>
 </div>

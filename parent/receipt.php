@@ -1,6 +1,7 @@
 <?php
 $pageTitle = "Application Receipt";
 require_once('../includes/db_connect.php');
+require_once(__DIR__ . '/../includes/receipt_pdf.php');
 
 $appId = (int) ($_GET['app_id'] ?? 0);
 $parentId = (int) ($_SESSION['parent_id'] ?? 0);
@@ -13,6 +14,21 @@ if (!$appId || !$parentId) {
 $app = $conn->query("SELECT a.*, p.name AS parent_name, p.phone AS parent_phone, p.email AS parent_email FROM applications a JOIN parents p ON p.id = a.parent_id WHERE a.id = $appId AND a.parent_id = $parentId")->fetch_assoc();
 if (!$app) {
     header("Location: dashboard.php");
+    exit();
+}
+
+$download = (isset($_GET['download']) && $_GET['download'] === '1');
+if ($download) {
+    $pdf = siba_receipt_pdf($app);
+    $filename = siba_receipt_filename($app, $appId);
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($pdf));
+    header('Cache-Control: private, max-age=0, must-revalidate');
+    echo $pdf;
     exit();
 }
 ?><html>
@@ -75,7 +91,8 @@ if (!$app) {
             <tr><td>Applied On</td><td><?= date('d-m-Y h:i A', strtotime($app['applied_at'])) ?></td></tr>
         </table>
         <div style="text-align:center;" class="no-print">
-            <button class="print-btn" onclick="window.print()"><i class="fas fa-print"></i> Print / Download PDF</button>
+            <a class="print-btn" href="receipt.php?app_id=<?= (int) $appId ?>&download=1"><i class="fas fa-download"></i> Download PDF</a>
+            <button class="print-btn" onclick="window.print()" style="margin-left:.5rem;"><i class="fas fa-print"></i> Print</button>
             <br><br>
             <a href="dashboard.php" style="color:#64748b;font-size:.85rem;">&larr; Back to Dashboard</a>
         </div>
