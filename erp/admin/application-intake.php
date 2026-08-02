@@ -67,14 +67,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $paymentMethod = trim((string) ($_POST['payment_method'] ?? 'Offline'));
 
     $errors = [];
-    if ($parentName === '') $errors[] = 'Parent name is required.';
-    if ($parentEmail === '' || !filter_var($parentEmail, FILTER_VALIDATE_EMAIL)) $errors[] = 'A valid parent email is required.';
-    if (strlen($parentPhone) !== 10) $errors[] = 'Parent phone must be exactly 10 digits.';
-    if ($studentName === '') $errors[] = 'Student name is required.';
-    if ($classSought === '' || !in_array($classSought, $classOptions, true)) $errors[] = 'A valid class must be selected.';
-    if ($dob === '') $errors[] = 'Date of birth is required.';
-    if ($fatherName === '') $errors[] = 'Father name is required.';
-    if ($motherName === '') $errors[] = 'Mother name is required.';
+    if ($parentName === '') $errors['parent_name'] = 'Parent name is required.';
+    if ($parentEmail === '' || !filter_var($parentEmail, FILTER_VALIDATE_EMAIL)) $errors['parent_email'] = 'A valid parent email is required.';
+    if (strlen($parentPhone) !== 10) $errors['parent_phone'] = 'Parent phone must be exactly 10 digits.';
+    if ($studentName === '') $errors['student_name'] = 'Student name is required.';
+    if ($classSought === '' || !in_array($classSought, $classOptions, true)) $errors['class_sought'] = 'A valid class must be selected.';
+    if ($dob === '') $errors['dob'] = 'Date of birth is required.';
+    if ($fatherName === '') $errors['father_name'] = 'Father name is required.';
+    if ($motherName === '') $errors['mother_name'] = 'Mother name is required.';
 
     if (empty($errors)) {
         if ($parentPassword === '') {
@@ -295,8 +295,15 @@ HTML;
             $error = 'An unexpected error occurred: ' . $e->getMessage();
         }
     } else {
-        $error = implode('<br>', $errors);
+        $error = implode('<br>', array_values($errors));
     }
+}
+
+function field_error(string $field, array $errors): string {
+    return isset($errors[$field]) ? ' is-invalid' : '';
+}
+function field_feedback(string $field, array $errors): string {
+    return isset($errors[$field]) ? '<div class="invalid-feedback">' . e($errors[$field]) . '</div>' : '';
 }
 ?>
 <!doctype html>
@@ -348,7 +355,7 @@ HTML;
             <?php endif; ?>
         <?php endif; ?>
 
-        <form method="post" enctype="multipart/form-data" class="stack" style="gap:1.5rem;">
+        <form method="post" enctype="multipart/form-data" class="stack" style="gap:1.5rem;" novalidate>
             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
 
             <section class="panel" style="padding:1.25rem">
@@ -359,15 +366,18 @@ HTML;
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label" for="parent_name">Full Name *</label>
-                        <input class="form-control" id="parent_name" name="parent_name" type="text" required value="<?= e($_POST['parent_name'] ?? '') ?>">
+                        <input class="form-control<?= field_error('parent_name', $errors) ?>" id="parent_name" name="parent_name" type="text" value="<?= e($_POST['parent_name'] ?? '') ?>">
+                        <?= field_feedback('parent_name', $errors) ?>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="parent_email">Email Address *</label>
-                        <input class="form-control" id="parent_email" name="parent_email" type="email" required value="<?= e($_POST['parent_email'] ?? '') ?>">
+                        <input class="form-control<?= field_error('parent_email', $errors) ?>" id="parent_email" name="parent_email" type="email" value="<?= e($_POST['parent_email'] ?? '') ?>">
+                        <?= field_feedback('parent_email', $errors) ?>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="parent_phone">Phone Number *</label>
-                        <input class="form-control" id="parent_phone" name="parent_phone" type="tel" maxlength="10" required value="<?= e($_POST['parent_phone'] ?? '') ?>" placeholder="10-digit mobile number">
+                        <input class="form-control<?= field_error('parent_phone', $errors) ?>" id="parent_phone" name="parent_phone" type="tel" maxlength="10" value="<?= e($_POST['parent_phone'] ?? '') ?>" placeholder="10-digit mobile number">
+                        <?= field_feedback('parent_phone', $errors) ?>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="parent_password">Password <span class="text-muted fw-normal">(leave empty to auto-generate)</span></label>
@@ -384,7 +394,8 @@ HTML;
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label" for="student_name">First name *</label>
-                        <input class="form-control" id="student_name" name="student_name" type="text" required value="<?= e($_POST['student_name'] ?? '') ?>">
+                        <input class="form-control<?= field_error('student_name', $errors) ?>" id="student_name" name="student_name" type="text" value="<?= e($_POST['student_name'] ?? '') ?>">
+                        <?= field_feedback('student_name', $errors) ?>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="middle_name">Middle Name</label>
@@ -405,16 +416,18 @@ HTML;
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="class_sought">Class Applying For *</label>
-                        <select class="form-select" id="class_sought" name="class_sought" required>
+                        <select class="form-select<?= field_error('class_sought', $errors) ?>" id="class_sought" name="class_sought">
                             <option value="">— Select Class —</option>
                             <?php foreach ($classOptions as $opt): ?>
                                 <option value="<?= e($opt) ?>" <?= ($_POST['class_sought'] ?? '') === $opt ? 'selected' : '' ?>><?= e($opt) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <?= field_feedback('class_sought', $errors) ?>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="dob">Date of Birth *</label>
-                        <input class="form-control" id="dob" name="dob" type="date" required value="<?= e($_POST['dob'] ?? '') ?>">
+                        <input class="form-control<?= field_error('dob', $errors) ?>" id="dob" name="dob" type="date" value="<?= e($_POST['dob'] ?? '') ?>">
+                        <?= field_feedback('dob', $errors) ?>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="gender">Gender</label>
@@ -505,7 +518,8 @@ HTML;
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label" for="father_name">Father's Name *</label>
-                        <input class="form-control" id="father_name" name="father_name" type="text" required value="<?= e($_POST['father_name'] ?? '') ?>">
+                        <input class="form-control<?= field_error('father_name', $errors) ?>" id="father_name" name="father_name" type="text" value="<?= e($_POST['father_name'] ?? '') ?>">
+                        <?= field_feedback('father_name', $errors) ?>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="father_photo">Father's Photo</label>
@@ -538,7 +552,8 @@ HTML;
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="mother_name">Mother's Name *</label>
-                        <input class="form-control" id="mother_name" name="mother_name" type="text" required value="<?= e($_POST['mother_name'] ?? '') ?>">
+                        <input class="form-control<?= field_error('mother_name', $errors) ?>" id="mother_name" name="mother_name" type="text" value="<?= e($_POST['mother_name'] ?? '') ?>">
+                        <?= field_feedback('mother_name', $errors) ?>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="mother_photo">Mother's Photo</label>
