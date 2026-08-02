@@ -44,6 +44,10 @@ $bc = $badgeClass[$fullApp['status']] ?? 'badge-pending';
             <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.3rem;">Applied On</p>
             <strong><?php echo date('d M Y, h:i A', strtotime($fullApp['applied_at'])); ?></strong>
         </div>
+        <div>
+            <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.3rem;">Receipt</p>
+            <a href="receipt.php?app_id=<?php echo $fullApp['id']; ?>&download=1" class="btn btn-primary btn-sm" target="_blank"><i class="fas fa-download"></i> Download Receipt</a>
+        </div>
     </div>
 </div>
 
