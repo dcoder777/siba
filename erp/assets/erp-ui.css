@@ -682,7 +682,10 @@ th.sortable::after{content:" ↕";font-size:.7rem;color:var(--muted)}
     overflow:auto;
     padding:1.25rem;
     border-radius:var(--radius-lg);
-    background:#fff;
+    background:#fff !important;
+    background-color:#fff !important;
+    pointer-events:auto;
+    z-index:1;
     border:1px solid var(--line);
     box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
 }
