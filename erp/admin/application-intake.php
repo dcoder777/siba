@@ -18,6 +18,8 @@ $success = '';
 $generatedPhone = '';
 $generatedPassword = '';
 $generatedAppNo = '';
+$generatedAppId = 0;
+$parentLoginUrl = 'https://sibapublicschool.com/parent/login.php';
 
 $classOptions = ['Nursery', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 $genderOptions = ['Male', 'Female', 'Other'];
@@ -250,10 +252,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
             $generatedPhone = $parentPhone;
             $generatedPassword = $parentPassword;
+            $generatedAppId = (int) $pdo->lastInsertId();
 
             $emailSent = false;
             $subject = 'Welcome to SIBA Public School – Your Parent Portal Credentials';
-            $loginUrl = 'http://localhost/siba/parent/login.php';
+            $loginUrl = $parentLoginUrl;
             $emailBody = <<<HTML
 <!doctype html>
 <html>
@@ -345,11 +348,12 @@ function field_feedback(string $field, array $errors): string {
             <?php if ($generatedPhone !== ''): ?>
                 <div class="cred-box">
                     <strong>Application Created</strong><br>
-                    Application No: <code><?= e($generatedAppNo) ?></code>
+                    Application No: <code><?= e($generatedAppNo) ?></code><br>
+                    <a class="btn btn-sm" style="margin-top:.5rem;background:#0d6efd;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;" href="application-receipt.php?app_id=<?= (int) $generatedAppId ?>" target="_blank"><i class="fas fa-download"></i> Download Receipt</a>
                 </div>
                 <div class="cred-box">
                     <strong>Parent Login Credentials</strong><br>
-                    Portal: <a href="http://localhost/siba/parent/login.php">http://localhost/siba/parent/login.php</a><br>
+                    Portal: <a href="<?= e($parentLoginUrl) ?>"><?= e($parentLoginUrl) ?></a><br>
                     Phone: <code><?= e($generatedPhone) ?></code><br>
                     Password: <code><?= e($generatedPassword) ?></code>
                 </div>
