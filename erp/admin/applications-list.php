@@ -236,6 +236,7 @@ function statusBadge(string $s): string {
                                     </form>
                                     <div class="row-links">
                                         <a href="application-view.php?app_id=<?= (int) $a['id'] ?>" class="link-view">View</a>
+                                        <a href="application-receipt.php?app_id=<?= (int) $a['id'] ?>&download=1" class="link-view" target="_blank" title="Download Receipt PDF">Receipt</a>
                                         <form method="post" style="display:inline;" onsubmit="return confirm('Delete <?= e($a['application_no'] ?? '#' . $a['id']) ?>? This cannot be undone.')">
                                             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                             <input type="hidden" name="app_id" value="<?= (int) $a['id'] ?>">

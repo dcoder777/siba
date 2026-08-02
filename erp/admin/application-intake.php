@@ -349,7 +349,7 @@ function field_feedback(string $field, array $errors): string {
                 <div class="cred-box">
                     <strong>Application Created</strong><br>
                     Application No: <code><?= e($generatedAppNo) ?></code><br>
-                    <a class="btn btn-sm" style="margin-top:.5rem;background:#0d6efd;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;" href="application-receipt.php?app_id=<?= (int) $generatedAppId ?>" target="_blank"><i class="fas fa-download"></i> Download Receipt</a>
+                    <a class="btn btn-sm" style="margin-top:.5rem;background:#0d6efd;color:#fff;padding:.4rem 1rem;border-radius:6px;text-decoration:none;" href="application-receipt.php?app_id=<?= (int) $generatedAppId ?>&download=1"><i class="fas fa-download"></i> Download Receipt</a>
                 </div>
                 <div class="cred-box">
                     <strong>Parent Login Credentials</strong><br>
