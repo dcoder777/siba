@@ -128,6 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
         }
 
         $success = 'Application updated successfully.';
+        $emailNotified = false;
+        $notifyEmail = '';
 
         $newStatus = (string) ($_POST['status'] ?? $oldStatus);
         if ($newStatus !== $oldStatus && !empty($app['parent_email'])) {
@@ -159,8 +161,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
 HTML;
             $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibapublicschool.com\r\n";
             try {
-                @mail($parentEmail, $subject, $body, $headers);
+                $emailNotified = @mail($parentEmail, $subject, $body, $headers);
             } catch (\Throwable) {}
+            $notifyEmail = $parentEmail;
         }
 
         $newPaymentStatus = (string) ($_POST['payment_status'] ?? $oldPaymentStatus);
@@ -193,8 +196,13 @@ HTML;
 HTML;
             $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibapublicschool.com\r\n";
             try {
-                @mail($parentEmail, $subject, $body, $headers);
+                $emailNotified = @mail($parentEmail, $subject, $body, $headers) || $emailNotified;
             } catch (\Throwable) {}
+            $notifyEmail = $parentEmail;
+        }
+
+        if ($emailNotified && $notifyEmail) {
+            $success .= ' An email notification has been sent to ' . htmlspecialchars($notifyEmail) . '.';
         }
     }
 }

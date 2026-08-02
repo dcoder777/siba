@@ -54,8 +54,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_payment']) && 
     $newStatus = trim((string) ($_POST['payment_status'] ?? ''));
     if ($appId > 0 && in_array($newStatus, ['Pending', 'Paid'], true)) {
         try {
+            $appStmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id");
+            $appStmt->execute(['id' => $appId]);
+            $appData = $appStmt->fetch(PDO::FETCH_ASSOC);
+            $oldPaymentStatus = (string) ($appData['payment_status'] ?? '');
+
             $pdo->prepare("UPDATE applications SET payment_status = :status WHERE id = :id")->execute(['status' => $newStatus, 'id' => $appId]);
             $success = 'Payment status updated to ' . $newStatus . '.';
+
+            if ($oldPaymentStatus !== $newStatus && !empty($appData['parent_email'])) {
+                $parentEmail = $appData['parent_email'];
+                $parentName = $appData['parent_name'] ?? '';
+                $studentName = $appData['student_name'] ?? '';
+                $appNo = $appData['application_no'] ?? ('#' . $appId);
+                $receiptUrl = 'https://sibapublicschool.com/parent/receipt.php?app_id=' . $appId . '&download=1';
+                $loginUrl = 'https://sibapublicschool.com/parent/login.php';
+                $subject = 'SIBA Public School – Payment Status Update (' . $appNo . ')';
+                $body = <<<HTML
+<!doctype html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;padding:20px;color:#333;">
+    <h2>Payment Status Update – SIBA Public School</h2>
+    <p>Dear {$parentName},</p>
+    <p>The payment status for the admission application of <strong>{$studentName}</strong> has been updated.</p>
+    <table style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0;">
+        <tr><td><strong>Application No:</strong></td><td>{$appNo}</td></tr>
+        <tr><td><strong>Previous Payment Status:</strong></td><td>{$oldPaymentStatus}</td></tr>
+        <tr><td><strong>New Payment Status:</strong></td><td><strong>{$newStatus}</strong></td></tr>
+    </table>
+    <p>You can view the full application details in your parent portal.</p>
+    <p><a href="{$receiptUrl}" style="background:#1e293b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Download Application Receipt</a></p>
+    <p><a href="{$loginUrl}">Log in to the Parent Portal</a></p>
+    <p>Best regards,<br>SIBA Public School Administration</p>
+</body>
+</html>
+HTML;
+                $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibapublicschool.com\r\n";
+                $emailSent = false;
+                try {
+                    $emailSent = @mail($parentEmail, $subject, $body, $headers);
+                } catch (\Throwable) {}
+                if ($emailSent) {
+                    $success .= ' An email notification has been sent to ' . htmlspecialchars($parentEmail) . '.';
+                }
+            }
         } catch (Exception $e) {
             $error = 'Failed to update payment status: ' . $e->getMessage();
         }
