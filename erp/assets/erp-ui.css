@@ -668,7 +668,10 @@ th.sortable::after{content:" ↕";font-size:.7rem;color:var(--muted)}
     z-index:1055;
 }
 
-.modal-backdrop.show{display:flex}
+.modal-backdrop.show{
+    display:flex;
+    opacity:1 !important;
+}
 
 .modal-backdrop .modal{
     position:relative;
@@ -684,6 +687,7 @@ th.sortable::after{content:" ↕";font-size:.7rem;color:var(--muted)}
     border-radius:var(--radius-lg);
     background:#fff !important;
     background-color:#fff !important;
+    opacity:1 !important;
     pointer-events:auto;
     z-index:1;
     border:1px solid var(--line);
