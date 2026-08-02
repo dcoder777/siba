@@ -75,6 +75,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         $pdo->prepare("DELETE FROM income_records WHERE id=?")->execute([$id]);
         $success = 'Income record deleted successfully.';
     }
+
+    if ($action === 'add_category') {
+        $name = trim((string) ($_POST['name'] ?? ''));
+        if ($name === '') {
+            $error = 'Category name is required.';
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO income_categories (name) VALUES (?)");
+            $stmt->execute([$name]);
+            $newId = (int) $pdo->lastInsertId();
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['id' => $newId, 'name' => $name]);
+                exit;
+            }
+            header('Location: income.php?action=add&cat=' . $newId);
+            exit;
+        }
+    }
 }
 
 $editRow = null;
@@ -132,6 +150,7 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $catStmt = $pdo->query("SELECT id, name FROM income_categories ORDER BY name");
 $categories = $catStmt->fetchAll(PDO::FETCH_ASSOC);
+$selectedCatId = (int) ($editRow['category_id'] ?? ($_GET['cat'] ?? 0));
 
 $showForm = isset($_GET['action']) && $_GET['action'] === 'add';
 $formAction = $editRow ? 'edit' : ($showForm ? 'add' : '');
@@ -212,12 +231,15 @@ $incomeTypeLabels = [
                     <div class="field-grid">
                         <div>
                             <label for="category_id">Category</label>
-                            <select name="category_id" id="category_id">
-                                <option value="">-- Select Category --</option>
-                                <?php foreach ($categories as $cat): ?>
-                                    <option value="<?= (int) $cat['id'] ?>" <?= (isset($editRow['category_id']) && (int) $editRow['category_id'] === (int) $cat['id']) ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div style="display:flex;gap:.4rem;align-items:center;">
+                                <select name="category_id" id="category_id" style="flex:1;min-width:0;">
+                                    <option value="">-- Select Category --</option>
+                                    <?php foreach ($categories as $cat): ?>
+                                        <option value="<?= (int) $cat['id'] ?>" <?= ((int) $selectedCatId === (int) $cat['id']) ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-soft" onclick="addIncomeCategory()" style="white-space:nowrap;">+ New</button>
+                            </div>
                         </div>
                         <div>
                             <label for="income_type">Income Type *</label>
@@ -387,6 +409,31 @@ $incomeTypeLabels = [
     </main>
 </div>
 <script src="../assets/erp.js?v=<?php echo filemtime(dirname(__DIR__) . '/assets/erp.js'); ?>"></script>
+<script>
+function addIncomeCategory() {
+    var name = prompt('Enter new income category name:');
+    if (!name || name.trim() === '') return;
+    var fd = new FormData();
+    fd.append('_token', <?= json_encode(csrf_token()) ?>);
+    fd.append('action', 'add_category');
+    fd.append('name', name.trim());
+    fetch('income.php', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.id) {
+                var sel = document.getElementById('category_id');
+                var opt = document.createElement('option');
+                opt.value = data.id;
+                opt.text = data.name;
+                sel.add(opt);
+                sel.value = String(data.id);
+            } else {
+                alert(data && data.error ? data.error : 'Could not add category.');
+            }
+        })
+        .catch(function() { alert('Could not add category.'); });
+}
+</script>
 <?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
 </html>
