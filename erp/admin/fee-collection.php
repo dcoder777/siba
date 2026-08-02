@@ -671,7 +671,7 @@ if ($cancelReceiptId > 0) {
         </section>
     </main>
 </div>
-<script src="../assets/erp.js"></script>
+<script src="../assets/erp.js?v=<?php echo filemtime(dirname(__DIR__) . '/assets/erp.js'); ?>"></script>
 <script>
 function toggleChequeFields(mode) {
     var el = document.getElementById('cheque-fields');

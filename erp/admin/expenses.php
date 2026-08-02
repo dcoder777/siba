@@ -462,7 +462,7 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
         <?php endif; ?>
     </main>
 </div>
-<script src="../assets/erp.js"></script>
+<script src="../assets/erp.js?v=<?php echo filemtime(dirname(__DIR__) . '/assets/erp.js'); ?>"></script>
 <script>
 function calcNet() {
     var amt = parseFloat(document.getElementById('amount').value) || 0;

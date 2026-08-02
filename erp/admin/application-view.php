@@ -421,7 +421,7 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
         </form>
     </main>
 </div>
-<script src="../assets/erp.js"></script>
+<script src="../assets/erp.js?v=<?php echo filemtime(dirname(__DIR__) . '/assets/erp.js'); ?>"></script>
 <?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
 </html>

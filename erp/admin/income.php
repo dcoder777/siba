@@ -386,7 +386,7 @@ $incomeTypeLabels = [
         <?php endif; ?>
     </main>
 </div>
-<script src="../assets/erp.js"></script>
+<script src="../assets/erp.js?v=<?php echo filemtime(dirname(__DIR__) . '/assets/erp.js'); ?>"></script>
 <?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
 </html>
