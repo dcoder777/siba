@@ -79,6 +79,7 @@ if ($payStatusCol->num_rows === 0) {
 
 $error   = '';
 $success = '';
+$errors  = [];
 $submittedApp = null;
 
 // ---- Generate application number ----
@@ -130,21 +131,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
     $disability_det   = $conn->real_escape_string(trim($_POST['disability_details'] ?? ''));
     $terms            = isset($_POST['terms']) ? 1 : 0;
 
-    if (empty($first_name)) {
-        $error = "Please enter the child's first name.";
-    } elseif (empty($dob)) {
-        $error = "Please enter the date of birth.";
-    } elseif (empty($gender)) {
-        $error = "Please select the gender.";
-    } elseif (empty($admission_class)) {
-        $error = "Please select the class for admission.";
-    } elseif (empty($father_name)) {
-        $error = "Please enter the father's name.";
-    } elseif (empty($mother_name)) {
-        $error = "Please enter the mother's name.";
-    } elseif (!$terms) {
-        $error = "You must accept the Terms and Conditions to proceed.";
-    } else {
+    $errors = [];
+
+    if (empty($first_name))      $errors['first_name']     = "Please enter the child's first name.";
+    if (empty($admission_class)) $errors['admission_class'] = "Please select the class for admission.";
+    if (empty($dob))             $errors['dob']            = "Please enter the date of birth.";
+    if (empty($gender))          $errors['gender']         = "Please select the gender.";
+    if (empty($address_line1))   $errors['address_line1']  = "Please enter Address Line 1.";
+    if (empty($district))        $errors['district']       = "Please enter the district.";
+    if (empty($village_city))    $errors['village_city']   = "Please enter the village / city.";
+    if (empty($pin))             $errors['pin']            = "Please enter the PIN code.";
+    if (empty($state))           $errors['state']          = "Please select the state.";
+    if (empty($country))         $errors['country']        = "Please enter the country.";
+    if (empty($father_name))     $errors['father_name']    = "Please enter the father's name.";
+    if (empty($mother_name))     $errors['mother_name']    = "Please enter the mother's name.";
+    if (!$terms)                 $errors['terms']          = "You must accept the Terms and Conditions to proceed.";
+
+    if (empty($errors)) {
         $upload_path = dirname(__DIR__) . '/uploads/docs/';
         $allowed     = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
 
@@ -428,6 +431,8 @@ HTML;
                 $error = "Database error: " . $conn->error;
             }
         }
+    } else {
+        $error = "Please fill in all required fields (marked with *).";
     }
 }
 ?>
@@ -480,7 +485,7 @@ HTML;
     <?php endif; ?>
 
     <?php if (!$submittedApp): ?>
-    <form method="POST" enctype="multipart/form-data" id="applyForm">
+    <form method="POST" enctype="multipart/form-data" id="applyForm" novalidate>
 
     <div class="req-note"><i class="fas fa-asterisk" style="color:#dc2626;font-size:.7rem;vertical-align:middle;"></i> Fields marked with an asterisk (<span class="req-star">*</span>) are required.</div>
 
@@ -491,7 +496,8 @@ HTML;
             <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                 <div class="form-group" style="flex:1;min-width:200px;">
                     <label>First Name <span class="req-star">*</span></label>
-                    <input type="text" name="first_name" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
+                    <input type="text" name="first_name" required class="<?php echo isset($errors['first_name']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
+                    <?php if (isset($errors['first_name'])): ?><div class="invalid-feedback"><?php echo $errors['first_name']; ?></div><?php endif; ?>
                 </div>
                 <div style="flex:0 0 auto;">
                     <label>Passport Size Photo</label>
@@ -518,7 +524,7 @@ HTML;
             <div class="form-row">
                 <div class="form-group">
                     <label>Admission Class <span class="req-star">*</span></label>
-                    <select name="admission_class" required>
+                    <select name="admission_class" required class="<?php echo isset($errors['admission_class']) ? 'is-invalid' : ''; ?>">
                         <option value="">Select Class</option>
                         <?php foreach (['Play School','LKG','UKG'] as $cls): ?>
                             <option value="<?php echo $cls; ?>" <?php echo (($_POST['admission_class'] ?? '') == $cls) ? 'selected' : ''; ?>><?php echo $cls; ?></option>
@@ -527,19 +533,22 @@ HTML;
                             <option value="Class <?php echo $cls; ?>" <?php echo (($_POST['admission_class'] ?? '') == "Class $cls") ? 'selected' : ''; ?>>Class <?php echo $cls; ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if (isset($errors['admission_class'])): ?><div class="invalid-feedback"><?php echo $errors['admission_class']; ?></div><?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>Date of Birth <span class="req-star">*</span></label>
-                    <input type="date" name="dob" required value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>">
+                    <input type="date" name="dob" required class="<?php echo isset($errors['dob']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['dob'] ?? ''); ?>">
+                    <?php if (isset($errors['dob'])): ?><div class="invalid-feedback"><?php echo $errors['dob']; ?></div><?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>Gender <span class="req-star">*</span></label>
-                    <select name="gender" required>
+                    <select name="gender" required class="<?php echo isset($errors['gender']) ? 'is-invalid' : ''; ?>">
                         <option value="">Select Gender</option>
                         <?php foreach (['Male','Female','Other'] as $g): ?>
                             <option value="<?php echo $g; ?>" <?php echo (($_POST['gender'] ?? '') == $g) ? 'selected' : ''; ?>><?php echo $g; ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if (isset($errors['gender'])): ?><div class="invalid-feedback"><?php echo $errors['gender']; ?></div><?php endif; ?>
                 </div>
             </div>
 
@@ -645,7 +654,8 @@ HTML;
             <div class="form-row">
                 <div class="form-group">
                     <label>Address Line 1 <span class="req-star">*</span></label>
-                    <input type="text" name="address_line1" placeholder="House/Flat No., Street" required value="<?php echo htmlspecialchars($_POST['address_line1'] ?? ''); ?>">
+                    <input type="text" name="address_line1" placeholder="House/Flat No., Street" required class="<?php echo isset($errors['address_line1']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['address_line1'] ?? ''); ?>">
+                    <?php if (isset($errors['address_line1'])): ?><div class="invalid-feedback"><?php echo $errors['address_line1']; ?></div><?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>Address Line 2</label>
@@ -665,21 +675,24 @@ HTML;
             <div class="form-row">
                 <div class="form-group">
                     <label>District <span class="req-star">*</span></label>
-                    <input type="text" name="district" required value="<?php echo htmlspecialchars($_POST['district'] ?? ''); ?>">
+                    <input type="text" name="district" required class="<?php echo isset($errors['district']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['district'] ?? ''); ?>">
+                    <?php if (isset($errors['district'])): ?><div class="invalid-feedback"><?php echo $errors['district']; ?></div><?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>Village / City <span class="req-star">*</span></label>
-                    <input type="text" name="village_city" required value="<?php echo htmlspecialchars($_POST['village_city'] ?? ''); ?>">
+                    <input type="text" name="village_city" required class="<?php echo isset($errors['village_city']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['village_city'] ?? ''); ?>">
+                    <?php if (isset($errors['village_city'])): ?><div class="invalid-feedback"><?php echo $errors['village_city']; ?></div><?php endif; ?>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>PIN Code <span class="req-star">*</span></label>
-                    <input type="text" name="pin" placeholder="6-digit PIN" maxlength="6" required inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" value="<?php echo htmlspecialchars($_POST['pin'] ?? ''); ?>">
+                    <input type="text" name="pin" placeholder="6-digit PIN" maxlength="6" required inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" class="<?php echo isset($errors['pin']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['pin'] ?? ''); ?>">
+                    <?php if (isset($errors['pin'])): ?><div class="invalid-feedback"><?php echo $errors['pin']; ?></div><?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>State <span class="req-star">*</span></label>
-                    <select name="state" required>
+                    <select name="state" required class="<?php echo isset($errors['state']) ? 'is-invalid' : ''; ?>">
                         <option value="">Select State</option>
                         <?php
                         $states = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -687,10 +700,12 @@ HTML;
                             <option value="<?php echo $st; ?>" <?php echo (($_POST['state'] ?? '') === $st) ? 'selected' : ''; ?>><?php echo $st; ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if (isset($errors['state'])): ?><div class="invalid-feedback"><?php echo $errors['state']; ?></div><?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>Country <span class="req-star">*</span></label>
-                    <input type="text" name="country" value="<?php echo htmlspecialchars($_POST['country'] ?? 'India'); ?>" required>
+                    <input type="text" name="country" value="<?php echo htmlspecialchars($_POST['country'] ?? 'India'); ?>" required class="<?php echo isset($errors['country']) ? 'is-invalid' : ''; ?>">
+                    <?php if (isset($errors['country'])): ?><div class="invalid-feedback"><?php echo $errors['country']; ?></div><?php endif; ?>
                 </div>
             </div>
         </div>
@@ -703,7 +718,8 @@ HTML;
             <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                 <div class="form-group" style="flex:1;min-width:200px;">
                     <label>Father's Name <span class="req-star">*</span></label>
-                    <input type="text" name="father_name" required value="<?php echo htmlspecialchars($_POST['father_name'] ?? ''); ?>">
+                    <input type="text" name="father_name" required class="<?php echo isset($errors['father_name']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['father_name'] ?? ''); ?>">
+                    <?php if (isset($errors['father_name'])): ?><div class="invalid-feedback"><?php echo $errors['father_name']; ?></div><?php endif; ?>
                 </div>
                 <div style="flex:0 0 auto;">
                     <label>Father's Photo</label>
@@ -745,7 +761,8 @@ HTML;
             <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
                 <div class="form-group" style="flex:1;min-width:200px;">
                     <label>Mother's Name <span class="req-star">*</span></label>
-                    <input type="text" name="mother_name" required value="<?php echo htmlspecialchars($_POST['mother_name'] ?? ''); ?>">
+                    <input type="text" name="mother_name" required class="<?php echo isset($errors['mother_name']) ? 'is-invalid' : ''; ?>" value="<?php echo htmlspecialchars($_POST['mother_name'] ?? ''); ?>">
+                    <?php if (isset($errors['mother_name'])): ?><div class="invalid-feedback"><?php echo $errors['mother_name']; ?></div><?php endif; ?>
                 </div>
                 <div style="flex:0 0 auto;">
                     <label>Mother's Photo</label>
@@ -832,6 +849,7 @@ HTML;
                     of SIBA Public School.
                 </label>
             </div>
+            <?php if (isset($errors['terms'])): ?><div class="invalid-feedback"><?php echo $errors['terms']; ?></div><?php endif; ?>
         </div>
     </div>
 
