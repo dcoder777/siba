@@ -482,7 +482,7 @@ input:focus,select:focus,textarea:focus{
     box-shadow:0 0 0 .25rem rgba(13,110,253,.15);
 }
 
-input[type="text"],input[type="email"],input[type="tel"],input[type="search"],input:not([type]),select{text-transform:uppercase}
+input[type="text"],input[type="email"],input[type="tel"],input[type="search"],input:not([type]){text-transform:uppercase}
 
 textarea{min-height:100px;resize:vertical}
 
