@@ -569,7 +569,7 @@ if (isset($_GET['edit_installment'])) {
         <!-- Items management for selected structure -->
         <?php if ($selStructure): ?>
         <hr class="section-divider">
-        <section class="panel" style="padding:1.25rem;margin-top:1rem;">
+        <section id="items-panel" class="panel" style="padding:1.25rem;margin-top:1rem;">
             <div class="section-title">
                 <div>
                     <h2>Items: <?= e($selStructure['name']) ?></h2>
@@ -906,6 +906,14 @@ document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
         }
     });
 });
+<?php if ($selStructureId > 0): ?>
+window.addEventListener('load', function() {
+    var panel = document.getElementById('items-panel');
+    if (panel) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+});
+<?php endif; ?>
 </script>
 <script src="../assets/erp.js?v=<?php echo filemtime(dirname(__DIR__) . '/assets/erp.js'); ?>"></script>
 <?php include __DIR__ . '/_theme-js.php'; ?>
