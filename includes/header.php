@@ -19,7 +19,7 @@ require_once(__DIR__ . '/config.php');
 
 <div class="announcement-bar">
     <span class="label">📢 NOTICE</span>
-    <span class="ticker">Admissions Open for Academic Year 2026–27</span>
+    <div class="ticker-track"><span class="ticker">Admissions Open for Academic Year 2026–27</span></div>
 </div>
 
 <header>

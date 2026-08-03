@@ -244,6 +244,14 @@ nav ul.nav-links li a:hover, nav ul.nav-links li a.active {
     border-radius: 4px;
     white-space: nowrap;
     letter-spacing: 0.08em;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.announcement-bar .ticker-track {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    align-self: center;
 }
 .announcement-bar .ticker {
     font-size: 0.85rem;
