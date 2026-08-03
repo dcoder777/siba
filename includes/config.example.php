@@ -49,7 +49,7 @@ if (file_exists($logoJpgPath)) {
 // Razorpay API Keys (update with live keys)
 define('RAZORPAY_KEY_ID', 'rzp_test_XXXXXXXXXXXXXXXX');
 define('RAZORPAY_KEY_SECRET', 'YOUR_SECRET_HERE');
-define('APPLICATION_FEE', 500);
+define('APPLICATION_FEE', 200);
 
 // Start session if not already started
 if (session_status() == PHP_SESSION_NONE) {

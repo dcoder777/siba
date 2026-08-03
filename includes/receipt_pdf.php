@@ -51,7 +51,7 @@ if (!function_exists('siba_receipt_pdf')) {
             ['Parent Email', $app['parent_email'] ?? ''],
             ['Status', $app['status'] ?? ''],
             ['Payment Status', $app['payment_status'] ?? 'Pending'],
-            ['Application Fee', 'Rs. 150'],
+            ['Application Fee', 'Rs. 200'],
             ['Applied On', $app['applied_at'] ?? ''],
         ];
 

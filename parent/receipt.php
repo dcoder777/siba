@@ -87,7 +87,7 @@ if ($download) {
             <tr><td>Parent Email</td><td><?= htmlspecialchars($app['parent_email']) ?></td></tr>
             <tr><td>Status</td><td><span class="status-badge started"><?= htmlspecialchars($app['status']) ?></span></td></tr>
             <tr><td>Payment Status</td><td><span class="status-badge <?= ($app['payment_status'] ?? 'Pending') === 'Paid' ? 'paid' : 'pending' ?>"><?= htmlspecialchars($app['payment_status'] ?? 'Pending') ?></span></td></tr>
-            <tr><td>Application Fee</td><td><strong>₹150</strong></td></tr>
+            <tr><td>Application Fee</td><td><strong>₹200</strong></td></tr>
             <tr><td>Applied On</td><td><?= date('d-m-Y h:i A', strtotime($app['applied_at'])) ?></td></tr>
         </table>
         <div style="text-align:center;" class="no-print">
