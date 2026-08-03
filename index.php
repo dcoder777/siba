@@ -64,7 +64,7 @@ include('includes/header.php');
             <div class="card feature-card">
                 <div class="icon"><i class="fas fa-<?php echo htmlspecialchars($item['icon'] ?? 'star'); ?>"></i></div>
                 <h3><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
-                <p><?php echo htmlspecialchars($item['text'] ?? ''); ?></p>
+                <!-- <p><?php echo htmlspecialchars($item['text'] ?? ''); ?></p> -->
             </div>
         <?php endforeach; ?>
     </div>
