@@ -59,7 +59,7 @@ include('includes/header.php');
         <h2><?php echo htmlspecialchars($data['offerings_heading'] ?? ''); ?></h2>
         <p><?php echo htmlspecialchars($data['offerings_text'] ?? ''); ?></p>
     </div>
-    <div class="grid fade-in-2">
+    <div class="grid offerings-grid fade-in-2">
         <?php foreach (($data['offerings'] ?? []) as $item): ?>
             <div class="card feature-card">
                 <div class="icon"><i class="fas fa-<?php echo htmlspecialchars($item['icon'] ?? 'star'); ?>"></i></div>

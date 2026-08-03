@@ -309,6 +309,7 @@ nav ul.nav-links li a:hover, nav ul.nav-links li a.active {
 
 /* ============ CARDS ============ */
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+.offerings-grid { grid-template-columns: repeat(6, 1fr); gap: 1rem; }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
 .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 
@@ -913,6 +914,7 @@ table tbody td { padding: 0.9rem 1.25rem; font-size: 0.88rem; }
 @media(max-width: 768px) {
     .hero h2 { font-size: 2.2rem; }
     .grid { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+    .offerings-grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; }
     .why-item { flex-direction: column; text-align: center; }
     .why-icon { margin-bottom: 1rem; }
     .event-item { flex-direction: column; text-align: center; gap: 1rem; }
@@ -951,6 +953,7 @@ table tbody td { padding: 0.9rem 1.25rem; font-size: 0.88rem; }
     .portal-content { padding: 1.5rem; }
     .footer-grid { grid-template-columns: 1fr; }
     .grid { grid-template-columns: 1fr; }
+    .offerings-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
     .steps { grid-template-columns: 1fr; }
     .cta-strip-btns { flex-direction: column; width: 100%; }
     .cta-strip-btns .btn { width: 100%; }
