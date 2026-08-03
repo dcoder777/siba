@@ -6,7 +6,7 @@
                     <a href="<?php echo SITE_URL; ?>" class="brand-logo-link" aria-label="SIBA Public School Home">
                         <img src="<?php echo SITE_LOGO_URL; ?>" alt="SIBA Public School Logo" class="brand-logo brand-logo-footer">
                     </a>
-                    <div><h3 style="text-transform:none;color:white;font-size:1rem;letter-spacing:0;">SIBA Public School</h3></div>
+                    <!-- <div><h3 style="text-transform:none;color:white;font-size:1rem;letter-spacing:0;">SIBA Public School</h3></div> -->
                 </div>
                 <p>Nurturing young minds for a brighter future. WBBSE Affiliated, upcoming Premium Bengali Medium School in Chapra, West Bengal.</p>
                 <div class="social-links">
