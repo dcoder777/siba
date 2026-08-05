@@ -286,6 +286,7 @@ ensure_columns($pdo, 'expenses', [
 try { $pdo->exec("ALTER TABLE expenses MODIFY category_id INT UNSIGNED NULL"); } catch (Throwable) {}
 try { $pdo->exec("ALTER TABLE expenses MODIFY category_name VARCHAR(100) NULL"); } catch (Throwable) {}
 ensure_columns($pdo, 'income_categories', [
+    'description' => "TEXT NULL",
     'amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
     'income_no' => "VARCHAR(50) NULL",
     'income_date' => "DATE NULL",
