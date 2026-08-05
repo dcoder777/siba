@@ -63,17 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $id = (int) ($_POST['id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
             $description = trim((string) ($_POST['description'] ?? ''));
+            $amount = (float) ($_POST['amount'] ?? 0);
             $isActive = isset($_POST['is_active']) ? 1 : 0;
             if ($name === '') {
                 $error = 'Category name is required.';
             } else {
                 if ($action === 'update_income_category' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE income_categories SET name=?, description=?, is_active=? WHERE id=?");
-                    $stmt->execute([$name, $description, $isActive, $id]);
+                    $stmt = $pdo->prepare("UPDATE income_categories SET name=?, description=?, amount=?, is_active=? WHERE id=?");
+                    $stmt->execute([$name, $description, $amount, $isActive, $id]);
                     $success = 'Income category updated.';
                 } else {
-                    $stmt = $pdo->prepare("INSERT INTO income_categories (name, description, is_active) VALUES (?,?,?)");
-                    $stmt->execute([$name, $description, $isActive]);
+                    $stmt = $pdo->prepare("INSERT INTO income_categories (name, description, amount, is_active) VALUES (?,?,?,?)");
+                    $stmt->execute([$name, $description, $amount, $isActive]);
                     $success = 'Income category created.';
                 }
                 header("Location: masters.php?tab=income-categories");
@@ -177,8 +178,15 @@ ensure_columns($pdo, 'expense_categories', [
     'vendor_id' => "INT UNSIGNED DEFAULT NULL",
     'amount'    => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
 ]);
+ensure_columns($pdo, 'income_categories', [
+    'amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+]);
+ensure_columns($pdo, 'applications', [
+    'payment_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 200.00",
+]);
 $expenseCategories = $pdo->query("SELECT ec.*, v.name AS vendor_name FROM expense_categories ec LEFT JOIN vendors v ON v.id = ec.vendor_id ORDER BY ec.id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$paidApplications = $pdo->query("SELECT a.id, a.application_no, a.student_name, a.class_sought, a.payment_amount, a.payment_method, a.payment_status, a.applied_at, p.name AS parent_name, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.payment_status = 'Paid' AND a.deleted_at IS NULL ORDER BY a.applied_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -424,13 +432,14 @@ if (isset($_GET['edit'])) {
             <div class="section-title">
                 <div>
                     <h2>Income</h2>
-                    <p>Classify income sources for tracking and financial reporting.</p>
+                    <p>Manual income entries and automatic application fee income.</p>
                 </div>
                 <button type="button" class="btn btn-sm" onclick="document.getElementById('icModal').classList.add('show')">+ Add Income</button>
             </div>
 
+            <h3 style="font-size:1rem;color:#64748b;margin:1rem 0 .5rem;">Manual Income</h3>
             <?php if (empty($incomeCategories)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No income categories defined yet.</p>
+                <p style="text-align:center;padding:2rem;color:#94a3b8;">No manual income entries yet.</p>
             <?php else: ?>
             <div style="overflow-x:auto;">
                 <table class="app-table">
@@ -438,7 +447,8 @@ if (isset($_GET['edit'])) {
                         <tr>
                             <th>#</th>
                             <th>Name</th>
-                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Note</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -448,7 +458,8 @@ if (isset($_GET['edit'])) {
                         <tr>
                             <td style="color:#94a3b8;"><?= $i++ ?></td>
                             <td><strong><?= e($row['name']) ?></strong></td>
-                            <td style="max-width:300px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
+                            <td>&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
+                            <td style="max-width:200px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
                             <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
                             <td>
                                 <div class="action-btns">
@@ -461,6 +472,40 @@ if (isset($_GET['edit'])) {
                                     </form>
                                 </div>
                             </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+
+            <h3 style="font-size:1rem;color:#22c55e;margin:1.5rem 0 .5rem;">&#9679; Application Fee Income (Automatic)</h3>
+            <?php if (empty($paidApplications)): ?>
+                <p style="text-align:center;padding:1.5rem;color:#94a3b8;">No paid applications yet.</p>
+            <?php else: ?>
+            <div style="overflow-x:auto;">
+                <table class="app-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Application No</th>
+                            <th>Student</th>
+                            <th>Class</th>
+                            <th>Parent</th>
+                            <th>Amount</th>
+                            <th>Paid On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $j = 1; foreach ($paidApplications as $app): ?>
+                        <tr>
+                            <td style="color:#94a3b8;"><?= $j++ ?></td>
+                            <td><code style="font-size:.8rem;"><?= e($app['application_no'] ?? '—') ?></code></td>
+                            <td><?= e($app['student_name']) ?></td>
+                            <td><?= e($app['class_sought']) ?></td>
+                            <td><?= e($app['parent_name'] ?? '—') ?><br><small style="color:#94a3b8;"><?= e($app['parent_phone'] ?? '') ?></small></td>
+                            <td>&#8377; <?= number_format((float) ($app['payment_amount'] ?? 200), 2) ?></td>
+                            <td style="white-space:nowrap;"><?= date('d-m-Y', strtotime($app['applied_at'])) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -486,8 +531,12 @@ if (isset($_GET['edit'])) {
                             <label>Name *</label>
                             <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
                         </div>
+                        <div>
+                            <label>Amount</label>
+                            <input name="amount" type="number" step="0.01" min="0" value="<?= e((string) ($editRecord['amount'] ?? '0')) ?>">
+                        </div>
                         <div class="full-col">
-                            <label>Description</label>
+                            <label>Note</label>
                             <textarea name="description" rows="2"><?= e($editRecord['description'] ?? '') ?></textarea>
                         </div>
                         <div class="full-col">
