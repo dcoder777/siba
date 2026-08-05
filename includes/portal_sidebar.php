@@ -9,7 +9,7 @@ $parent_id = $_SESSION['parent_id'];
 $phone = $_SESSION['phone'] ?? 'Unknown';
 
 // Check if they have an application
-$appResult = $conn->query("SELECT id, student_name, status FROM applications WHERE parent_id='$parent_id' LIMIT 1");
+$appResult = $conn->query("SELECT id, student_name, status, payment_status FROM applications WHERE parent_id='$parent_id' LIMIT 1");
 $hasApp = ($appResult->num_rows > 0);
 $app = $hasApp ? $appResult->fetch_assoc() : null;
 $currentPage = basename($_SERVER['PHP_SELF']);

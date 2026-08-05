@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['razorpay_payment_id'])
         $insert = $conn->query("INSERT INTO fees (application_id, fee_type, amount, status, razorpay_order_id, razorpay_payment_id, razorpay_signature, paid_at)
                                 VALUES ('$app_id','application','$fee_amount','Paid','$rzp_order_id','$rzp_payment_id','$rzp_signature',NOW())");
         if ($insert) {
+            $conn->query("UPDATE applications SET payment_status = 'Paid' WHERE id = '$app_id'");
             header("Location: application-summary.php?app_id=$app_id"); exit();
         } else {
             $error = "Could not save payment record. Please contact the school.";
