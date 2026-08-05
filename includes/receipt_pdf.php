@@ -39,16 +39,22 @@ if (!function_exists('siba_receipt_pdf')) {
         $lines[] = '2 w';
         $lines[] = '72 702 m 528 702 l S';
 
+        $studentFullName = trim(implode(' ', array_filter([
+            $app['first_name'] ?? '',
+            $app['middle_name'] ?? '',
+            $app['last_name'] ?? '',
+        ]))) ?: (string) ($app['student_name'] ?? '');
+
         $rows = [
             ['Application No', $app['application_no'] ?? ''],
-            ['Student Name', $app['student_name'] ?? ''],
+            ['Student Name', $studentFullName],
             ['Date of Birth', $app['dob'] ?? ''],
             ['Class Applied', $app['class_sought'] ?? ''],
             ["Father's Name", $app['father_name'] ?? ''],
             ["Mother's Name", $app['mother_name'] ?? ''],
-            ['Parent Name', $app['parent_name'] ?? ''],
-            ['Parent Phone', $app['parent_phone'] ?? ''],
-            ['Parent Email', $app['parent_email'] ?? ''],
+            ['Guardian Name', $app['parent_name'] ?? ''],
+            ['Guardian Phone', $app['parent_phone'] ?? ''],
+            ['Guardian Email', $app['parent_email'] ?? ''],
             ['Status', $app['status'] ?? ''],
             ['Payment Status', $app['payment_status'] ?? 'Pending'],
             ['Application Fee', 'Rs. 200'],

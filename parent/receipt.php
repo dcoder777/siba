@@ -17,6 +17,12 @@ if (!$app) {
     exit();
 }
 
+$studentFullName = trim(implode(' ', array_filter([
+    $app['first_name'] ?? '',
+    $app['middle_name'] ?? '',
+    $app['last_name'] ?? '',
+]))) ?: (string) ($app['student_name'] ?? '');
+
 $download = (isset($_GET['download']) && $_GET['download'] === '1');
 if ($download) {
     $pdf = siba_receipt_pdf($app);
@@ -77,14 +83,14 @@ if ($download) {
         </div>
         <table class="receipt-table">
             <tr><td>Application No</td><td><strong><?= htmlspecialchars($app['application_no']) ?></strong></td></tr>
-            <tr><td>Student Name</td><td><?= htmlspecialchars($app['student_name']) ?></td></tr>
+            <tr><td>Student Name</td><td><?= htmlspecialchars($studentFullName) ?></td></tr>
             <tr><td>Date of Birth</td><td><?= htmlspecialchars($app['dob']) ?></td></tr>
             <tr><td>Class Applied</td><td><?= htmlspecialchars($app['class_sought']) ?></td></tr>
             <tr><td>Father's Name</td><td><?= htmlspecialchars($app['father_name']) ?></td></tr>
             <tr><td>Mother's Name</td><td><?= htmlspecialchars($app['mother_name']) ?></td></tr>
-            <tr><td>Parent Name</td><td><?= htmlspecialchars($app['parent_name']) ?></td></tr>
-            <tr><td>Parent Phone</td><td><?= htmlspecialchars($app['parent_phone']) ?></td></tr>
-            <tr><td>Parent Email</td><td><?= htmlspecialchars($app['parent_email']) ?></td></tr>
+            <tr><td>Guardian Name</td><td><?= htmlspecialchars($app['parent_name']) ?></td></tr>
+            <tr><td>Guardian Phone</td><td><?= htmlspecialchars($app['parent_phone']) ?></td></tr>
+            <tr><td>Guardian Email</td><td><?= htmlspecialchars($app['parent_email']) ?></td></tr>
             <tr><td>Status</td><td><span class="status-badge started"><?= htmlspecialchars($app['status']) ?></span></td></tr>
             <tr><td>Payment Status</td><td><span class="status-badge <?= ($app['payment_status'] ?? 'Pending') === 'Paid' ? 'paid' : 'pending' ?>"><?= htmlspecialchars($app['payment_status'] ?? 'Pending') ?></span></td></tr>
             <tr><td>Application Fee</td><td><strong>₹200</strong></td></tr>
