@@ -75,60 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['action'] ?? ''));
 
     try {
-        // Create income
-        if ($action === 'create_income') {
-            $name = trim((string) ($_POST['name'] ?? ''));
-            $amount = (float) ($_POST['amount'] ?? 0);
-            $incomeDate = trim((string) ($_POST['income_date'] ?? ''));
-            $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
-            $paymentId = trim((string) ($_POST['payment_id'] ?? ''));
-            $note = trim((string) ($_POST['note'] ?? ''));
-
-            if ($name === '') {
-                $error = 'Name is required.';
-            } elseif ($amount <= 0) {
-                $error = 'Amount must be greater than zero.';
-            } elseif ($incomeDate === '') {
-                $error = 'Income date is required.';
-            } else {
-                $incomeNo = generate_income_no($pdo);
-                $uid = (int) ($user['id'] ?? 0);
-                $stmt = $pdo->prepare("INSERT INTO income_categories (income_no, income_date, name, description, amount, payment_mode, payment_id, status, created_by) VALUES (?,?,?,?,?,?,?,?,?)");
-                $stmt->execute([$incomeNo, $incomeDate ?: null, $name, $note ?: null, $amount, $paymentMode ?: null, $paymentId ?: null, 'Pending', $uid]);
-                set_flash('success', 'Income created successfully.');
-                header('Location: income-entry.php');
-                exit;
-            }
-        }
-
-        // Update income
-        if ($action === 'update_income') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $name = trim((string) ($_POST['name'] ?? ''));
-            $amount = (float) ($_POST['amount'] ?? 0);
-            $incomeDate = trim((string) ($_POST['income_date'] ?? ''));
-            $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
-            $paymentId = trim((string) ($_POST['payment_id'] ?? ''));
-            $note = trim((string) ($_POST['note'] ?? ''));
-            $status = trim((string) ($_POST['status'] ?? ''));
-
-            if ($id <= 0) {
-                $error = 'Invalid income record.';
-            } elseif ($name === '') {
-                $error = 'Name is required.';
-            } elseif ($amount <= 0) {
-                $error = 'Amount must be greater than zero.';
-            } elseif ($incomeDate === '') {
-                $error = 'Income date is required.';
-            } else {
-                $stmt = $pdo->prepare("UPDATE income_categories SET income_date=?, name=?, description=?, amount=?, payment_mode=?, payment_id=?, status=? WHERE id=?");
-                $stmt->execute([$incomeDate ?: null, $name, $note ?: null, $amount, $paymentMode ?: null, $paymentId ?: null, $status ?: 'Pending', $id]);
-                set_flash('success', 'Income updated successfully.');
-                header('Location: income-entry.php');
-                exit;
-            }
-        }
-
         // Delete (soft)
         if ($action === 'delete_income' && isset($_POST['id'])) {
             $id = (int) $_POST['id'];
@@ -383,7 +329,6 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                     <p>Track all income entries including manual entries and application payments.</p>
                 </div>
                 <div class="toolbar-right">
-                    <button type="button" class="btn btn-sm" style="background:#059669;color:#fff;border:none;padding:.5rem 1rem;font-size:.85rem;border-radius:10px;" onclick="openAddModal()">+ Add Income</button>
                 </div>
             </div>
         </section>
@@ -473,7 +418,6 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                                     <button type="button" style="background:#dc2626;color:#fff;border:none;padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openRejectModal(<?= (int) $r['id'] ?>)">Reject</button>
                                                 <?php endif; ?>
                                                 <?php if ($r['status'] !== 'Cancelled'): ?>
-                                                    <button type="button" class="btn btn-sm btn-outline" style="padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;border-color:#f59e0b;color:#d97706;" onclick="openEditModal(<?= (int) $r['id'] ?>)">Edit</button>
                                                     <form method="post" style="display:inline;" onsubmit="return confirm('Cancel this income entry?')">
                                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                         <input type="hidden" name="action" value="delete_income">
@@ -494,71 +438,6 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
             <?php endif; ?>
         </section>
     </main>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- ADD/EDIT MODAL -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modal-form">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h2 id="modal-form-title">Add Income</h2>
-            <button type="button" class="modal-close" onclick="closeModals()">&times;</button>
-        </div>
-        <form method="post" id="income-form">
-            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-            <input type="hidden" name="action" id="form-action" value="create_income">
-            <input type="hidden" name="id" id="form-id" value="">
-
-            <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem 1rem;">
-                <div>
-                    <label for="income_date" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.85rem;">Income Date *</label>
-                    <input type="date" name="income_date" id="income_date" required style="width:100%;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
-                </div>
-                <div>
-                    <label for="name" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.85rem;">Name *</label>
-                    <input type="text" name="name" id="name" required placeholder="Source of income" style="width:100%;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
-                </div>
-                <div>
-                    <label for="amount" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.85rem;">Amount (Rs.) *</label>
-                    <input type="number" step="0.01" min="0.01" name="amount" id="amount" required style="width:100%;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
-                </div>
-                <div>
-                    <label for="payment_mode" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.85rem;">Payment Mode</label>
-                    <select name="payment_mode" id="payment_mode" style="width:100%;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
-                        <option value="">-- Select --</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Cheque">Cheque</option>
-                        <option value="UPI">UPI</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Card">Card</option>
-                        <option value="Online">Online</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="payment_id" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.85rem;">Payment ID</label>
-                    <input type="text" name="payment_id" id="payment_id" placeholder="Transaction / Cheque / Ref No" style="width:100%;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
-                </div>
-                <div id="status-group" style="display:none;">
-                    <label for="status" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.85rem;">Status</label>
-                    <select name="status" id="status" style="width:100%;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
-                        <option value="Pending">Pending</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                        <option value="Cancelled">Cancelled</option>
-                    </select>
-                </div>
-            </div>
-            <div style="margin-top:1rem;">
-                <label for="note" style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.85rem;">Note</label>
-                <textarea name="note" id="note" rows="3" placeholder="Additional description..." style="width:100%;padding:.5rem .7rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;resize:vertical;"></textarea>
-            </div>
-            <div style="margin-top:1.25rem;display:flex;gap:.75rem;">
-                <button type="submit" id="form-submit-btn" class="btn" style="background:#059669;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:.9rem;">Save Income</button>
-                <button type="button" class="btn btn-outline" style="padding:.6rem 1.5rem;border-radius:8px;font-size:.9rem;cursor:pointer;" onclick="closeModals()">Cancel</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -619,48 +498,9 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
 var allIncomeData = <?= json_encode($allRows) ?>;
 
 function closeModals() {
-    ['modal-view', 'modal-reject', 'modal-form', 'modal-auto-view'].forEach(function(id) {
+    ['modal-view', 'modal-reject', 'modal-auto-view'].forEach(function(id) {
         document.getElementById(id).classList.remove('open');
     });
-}
-
-function openAddModal() {
-    closeModals();
-    document.getElementById('modal-form-title').textContent = 'Add Income';
-    document.getElementById('form-action').value = 'create_income';
-    document.getElementById('form-id').value = '';
-    document.getElementById('income_date').value = '';
-    document.getElementById('name').value = '';
-    document.getElementById('amount').value = '';
-    document.getElementById('payment_mode').value = '';
-    document.getElementById('payment_id').value = '';
-    document.getElementById('note').value = '';
-    document.getElementById('status').value = 'Pending';
-    document.getElementById('status-group').style.display = 'none';
-    document.getElementById('form-submit-btn').textContent = 'Save Income';
-    document.getElementById('form-submit-btn').style.background = '#059669';
-    document.getElementById('modal-form').classList.add('open');
-}
-
-function openEditModal(id) {
-    closeModals();
-    var row = allIncomeData.find(function(r) { return r.id === id && r.source === 'manual'; });
-    if (!row) return;
-
-    document.getElementById('modal-form-title').textContent = 'Edit Income';
-    document.getElementById('form-action').value = 'update_income';
-    document.getElementById('form-id').value = row.id;
-    document.getElementById('income_date').value = row.income_date;
-    document.getElementById('name').value = row.name;
-    document.getElementById('amount').value = row.amount;
-    document.getElementById('payment_mode').value = row.payment_mode;
-    document.getElementById('payment_id').value = row.payment_id;
-    document.getElementById('note').value = row.description || '';
-    document.getElementById('status').value = row.status;
-    document.getElementById('status-group').style.display = 'block';
-    document.getElementById('form-submit-btn').textContent = 'Update Income';
-    document.getElementById('form-submit-btn').style.background = '#2563eb';
-    document.getElementById('modal-form').classList.add('open');
 }
 
 function openViewModal(id) {
