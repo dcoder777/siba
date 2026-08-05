@@ -27,20 +27,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         if ($action === 'create_expense_category' || $action === 'update_expense_category') {
             $id = (int) ($_POST['id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
-            $groupName = trim((string) ($_POST['group_name'] ?? ''));
+            $vendorId = (int) ($_POST['vendor_id'] ?? 0);
             $description = trim((string) ($_POST['description'] ?? ''));
+            $amount = (float) ($_POST['amount'] ?? 0);
             $approvalRequired = isset($_POST['approval_required']) ? 1 : 0;
             $isActive = isset($_POST['is_active']) ? 1 : 0;
             if ($name === '') {
                 $error = 'Category name is required.';
             } else {
                 if ($action === 'update_expense_category' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE expense_categories SET name=?, group_name=?, description=?, approval_required=?, is_active=? WHERE id=?");
-                    $stmt->execute([$name, $groupName, $description, $approvalRequired, $isActive, $id]);
+                    $stmt = $pdo->prepare("UPDATE expense_categories SET name=?, vendor_id=?, description=?, amount=?, approval_required=?, is_active=? WHERE id=?");
+                    $stmt->execute([$name, $vendorId > 0 ? $vendorId : null, $description, $amount, $approvalRequired, $isActive, $id]);
                     $success = 'Expense category updated.';
                 } else {
-                    $stmt = $pdo->prepare("INSERT INTO expense_categories (name, group_name, description, approval_required, is_active) VALUES (?,?,?,?,?)");
-                    $stmt->execute([$name, $groupName, $description, $approvalRequired, $isActive]);
+                    $stmt = $pdo->prepare("INSERT INTO expense_categories (name, vendor_id, description, amount, approval_required, is_active) VALUES (?,?,?,?,?,?)");
+                    $stmt->execute([$name, $vendorId > 0 ? $vendorId : null, $description, $amount, $approvalRequired, $isActive]);
                     $success = 'Expense category created.';
                 }
                 header("Location: masters.php?tab=expense-categories");
@@ -172,7 +173,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 }
 
 // ─── Fetch data for each tab ───
-$expenseCategories = $pdo->query("SELECT * FROM expense_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+ensure_columns($pdo, 'expense_categories', [
+    'vendor_id' => "INT UNSIGNED DEFAULT NULL",
+    'amount'    => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+]);
+$expenseCategories = $pdo->query("SELECT ec.*, v.name AS vendor_name FROM expense_categories ec LEFT JOIN vendors v ON v.id = ec.vendor_id ORDER BY ec.id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -322,8 +327,9 @@ if (isset($_GET['edit'])) {
                         <tr>
                             <th>#</th>
                             <th>Name</th>
-                            <th>Group</th>
-                            <th>Description</th>
+                            <th>Vendor</th>
+                            <th>Amount</th>
+                            <th>Note</th>
                             <th>Approval Required</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -334,7 +340,8 @@ if (isset($_GET['edit'])) {
                         <tr>
                             <td style="color:#94a3b8;"><?= $i++ ?></td>
                             <td><strong><?= e($row['name']) ?></strong></td>
-                            <td><?= e($row['group_name'] ?? '—') ?></td>
+                            <td><?= e($row['vendor_name'] ?? '') ?: '—' ?></td>
+                            <td>&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
                             <td style="max-width:200px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
                             <td><span class="badge <?= ($row['approval_required'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['approval_required'] ?? 0) ? 'Yes' : 'No' ?></span></td>
                             <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
@@ -375,11 +382,20 @@ if (isset($_GET['edit'])) {
                             <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
                         </div>
                         <div>
-                            <label>Group Name</label>
-                            <input name="group_name" type="text" value="<?= e($editRecord['group_name'] ?? '') ?>" placeholder="e.g. Administrative, Academic">
+                            <label>Vendor</label>
+                            <select name="vendor_id">
+                                <option value="">— Select Vendor —</option>
+                                <?php foreach ($vendors as $v): ?>
+                                    <option value="<?= (int) $v['id'] ?>" <?= (isset($editRecord['vendor_id']) && (int) $editRecord['vendor_id'] === (int) $v['id']) ? 'selected' : '' ?>><?= e($v['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Amount</label>
+                            <input name="amount" type="number" step="0.01" min="0" value="<?= e((string) ($editRecord['amount'] ?? '0')) ?>">
                         </div>
                         <div class="full-col">
-                            <label>Description</label>
+                            <label>Note</label>
                             <textarea name="description" rows="2"><?= e($editRecord['description'] ?? '') ?></textarea>
                         </div>
                         <div class="full-col" style="display:flex;gap:1.5rem;flex-wrap:wrap;">
