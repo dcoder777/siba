@@ -4,6 +4,15 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
+function generate_expense_no(PDO $pdo): string
+{
+    $year = date('Y');
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE YEAR(created_at) = ?");
+    $stmt->execute([$year]);
+    $next = (int) $stmt->fetchColumn() + 1;
+    return 'EXP-' . $year . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+}
+
 $user = admin_user();
 $pageTitle = 'Masters';
 $error = '';
@@ -25,35 +34,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
     try {
         // ─── Expense ───
-        if ($action === 'create_expense_category' || $action === 'update_expense_category') {
+        if ($action === 'create_expense' || $action === 'update_expense') {
             $id = (int) ($_POST['id'] ?? 0);
-            $name = trim((string) ($_POST['name'] ?? ''));
+            $expenseDate = trim((string) ($_POST['expense_date'] ?? date('Y-m-d')));
+            $categoryId = (int) ($_POST['category_id'] ?? 0);
             $vendorId = (int) ($_POST['vendor_id'] ?? 0);
-            $description = trim((string) ($_POST['description'] ?? ''));
+            $vendorName = trim((string) ($_POST['vendor_name'] ?? ''));
+            $billNo = trim((string) ($_POST['bill_no'] ?? ''));
+            $billDate = trim((string) ($_POST['bill_date'] ?? ''));
             $amount = (float) ($_POST['amount'] ?? 0);
-            $approvalRequired = isset($_POST['approval_required']) ? 1 : 0;
-            $isActive = isset($_POST['is_active']) ? 1 : 0;
-            if ($name === '') {
-                $error = 'Category name is required.';
+            $gstAmount = (float) ($_POST['gst_amount'] ?? 0);
+            $netAmount = (float) ($_POST['net_amount'] ?? 0);
+            $description = trim((string) ($_POST['description'] ?? ''));
+            $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
+            $paymentDate = trim((string) ($_POST['payment_date'] ?? ''));
+            $chequeNo = trim((string) ($_POST['cheque_no'] ?? ''));
+            $transactionId = trim((string) ($_POST['transaction_id'] ?? ''));
+            $payeeName = trim((string) ($_POST['payee_name'] ?? ''));
+            $status = trim((string) ($_POST['status'] ?? 'Pending'));
+            $validStatuses = ['Pending', 'Approved', 'Rejected', 'Cancelled'];
+            $status = in_array($status, $validStatuses, true) ? $status : 'Pending';
+
+            if ($expenseDate === '' || $categoryId === 0) {
+                $error = 'Expense date and category are required.';
             } else {
-                if ($action === 'update_expense_category' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE expense_categories SET name=?, vendor_id=?, description=?, amount=?, approval_required=?, is_active=? WHERE id=?");
-                    $stmt->execute([$name, $vendorId > 0 ? $vendorId : null, $description, $amount, $approvalRequired, $isActive, $id]);
-                    $success = 'Expense category updated.';
+                $catName = '';
+                $catRow = $pdo->prepare("SELECT name FROM expense_categories WHERE id=?");
+                $catRow->execute([$categoryId]);
+                $cat = $catRow->fetch();
+                if ($cat) { $catName = (string) $cat['name']; }
+
+                if (!$vendorName && $vendorId > 0) {
+                    $vRow = $pdo->prepare("SELECT name FROM vendors WHERE id=?");
+                    $vRow->execute([$vendorId]);
+                    $v = $vRow->fetch();
+                    if ($v) { $vendorName = (string) $v['name']; }
+                }
+
+                if ($action === 'update_expense' && $id > 0) {
+                    $stmt = $pdo->prepare("UPDATE expenses SET expense_date=?, category_id=?, category_name=?, vendor_id=?, vendor_name=?, bill_no=?, bill_date=?, amount=?, gst_amount=?, net_amount=?, description=?, payment_mode=?, payment_date=?, cheque_no=?, transaction_id=?, payee_name=?, status=? WHERE id=?");
+                    $stmt->execute([$expenseDate, $categoryId, $catName, $vendorId > 0 ? $vendorId : null, $vendorName ?: null, $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount, $description ?: null, $paymentMode ?: null, $paymentDate ?: null, $chequeNo ?: null, $transactionId ?: null, $payeeName ?: null, $status, $id]);
+                    $success = 'Expense updated.';
                 } else {
-                    $stmt = $pdo->prepare("INSERT INTO expense_categories (name, vendor_id, description, amount, approval_required, is_active) VALUES (?,?,?,?,?,?)");
-                    $stmt->execute([$name, $vendorId > 0 ? $vendorId : null, $description, $amount, $approvalRequired, $isActive]);
-                    $success = 'Expense category created.';
+                    $expenseNo = generate_expense_no($pdo);
+                    $createdBy = (int) ($user['id'] ?? 0);
+                    $stmt = $pdo->prepare("INSERT INTO expenses (expense_no, expense_date, category_id, category_name, vendor_id, vendor_name, bill_no, bill_date, amount, gst_amount, net_amount, description, payment_mode, payment_date, cheque_no, transaction_id, payee_name, status, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                    $stmt->execute([$expenseNo, $expenseDate, $categoryId, $catName, $vendorId > 0 ? $vendorId : null, $vendorName ?: null, $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount, $description ?: null, $paymentMode ?: null, $paymentDate ?: null, $chequeNo ?: null, $transactionId ?: null, $payeeName ?: null, $status, $createdBy]);
+                    $success = 'Expense created.';
                 }
                 header("Location: masters.php?tab=expense-categories");
                 exit;
             }
         }
-        if ($action === 'delete_expense_category') {
+        if ($action === 'delete_expense') {
             $id = (int) ($_POST['id'] ?? 0);
             if ($id > 0) {
-                $pdo->prepare("DELETE FROM expense_categories WHERE id=?")->execute([$id]);
-                $success = 'Expense category deleted.';
+                $pdo->prepare("DELETE FROM expenses WHERE id=?")->execute([$id]);
+                $success = 'Expense deleted.';
                 header("Location: masters.php?tab=expense-categories");
                 exit;
             }
@@ -214,17 +251,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 }
 
 // ─── Fetch data for each tab ───
-ensure_columns($pdo, 'expense_categories', [
-    'vendor_id' => "INT UNSIGNED DEFAULT NULL",
-    'amount'    => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
-]);
 ensure_columns($pdo, 'income_categories', [
     'amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
 ]);
 ensure_columns($pdo, 'applications', [
     'payment_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 200.00",
 ]);
-$expenseCategories = $pdo->query("SELECT ec.*, v.name AS vendor_name FROM expense_categories ec LEFT JOIN vendors v ON v.id = ec.vendor_id ORDER BY ec.id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$expenseCategories = $pdo->query("SELECT * FROM expense_categories ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+$expenses = $pdo->query("SELECT e.*, ec.name AS category_label, v.name AS vendor_label FROM expenses e LEFT JOIN expense_categories ec ON ec.id = e.category_id LEFT JOIN vendors v ON v.id = e.vendor_id ORDER BY e.id DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC);
 $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $paidApplications = $pdo->query("SELECT a.id, a.application_no, a.student_name, a.class_sought, a.payment_amount, a.payment_method, a.payment_status, a.applied_at, p.name AS parent_name, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.payment_status = 'Paid' AND a.deleted_at IS NULL ORDER BY a.applied_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -242,7 +276,7 @@ if (isset($_GET['edit'])) {
     $editType = $tab;
     switch ($tab) {
         case 'expense-categories':
-            $stmt = $pdo->prepare("SELECT * FROM expense_categories WHERE id=?");
+            $stmt = $pdo->prepare("SELECT * FROM expenses WHERE id=?");
             $stmt->execute([$editId]);
             $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
             break;
@@ -365,50 +399,56 @@ if (isset($_GET['edit'])) {
             <div class="detail-panel">
 
 
-        <!-- ======================== EXPENSE CATEGORIES ======================== -->
+        <!-- ======================== EXPENSE ======================== -->
         <?php if ($tab === 'expense-categories'): ?>
         <section class="panel" style="padding:1.25rem;">
             <div class="section-title">
                 <div>
                     <h2>Expense</h2>
-                    <p>Classify expenses by category and group for budgeting and reporting.</p>
+                    <p>Record and manage all expenses with vendor, GST, and payment details.</p>
                 </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('ecModal').classList.add('show')">+ Add Expense</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('ecModal').classList.add('show'); document.getElementById('expense-form').reset(); document.getElementById('expense-form').action=''; document.getElementById('ee-net-amount').value='0'; document.getElementById('ecModalTitle').textContent='Add Expense'; document.getElementById('ee-form-action').value='create_expense'; document.getElementById('ee-form-id').value='';">+ Add Expense</button>
             </div>
 
-            <?php if (empty($expenseCategories)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No expense categories defined yet.</p>
+            <?php if (empty($expenses)): ?>
+                <p style="text-align:center;padding:2rem;color:#94a3b8;">No expenses recorded yet.</p>
             <?php else: ?>
             <div style="overflow-x:auto;">
                 <table class="app-table">
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Name</th>
+                            <th>Expense No</th>
+                            <th>Date</th>
+                            <th>Category</th>
                             <th>Vendor</th>
                             <th>Amount</th>
-                            <th>Note</th>
-                            <th>Approval Required</th>
+                            <th>Mode</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $i = 1; foreach ($expenseCategories as $row): ?>
+                        <?php $i = 1; foreach ($expenses as $row): ?>
                         <tr>
                             <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['name']) ?></strong></td>
-                            <td><?= e($row['vendor_name'] ?? '') ?: '—' ?></td>
-                            <td>&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
-                            <td style="max-width:200px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
-                            <td><span class="badge <?= ($row['approval_required'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['approval_required'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
+                            <td style="font-family:monospace;font-size:.82rem;"><?= e($row['expense_no']) ?></td>
+                            <td style="white-space:nowrap;"><?= date('d-m-Y', strtotime($row['expense_date'])) ?></td>
+                            <td><span class="badge" style="background:#e0f2fe;color:#0369a1;"><?= e($row['category_label'] ?? $row['category_name'] ?? '—') ?></span></td>
+                            <td><?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?: '—' ?></td>
+                            <td>&#8377; <?= number_format((float) $row['net_amount'], 2) ?></td>
+                            <td><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
+                            <td><?php
+                                $statusColors = ['Pending' => '#fef3c7,#92400e', 'Approved' => '#d1fae5,#065f46', 'Rejected' => '#fee2e2,#991b1b', 'Cancelled' => '#e2e8f0,#475569'];
+                                $sc = $statusColors[$row['status']] ?? '#fef3c7,#92400e';
+                                [$stBg, $stClr] = explode(',', $sc);
+                            ?><span class="badge" style="background:<?= $stBg ?>;color:<?= $stClr ?>;"><?= e($row['status']) ?></span></td>
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=expense-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this expense?')">
+                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete expense <?= e($row['expense_no']) ?>?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_expense_category">
+                                        <input type="hidden" name="master_action" value="delete_expense">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
                                         <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
                                     </form>
@@ -425,50 +465,106 @@ if (isset($_GET['edit'])) {
         <div id="ecModal" class="modal-backdrop <?= ($editRecord && $editType === 'expense-categories') ? 'show' : '' ?>">
             <div class="modal">
                 <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'expense-categories') ? 'Edit Expense' : 'Add Expense' ?></h2>
+                    <h2 id="ecModalTitle"><?= ($editRecord && $editType === 'expense-categories') ? 'Edit Expense' : 'Add Expense' ?></h2>
                     <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
                 </div>
-                <form method="post">
+                <form method="post" id="expense-form" enctype="multipart/form-data">
                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'expense-categories') ? 'update_expense_category' : 'create_expense_category' ?>">
-                    <?php if ($editRecord && $editType === 'expense-categories'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
+                    <input type="hidden" name="master_action" id="ee-form-action" value="<?= ($editRecord && $editType === 'expense-categories') ? 'update_expense' : 'create_expense' ?>">
+                    <input type="hidden" name="id" id="ee-form-id" value="<?= $editRecord['id'] ?? '' ?>">
                     <div class="field-grid">
                         <div>
-                            <label>Name *</label>
-                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
+                            <label>Expense Date *</label>
+                            <input type="date" name="expense_date" required value="<?= e($editRecord['expense_date'] ?? date('Y-m-d')) ?>">
                         </div>
                         <div>
-                            <label>Vendor</label>
-                            <select name="vendor_id">
-                                <option value="">— Select Vendor —</option>
-                                <?php foreach ($vendors as $v): ?>
-                                    <option value="<?= (int) $v['id'] ?>" <?= (isset($editRecord['vendor_id']) && (int) $editRecord['vendor_id'] === (int) $v['id']) ? 'selected' : '' ?>><?= e($v['name']) ?></option>
+                            <label>Category *</label>
+                            <select name="category_id" required>
+                                <option value="">-- Select --</option>
+                                <?php foreach ($expenseCategories as $cat): ?>
+                                    <option value="<?= (int) $cat['id'] ?>" <?= (isset($editRecord['category_id']) && (int) $editRecord['category_id'] === (int) $cat['id']) ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div>
-                            <label>Amount</label>
-                            <input name="amount" type="number" step="0.01" min="0" value="<?= e((string) ($editRecord['amount'] ?? '0')) ?>">
+                            <label>Vendor</label>
+                            <select name="vendor_id" id="ee-vendor-id" onchange="document.getElementById('ee-vendor-name').value = this.options[this.selectedIndex].text;">
+                                <option value="0">-- Select Vendor --</option>
+                                <?php foreach ($vendors as $v): ?>
+                                    <option value="<?= (int) $v['id'] ?>" <?= (isset($editRecord['vendor_id']) && (int) $editRecord['vendor_id'] === (int) $v['id']) ? 'selected' : '' ?>><?= e($v['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="hidden" name="vendor_name" id="ee-vendor-name" value="<?= e($editRecord['vendor_name'] ?? '') ?>">
                         </div>
+                        <div>
+                            <label>Bill Number</label>
+                            <input type="text" name="bill_no" value="<?= e($editRecord['bill_no'] ?? '') ?>">
+                        </div>
+                        <div>
+                            <label>Bill Date</label>
+                            <input type="date" name="bill_date" value="<?= e($editRecord['bill_date'] ?? '') ?>">
+                        </div>
+                        <div>
+                            <label>Amount (Rs.) *</label>
+                            <input type="number" step="0.01" min="0" name="amount" required value="<?= e((string) ($editRecord['amount'] ?? '0')) ?>" oninput="eeCalcNet()">
+                        </div>
+                        <div>
+                            <label>GST Amount (Rs.)</label>
+                            <input type="number" step="0.01" min="0" name="gst_amount" value="<?= e((string) ($editRecord['gst_amount'] ?? '0')) ?>" oninput="eeCalcNet()">
+                        </div>
+                        <div>
+                            <label>Net Amount (Rs.)</label>
+                            <input type="number" step="0.01" min="0" name="net_amount" id="ee-net-amount" readonly style="background:#f1f5f9;" value="<?= e((string) ($editRecord['net_amount'] ?? '0')) ?>">
+                        </div>
+                        <div>
+                            <label>Payment Mode</label>
+                            <select name="payment_mode" id="ee-payment-mode" onchange="eeToggleTxn()">
+                                <option value="">-- Select --</option>
+                                <?php foreach (['Cash', 'Cheque', 'UPI', 'Bank Transfer', 'Card', 'Online'] as $pm): ?>
+                                    <option value="<?= $pm ?>" <?= (isset($editRecord['payment_mode']) && $editRecord['payment_mode'] === $pm) ? 'selected' : '' ?>><?= $pm ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Payment Date</label>
+                            <input type="date" name="payment_date" value="<?= e($editRecord['payment_date'] ?? '') ?>">
+                        </div>
+                        <div>
+                            <label>Cheque No</label>
+                            <input type="text" name="cheque_no" value="<?= e($editRecord['cheque_no'] ?? '') ?>">
+                        </div>
+                        <div class="ee-txn-field">
+                            <label>Transaction ID</label>
+                            <input type="text" name="transaction_id" value="<?= e($editRecord['transaction_id'] ?? '') ?>">
+                        </div>
+                        <div>
+                            <label>Payee Name</label>
+                            <input type="text" name="payee_name" value="<?= e($editRecord['payee_name'] ?? '') ?>">
+                        </div>
+                        <div>
+                            <label>Bill Upload</label>
+                            <input type="file" name="bill_file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx">
+                            <?php if (!empty($editRecord['bill_file'])): ?>
+                                <small style="color:#64748b;">Current: <?= e($editRecord['bill_file']) ?></small>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($editRecord && $editType === 'expense-categories'): ?>
+                        <div>
+                            <label>Status</label>
+                            <select name="status">
+                                <?php foreach (['Pending', 'Approved', 'Rejected', 'Cancelled'] as $st): ?>
+                                    <option value="<?= $st ?>" <?= (isset($editRecord['status']) && $editRecord['status'] === $st) ? 'selected' : '' ?>><?= $st ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
                         <div class="full-col">
-                            <label>Note</label>
+                            <label>Description / Note</label>
                             <textarea name="description" rows="2"><?= e($editRecord['description'] ?? '') ?></textarea>
-                        </div>
-                        <div class="full-col" style="display:flex;gap:1.5rem;flex-wrap:wrap;">
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="approval_required" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['approval_required'] ?? 0) ? 'checked' : '' ?>>
-                                Approval Required
-                            </label>
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_active" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_active'] ?? 1) ? 'checked' : '' ?>>
-                                Active
-                            </label>
                         </div>
                     </div>
                     <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'expense-categories') ? 'Update' : 'Add' ?></button>
+                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'expense-categories') ? 'Update' : 'Create Expense' ?></button>
                         <a href="?tab=expense-categories" class="btn btn-soft">Cancel</a>
                     </div>
                 </form>
@@ -988,6 +1084,22 @@ function closeModal(backdrop) {
     url.searchParams.delete('edit');
     history.replaceState(null, '', url.toString());
 }
+
+function eeCalcNet() {
+    var amt = parseFloat(document.querySelector('[name="amount"]')?.value) || 0;
+    var gst = parseFloat(document.querySelector('[name="gst_amount"]')?.value) || 0;
+    var net = document.getElementById('ee-net-amount');
+    if (net) net.value = (amt + gst).toFixed(2);
+}
+
+function eeToggleTxn() {
+    var mode = document.getElementById('ee-payment-mode');
+    var txnFields = document.querySelectorAll('.ee-txn-field');
+    var show = mode && (mode.value === 'UPI' || mode.value === 'Bank Transfer' || mode.value === 'Online');
+    txnFields.forEach(function(el) { el.style.display = show ? '' : 'none'; });
+}
+
+document.addEventListener('DOMContentLoaded', function() { eeToggleTxn(); eeCalcNet(); });
 
 document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
     backdrop.addEventListener('click', function(e) {
