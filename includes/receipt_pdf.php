@@ -73,16 +73,23 @@ if (!function_exists('siba_receipt_pdf')) {
 
         $lines = [];
 
-        // Header band
-        $lines[] = '0.12 0.16 0.23 rg';           // dark slate
-        $lines[] = '0 0 595 90 re f';
-        $lines[] = '0.96 0.60 0.13 rg';
-        $lines[] = '0 90 595 3 re f';
+        // A4: 595 x 842. y=842 is top, y=0 is bottom.
+        // Header band: y=752..842 (90px tall)
+        $headerTop = 842;
+        $headerBot = 752;
 
-        // Logo (if available)
+        // Header band background
+        $lines[] = '0.12 0.16 0.23 rg';
+        $lines[] = '0 ' . $headerBot . ' 595 90 re f';
+        // Accent line at bottom of header
+        $lines[] = '0.96 0.60 0.13 rg';
+        $lines[] = '0 ' . $headerBot . ' 595 3 re f';
+
+        // Logo (if available) - centered vertically in header band
         if ($logoSize) {
+            $logoDrawY = $headerBot + (int) round((90 - $logoH) / 2);
             $lines[] = 'q';
-            $lines[] = $logoW . ' 0 0 ' . $logoH . ' ' . $logoX . ' ' . $logoY . ' cm';
+            $lines[] = $logoW . ' 0 0 ' . $logoH . ' ' . $logoX . ' ' . $logoDrawY . ' cm';
             $lines[] = '/Im1 Do';
             $lines[] = 'Q';
         }
@@ -91,14 +98,14 @@ if (!function_exists('siba_receipt_pdf')) {
         $lines[] = 'BT';
         $lines[] = '/F1 20 Tf';
         $lines[] = '1 1 1 rg';
-        $lines[] = $brandX . ' 56 Td';
+        $lines[] = $brandX . ' 806 Td';
         $lines[] = '(' . $esc('SIBA PUBLIC SCHOOL') . ') Tj';
         $lines[] = 'ET';
 
         $lines[] = 'BT';
         $lines[] = '/F2 10 Tf';
         $lines[] = '0.80 0.84 0.90 rg';
-        $lines[] = $brandX . ' 42 Td';
+        $lines[] = $brandX . ' 792 Td';
         $lines[] = '(' . $esc('WBBSE Affiliated | Chapra, West Bengal') . ') Tj';
         $lines[] = 'ET';
 
@@ -106,33 +113,36 @@ if (!function_exists('siba_receipt_pdf')) {
         $lines[] = 'BT';
         $lines[] = '/F2 8 Tf';
         $lines[] = '0.80 0.84 0.90 rg';
-        $lines[] = '400 62 Td';
+        $lines[] = '400 812 Td';
         $lines[] = '(' . $esc('RECEIPT NO.: ' . ($app['application_no'] ?? '')) . ') Tj';
         $lines[] = 'ET';
         $lines[] = 'BT';
         $lines[] = '/F1 11 Tf';
         $lines[] = '0.96 0.75 0.20 rg';
-        $lines[] = '400 48 Td';
+        $lines[] = '400 798 Td';
         $lines[] = '(' . $esc('APPLICATION RECEIPT') . ') Tj';
         $lines[] = 'ET';
 
-        // Title
+        // Title block below header
+        $titleY = $headerBot - 20;
         $lines[] = 'BT';
         $lines[] = '/F1 15 Tf';
         $lines[] = '0.12 0.16 0.23 rg';
-        $lines[] = '60 104 Td';
+        $lines[] = '60 ' . $titleY . ' Td';
         $lines[] = '(' . $esc('Application Acknowledgement Receipt') . ') Tj';
         $lines[] = 'ET';
+        $subY = $titleY - 16;
         $lines[] = 'BT';
         $lines[] = '/F2 9.5 Tf';
         $lines[] = '0.45 0.50 0.55 rg';
-        $lines[] = '60 92 Td';
+        $lines[] = '60 ' . $subY . ' Td';
         $lines[] = '(' . $esc('Thank you for applying to SIBA Public School.') . ') Tj';
         $lines[] = 'ET';
 
+        $lineY = $subY - 12;
         $lines[] = '0.85 0.85 0.85 RG';
         $lines[] = '1 w';
-        $lines[] = '60 82 m 535 82 l S';
+        $lines[] = '60 ' . $lineY . ' m 535 ' . $lineY . ' l S';
 
         // Sections
         $rows = [
@@ -154,7 +164,7 @@ if (!function_exists('siba_receipt_pdf')) {
             ['Payment Status', $paymentStatus],
         ];
 
-        $y = 500;
+        $y = $lineY - 20;
         foreach ($rows as $row) {
             $isSection = $row[1] === true;
             if ($isSection) {
@@ -189,17 +199,17 @@ if (!function_exists('siba_receipt_pdf')) {
             $y -= 17;
         }
 
-        // Footer
+        // Footer at bottom
         $lines[] = 'BT';
         $lines[] = '/F2 9 Tf';
         $lines[] = '0.45 0.50 0.55 rg';
-        $lines[] = '60 56 Td';
+        $lines[] = '60 46 Td';
         $lines[] = '(' . $esc('This is a computer-generated receipt. No signature required.') . ') Tj';
         $lines[] = 'ET';
         $lines[] = 'BT';
         $lines[] = '/F2 8 Tf';
         $lines[] = '0.12 0.16 0.23 rg';
-        $lines[] = '60 44 Td';
+        $lines[] = '60 34 Td';
         $lines[] = '(' . $esc('SIBA Public School | Chapra, West Bengal | All Rights Reserved') . ') Tj';
         $lines[] = 'ET';
 
