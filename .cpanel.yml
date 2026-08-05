@@ -1,4 +1,4 @@
 ---
 deployment:
   tasks:
-    - /bin/true
+    - /bin/cp -Rf * ../public_html/
