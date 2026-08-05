@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $name = trim((string) ($_POST['name'] ?? ''));
             $description = trim((string) ($_POST['description'] ?? ''));
             $amount = (float) ($_POST['amount'] ?? 0);
-            $isActive = isset($_POST['is_active']) ? 1 : 0;
+            $isActive = 1;
             if ($name === '') {
                 $error = 'Category name is required.';
             } else {
@@ -499,7 +499,6 @@ if (isset($_GET['edit'])) {
                             <th>Name</th>
                             <th>Amount</th>
                             <th>Note</th>
-                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -510,7 +509,6 @@ if (isset($_GET['edit'])) {
                             <td><strong><?= e($row['name']) ?></strong></td>
                             <td>&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
                             <td style="max-width:200px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
-                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=income-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
@@ -588,12 +586,6 @@ if (isset($_GET['edit'])) {
                         <div class="full-col">
                             <label>Note</label>
                             <textarea name="description" rows="2"><?= e($editRecord['description'] ?? '') ?></textarea>
-                        </div>
-                        <div class="full-col">
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_active" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_active'] ?? 1) ? 'checked' : '' ?>>
-                                Active
-                            </label>
                         </div>
                     </div>
                     <div class="action-row" style="margin-top:1.5rem;">
