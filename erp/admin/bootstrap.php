@@ -49,7 +49,7 @@ function available_modules(): array
     return [
         'students' => ['label' => 'Students', 'entities' => ['students', 'student_enrollments', 'attendance_records']],
         'academics' => ['label' => 'Academics', 'entities' => ['subjects', 'assignments', 'exam_results', 'assignment_submissions', 'parent_teacher_messages']],
-        'finance' => ['label' => 'Finance', 'entities' => ['fee_structures', 'student_fee_dues', 'payments', 'payment_reconciliations']],
+        'finance' => ['label' => 'Finance', 'entities' => ['fee_heads', 'fee_structures', 'fee_collections', 'expenses', 'income_categories', 'vendors', 'bank_accounts', 'ledger_accounts']],
         'operations' => ['label' => 'Operations', 'entities' => ['timetables', 'transport_routes', 'transport_allocations', 'hostels', 'hostel_rooms', 'hostel_allocations']],
         'hr' => ['label' => 'HR', 'entities' => ['employees', 'leave_requests', 'payroll_runs', 'payroll_items']],
         'reports' => ['label' => 'Reports', 'entities' => []],
@@ -276,29 +276,53 @@ function entity_config(): array
             'fields' => ['student_id', 'sender_user_id', 'receiver_user_id', 'message'],
             'search' => ['message'],
         ],
+        'fee_heads' => [
+            'pk' => 'id',
+            'label' => 'Fee Heads',
+            'fields' => ['name', 'category', 'default_amount', 'frequency', 'is_refundable', 'late_fee_applicable', 'is_active'],
+            'search' => ['name', 'category'],
+        ],
         'fee_structures' => [
             'pk' => 'id',
             'label' => 'Fee Structures',
-            'fields' => ['class_name', 'academic_session', 'fee_head', 'amount', 'frequency'],
-            'search' => ['class_name', 'academic_session', 'fee_head'],
+            'fields' => ['name', 'academic_session', 'class_name', 'student_category', 'total_amount', 'emi_allowed', 'num_installments', 'is_active'],
+            'search' => ['name', 'class_name', 'academic_session'],
         ],
-        'student_fee_dues' => [
+        'fee_collections' => [
             'pk' => 'id',
-            'label' => 'Student Fee Dues',
-            'fields' => ['student_id', 'fee_structure_id', 'due_date', 'amount', 'paid_amount', 'status'],
-            'search' => ['status'],
+            'label' => 'Fee Collections',
+            'fields' => ['receipt_no', 'student_name', 'class_name', 'net_amount', 'payment_mode', 'payment_date', 'status'],
+            'search' => ['receipt_no', 'student_name', 'admission_no'],
         ],
-        'payments' => [
+        'expenses' => [
             'pk' => 'id',
-            'label' => 'Payments',
-            'fields' => ['student_id', 'fee_due_id', 'amount', 'payment_date', 'payment_mode', 'source', 'reference_no'],
-            'search' => ['payment_mode', 'source', 'reference_no'],
+            'label' => 'Expenses',
+            'fields' => ['expense_no', 'expense_date', 'category_name', 'vendor_name', 'net_amount', 'status'],
+            'search' => ['expense_no', 'vendor_name', 'category_name'],
         ],
-        'payment_reconciliations' => [
+        'income_categories' => [
             'pk' => 'id',
-            'label' => 'Payment Reconciliation',
-            'fields' => ['gateway_reference', 'website_order_id', 'amount', 'status', 'notes'],
-            'search' => ['gateway_reference', 'website_order_id', 'status'],
+            'label' => 'Income Categories',
+            'fields' => ['name', 'description', 'is_active'],
+            'search' => ['name'],
+        ],
+        'vendors' => [
+            'pk' => 'id',
+            'label' => 'Vendors',
+            'fields' => ['vendor_code', 'name', 'mobile', 'email', 'gst_number', 'is_active'],
+            'search' => ['vendor_code', 'name', 'mobile'],
+        ],
+        'bank_accounts' => [
+            'pk' => 'id',
+            'label' => 'Bank Accounts',
+            'fields' => ['bank_name', 'account_name', 'account_number', 'ifsc_code', 'current_balance', 'is_active'],
+            'search' => ['bank_name', 'account_name', 'account_number'],
+        ],
+        'ledger_accounts' => [
+            'pk' => 'id',
+            'label' => 'Ledger Accounts',
+            'fields' => ['account_code', 'account_name', 'account_type', 'current_balance'],
+            'search' => ['account_code', 'account_name'],
         ],
         'timetables' => [
             'pk' => 'id',

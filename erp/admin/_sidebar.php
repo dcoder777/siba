@@ -44,27 +44,24 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
     </div>
 
     <div class="nav-group">
-        <div class="nav-title">Finance</div>
+        <div class="nav-title">Accounts</div>
         <a class="nav-link<?= $activePage === 'finance-dashboard.php' ? ' active' : '' ?>" href="finance-dashboard.php">
-            <span class="sidebar-icon">📊</span><span>Finance Dashboard</span>
+            <span class="sidebar-icon">📊</span><span>Dashboard</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'masters.php' ? ' active' : '' ?>" href="masters.php">
+            <span class="sidebar-icon">⚙</span><span>Masters</span>
         </a>
         <a class="nav-link<?= $activePage === 'fee-structures.php' ? ' active' : '' ?>" href="fee-structures.php">
-            <span class="sidebar-icon">🏗</span><span>Fee Structures</span>
+            <span class="sidebar-icon">🏗</span><span>Fee Structure</span>
         </a>
         <a class="nav-link<?= $activePage === 'fee-collection.php' ? ' active' : '' ?>" href="fee-collection.php">
             <span class="sidebar-icon">💰</span><span>Fee Collection</span>
         </a>
-        <a class="nav-link<?= $activePage === 'receipts-list.php' ? ' active' : '' ?>" href="receipts-list.php">
-            <span class="sidebar-icon">🧾</span><span>Receipts</span>
-        </a>
         <a class="nav-link<?= $activePage === 'expenses.php' ? ' active' : '' ?>" href="expenses.php">
             <span class="sidebar-icon">📤</span><span>Expenses</span>
         </a>
-        <a class="nav-link<?= $activePage === 'income.php' ? ' active' : '' ?>" href="income.php">
-            <span class="sidebar-icon">📥</span><span>Income</span>
-        </a>
         <a class="nav-link<?= $activePage === 'accounts.php' ? ' active' : '' ?>" href="accounts.php">
-            <span class="sidebar-icon">🏦</span><span>Accounts</span>
+            <span class="sidebar-icon">🏦</span><span>Cash & Bank</span>
         </a>
         <a class="nav-link<?= $activePage === 'reports.php' ? ' active' : '' ?>" href="reports.php">
             <span class="sidebar-icon">📈</span><span>Reports</span>
