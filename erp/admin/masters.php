@@ -298,7 +298,7 @@ if (isset($_GET['edit'])) {
                 <div class="stack" style="gap:.55rem">
                     <span class="eyebrow">Administration</span>
                     <h1>Masters</h1>
-                    <p>Manage all foundational master data for the ERP system — schools, financial years, fee heads, vendors, and more.</p>
+                    <p>Manage foundational master data for the ERP system.</p>
                 </div>
             </div>
         </section>
