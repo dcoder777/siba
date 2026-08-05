@@ -141,152 +141,6 @@ function generate_expense_no(PDO $pdo): string
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['action'] ?? ''));
 
-    // Create
-    if ($action === 'create_expense') {
-        $expenseDate = trim((string) ($_POST['expense_date'] ?? ''));
-        $categoryId = (int) ($_POST['category_id'] ?? 0);
-        $vendorId = (int) ($_POST['vendor_id'] ?? 0);
-        $vendorName = trim((string) ($_POST['vendor_name'] ?? ''));
-        $billNo = trim((string) ($_POST['bill_no'] ?? ''));
-        $billDate = trim((string) ($_POST['bill_date'] ?? ''));
-        $amount = (float) ($_POST['amount'] ?? 0);
-        $gstAmount = (float) ($_POST['gst_amount'] ?? 0);
-        $netAmount = (float) ($_POST['net_amount'] ?? 0);
-        $description = trim((string) ($_POST['description'] ?? ''));
-        $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
-        $paymentDate = trim((string) ($_POST['payment_date'] ?? ''));
-        $chequeNo = trim((string) ($_POST['cheque_no'] ?? ''));
-        $transactionId = trim((string) ($_POST['transaction_id'] ?? ''));
-        $payeeName = trim((string) ($_POST['payee_name'] ?? ''));
-
-        if ($expenseDate === '' || $categoryId < 1 || $amount <= 0) {
-            $error = 'Expense date, category, and amount are required.';
-        } else {
-            $catName = '';
-            if ($categoryId > 0) {
-                $cs = $pdo->prepare("SELECT name FROM expense_categories WHERE id = ?");
-                $cs->execute([$categoryId]);
-                $catName = (string) ($cs->fetchColumn() ?: '');
-            }
-            if ($vendorId < 1 && $vendorName !== '') {
-                $vs = $pdo->prepare("INSERT INTO vendors (name, is_active) VALUES (?, 1)");
-                $vs->execute([$vendorName]);
-                $vendorId = (int) $pdo->lastInsertId();
-            } elseif ($vendorId > 0 && $vendorName === '') {
-                $vs = $pdo->prepare("SELECT name FROM vendors WHERE id = ?");
-                $vs->execute([$vendorId]);
-                $vendorName = (string) ($vs->fetchColumn() ?: '');
-            }
-
-            $uploadDir = __DIR__ . '/../../uploads/expenses/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            $billFile = null;
-            if (isset($_FILES['bill_file']) && $_FILES['bill_file']['error'] === UPLOAD_ERR_OK) {
-                $ext = strtolower(pathinfo($_FILES['bill_file']['name'], PATHINFO_EXTENSION));
-                $allowed = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx'];
-                if (in_array($ext, $allowed, true)) {
-                    $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($_FILES['bill_file']['name']));
-                    move_uploaded_file($_FILES['bill_file']['tmp_name'], $uploadDir . $filename);
-                    $billFile = $filename;
-                } else {
-                    $error = 'File type not allowed. Allowed: PDF, JPG, PNG, GIF, DOC, DOCX.';
-                }
-            }
-
-            if ($error === '') {
-                $expenseNo = generate_expense_no($pdo);
-                $stmt = $pdo->prepare("INSERT INTO expenses (expense_no, expense_date, category_id, category_name, vendor_id, vendor_name, bill_no, bill_date, amount, gst_amount, net_amount, description, bill_file, payment_mode, payment_date, cheque_no, transaction_id, payee_name, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)");
-                $stmt->execute([
-                    $expenseNo, $expenseDate, $categoryId, $catName, $vendorId ?: null, $vendorName,
-                    $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount,
-                    $description ?: null, $billFile, $paymentMode ?: null, $paymentDate ?: null,
-                    $chequeNo ?: null, $transactionId ?: null, $payeeName ?: null,
-                    (int) ($user['id'] ?? 0),
-                ]);
-                $success = "Expense {$expenseNo} created successfully.";
-            }
-        }
-    }
-
-    // Update
-    if ($action === 'update_expense') {
-        $id = (int) ($_POST['id'] ?? 0);
-        $expenseDate = trim((string) ($_POST['expense_date'] ?? ''));
-        $categoryId = (int) ($_POST['category_id'] ?? 0);
-        $vendorId = (int) ($_POST['vendor_id'] ?? 0);
-        $vendorName = trim((string) ($_POST['vendor_name'] ?? ''));
-        $billNo = trim((string) ($_POST['bill_no'] ?? ''));
-        $billDate = trim((string) ($_POST['bill_date'] ?? ''));
-        $amount = (float) ($_POST['amount'] ?? 0);
-        $gstAmount = (float) ($_POST['gst_amount'] ?? 0);
-        $netAmount = (float) ($_POST['net_amount'] ?? 0);
-        $description = trim((string) ($_POST['description'] ?? ''));
-        $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
-        $paymentDate = trim((string) ($_POST['payment_date'] ?? ''));
-        $chequeNo = trim((string) ($_POST['cheque_no'] ?? ''));
-        $transactionId = trim((string) ($_POST['transaction_id'] ?? ''));
-        $payeeName = trim((string) ($_POST['payee_name'] ?? ''));
-
-        if ($id < 1) {
-            $error = 'Invalid expense ID.';
-        } elseif ($expenseDate === '' || $categoryId < 1 || $amount <= 0) {
-            $error = 'Expense date, category, and amount are required.';
-        } else {
-            $chk = $pdo->prepare("SELECT status, bill_file FROM expenses WHERE id = ?");
-            $chk->execute([$id]);
-            $existing = $chk->fetch(PDO::FETCH_ASSOC);
-            if (!$existing || $existing['status'] !== 'Pending') {
-                $error = 'Only pending expenses can be edited.';
-            } else {
-                $catName = '';
-                if ($categoryId > 0) {
-                    $cs = $pdo->prepare("SELECT name FROM expense_categories WHERE id = ?");
-                    $cs->execute([$categoryId]);
-                    $catName = (string) ($cs->fetchColumn() ?: '');
-                }
-                if ($vendorId < 1 && $vendorName !== '') {
-                    $vs = $pdo->prepare("INSERT INTO vendors (name, is_active) VALUES (?, 1)");
-                    $vs->execute([$vendorName]);
-                    $vendorId = (int) $pdo->lastInsertId();
-                } elseif ($vendorId > 0 && $vendorName === '') {
-                    $vs = $pdo->prepare("SELECT name FROM vendors WHERE id = ?");
-                    $vs->execute([$vendorId]);
-                    $vendorName = (string) ($vs->fetchColumn() ?: '');
-                }
-
-                $uploadDir = __DIR__ . '/../../uploads/expenses/';
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
-                }
-                $billFile = $existing['bill_file'];
-                if (isset($_FILES['bill_file']) && $_FILES['bill_file']['error'] === UPLOAD_ERR_OK) {
-                    $ext = strtolower(pathinfo($_FILES['bill_file']['name'], PATHINFO_EXTENSION));
-                    $allowed = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx'];
-                    if (in_array($ext, $allowed, true)) {
-                        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', basename($_FILES['bill_file']['name']));
-                        move_uploaded_file($_FILES['bill_file']['tmp_name'], $uploadDir . $filename);
-                        $billFile = $filename;
-                    } else {
-                        $error = 'File type not allowed. Allowed: PDF, JPG, PNG, GIF, DOC, DOCX.';
-                    }
-                }
-
-                if ($error === '') {
-                    $stmt = $pdo->prepare("UPDATE expenses SET expense_date=?, category_id=?, category_name=?, vendor_id=?, vendor_name=?, bill_no=?, bill_date=?, amount=?, gst_amount=?, net_amount=?, description=?, bill_file=?, payment_mode=?, payment_date=?, cheque_no=?, transaction_id=?, payee_name=? WHERE id=?");
-                    $stmt->execute([
-                        $expenseDate, $categoryId, $catName, $vendorId ?: null, $vendorName,
-                        $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount,
-                        $description ?: null, $billFile, $paymentMode ?: null, $paymentDate ?: null,
-                        $chequeNo ?: null, $transactionId ?: null, $payeeName ?: null, $id,
-                    ]);
-                    $success = 'Expense updated successfully.';
-                }
-            }
-        }
-    }
-
     // Delete (soft)
     if ($action === 'delete_expense' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
@@ -533,7 +387,6 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                     <p>Track, approve, and manage all school expenses.</p>
                 </div>
                 <div class="toolbar-right">
-                    <button type="button" class="btn" style="background:#059669;color:#fff;border:none;padding:.5rem 1rem;font-size:.85rem;border-radius:10px;cursor:pointer;" onclick="openModal('create')">+ Add Expense</button>
                 </div>
             </div>
         </section>
@@ -656,7 +509,6 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                         <div class="action-btns">
                                             <button type="button" class="btn btn-sm btn-outline" style="padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openModal('view', <?= (int) $r['id'] ?>)">View</button>
                                             <?php if ($r['status'] === 'Pending'): ?>
-                                                <button type="button" class="btn btn-sm btn-outline" style="padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openModal('edit', <?= (int) $r['id'] ?>)">Edit</button>
                                                 <form method="post" style="display:inline;" onsubmit="return confirm('Approve this expense?')">
                                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                     <input type="hidden" name="action" value="approve_expense">
@@ -706,116 +558,6 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
     </main>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- CREATE / EDIT MODAL -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modal-form">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h2 id="modal-form-title">Add Expense</h2>
-            <button type="button" class="modal-close" onclick="closeModals()">&times;</button>
-        </div>
-        <form method="post" enctype="multipart/form-data" id="expense-form">
-            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-            <input type="hidden" name="action" id="form-action" value="create_expense">
-            <input type="hidden" name="id" id="form-id" value="">
-
-            <div class="field-grid">
-                <div>
-                    <label for="f_expense_date">Expense Date *</label>
-                    <input type="date" name="expense_date" id="f_expense_date" required value="<?= date('Y-m-d') ?>">
-                </div>
-                <div>
-                    <label for="f_category_id">Category *</label>
-                    <div style="display:flex;gap:.4rem;align-items:center;">
-                        <select name="category_id" id="f_category_id" required style="flex:1;min-width:0;">
-                            <option value="">-- Select --</option>
-                            <?php foreach ($categories as $cat): ?>
-                                <option value="<?= (int) $cat['id'] ?>"><?= e($cat['name']) ?><?= $cat['group_name'] ? ' (' . e($cat['group_name']) . ')' : '' ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <button type="button" class="btn btn-sm btn-soft" onclick="addCategoryInline()" style="white-space:nowrap;font-size:.78rem;">+ New</button>
-                    </div>
-                </div>
-                <div>
-                    <label for="f_vendor_id">Vendor</label>
-                    <div style="display:flex;gap:.4rem;align-items:center;">
-                        <select name="vendor_id" id="f_vendor_id" style="flex:1;min-width:0;" onchange="document.getElementById('f_vendor_name').value = this.options[this.selectedIndex].text || '';">
-                            <option value="0">-- Select Vendor --</option>
-                            <?php foreach ($vendors as $v): ?>
-                                <option value="<?= (int) $v['id'] ?>"><?= e($v['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <a href="masters.php" target="_blank" class="btn btn-sm btn-soft" style="white-space:nowrap;font-size:.78rem;text-decoration:none;">+ Add New</a>
-                    </div>
-                    <input type="hidden" name="vendor_name" id="f_vendor_name" value="">
-                </div>
-                <div>
-                    <label for="f_bill_no">Bill Number</label>
-                    <input type="text" name="bill_no" id="f_bill_no">
-                </div>
-                <div>
-                    <label for="f_bill_date">Bill Date</label>
-                    <input type="date" name="bill_date" id="f_bill_date">
-                </div>
-                <div>
-                    <label for="f_amount">Amount (Rs.) *</label>
-                    <input type="number" step="0.01" min="0" name="amount" id="f_amount" required oninput="calcNet()">
-                </div>
-                <div>
-                    <label for="f_gst_amount">GST Amount (Rs.)</label>
-                    <input type="number" step="0.01" min="0" name="gst_amount" id="f_gst_amount" value="0" oninput="calcNet()">
-                </div>
-                <div>
-                    <label for="f_net_amount">Net Amount (Rs.)</label>
-                    <input type="number" step="0.01" min="0" name="net_amount" id="f_net_amount" readonly style="background:#f1f5f9;">
-                </div>
-                <div>
-                    <label for="f_payment_mode">Payment Mode</label>
-                    <select name="payment_mode" id="f_payment_mode" onchange="toggleTxnFields()">
-                        <option value="">-- Select --</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Cheque">Cheque</option>
-                        <option value="UPI">UPI</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Card">Card</option>
-                        <option value="Online">Online</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="f_payment_date">Payment Date</label>
-                    <input type="date" name="payment_date" id="f_payment_date">
-                </div>
-                <div>
-                    <label for="f_cheque_no">Cheque No</label>
-                    <input type="text" name="cheque_no" id="f_cheque_no">
-                </div>
-                <div class="txn-fields" id="txn-fields-tid">
-                    <label for="f_transaction_id">Transaction ID</label>
-                    <input type="text" name="transaction_id" id="f_transaction_id">
-                </div>
-                <div>
-                    <label for="f_payee_name">Payee Name</label>
-                    <input type="text" name="payee_name" id="f_payee_name">
-                </div>
-                <div>
-                    <label for="f_bill_file">Bill Upload</label>
-                    <input type="file" name="bill_file" id="f_bill_file" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx">
-                </div>
-            </div>
-            <div class="field-grid" style="margin-top:1rem;">
-                <div>
-                    <label for="f_description">Description</label>
-                    <textarea name="description" id="f_description" rows="3"></textarea>
-                </div>
-            </div>
-            <div style="margin-top:1.25rem;display:flex;gap:.75rem;">
-                <button type="submit" class="btn" style="background:#2563eb;padding:.6rem 1.5rem;min-height:auto;font-size:.9rem;color:#fff;border:none;border-radius:8px;cursor:pointer;" id="form-submit-btn">Create Expense</button>
-                <button type="button" class="btn btn-outline" style="padding:.6rem 1.5rem;min-height:auto;font-size:.9rem;border-radius:8px;cursor:pointer;" onclick="closeModals()">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- VIEW MODAL -->
@@ -882,66 +624,14 @@ var allExpenses = <?= json_encode(array_map(fn(array $r) => [
     'status' => $r['status'],
 ], $rows)) ?>;
 
-function calcNet() {
-    var amt = parseFloat(document.getElementById('f_amount').value) || 0;
-    var gst = parseFloat(document.getElementById('f_gst_amount').value) || 0;
-    document.getElementById('f_net_amount').value = (amt + gst).toFixed(2);
-}
-
-function toggleTxnFields() {
-    var mode = document.getElementById('f_payment_mode').value;
-    var el = document.getElementById('txn-fields-tid');
-    if (mode === 'UPI' || mode === 'Bank Transfer' || mode === 'Online') {
-        el.classList.add('show');
-    } else {
-        el.classList.remove('show');
-    }
-}
-
 function closeModals() {
-    document.getElementById('modal-form').classList.remove('open');
     document.getElementById('modal-view').classList.remove('open');
     document.getElementById('modal-reject').classList.remove('open');
 }
 
 function openModal(type, id) {
     closeModals();
-    if (type === 'create') {
-        document.getElementById('modal-form-title').textContent = 'Add Expense';
-        document.getElementById('form-action').value = 'create_expense';
-        document.getElementById('form-id').value = '';
-        document.getElementById('form-submit-btn').textContent = 'Create Expense';
-        document.getElementById('expense-form').reset();
-        document.getElementById('f_expense_date').value = <?= json_encode(date('Y-m-d')) ?>;
-        document.getElementById('f_gst_amount').value = '0';
-        document.getElementById('f_net_amount').value = '0';
-        toggleTxnFields();
-        document.getElementById('modal-form').classList.add('open');
-    } else if (type === 'edit') {
-        var exp = allExpenses.find(function(e) { return e.id === id; });
-        if (!exp) return;
-        document.getElementById('modal-form-title').textContent = 'Edit Expense';
-        document.getElementById('form-action').value = 'update_expense';
-        document.getElementById('form-id').value = exp.id;
-        document.getElementById('form-submit-btn').textContent = 'Update Expense';
-        document.getElementById('f_expense_date').value = exp.expense_date;
-        document.getElementById('f_category_id').value = exp.category_id;
-        document.getElementById('f_vendor_id').value = exp.vendor_id;
-        document.getElementById('f_vendor_name').value = exp.vendor_name;
-        document.getElementById('f_bill_no').value = exp.bill_no;
-        document.getElementById('f_bill_date').value = exp.bill_date;
-        document.getElementById('f_amount').value = exp.amount;
-        document.getElementById('f_gst_amount').value = exp.gst_amount;
-        document.getElementById('f_net_amount').value = exp.net_amount;
-        document.getElementById('f_payment_mode').value = exp.payment_mode;
-        document.getElementById('f_payment_date').value = exp.payment_date;
-        document.getElementById('f_cheque_no').value = exp.cheque_no;
-        document.getElementById('f_transaction_id').value = exp.transaction_id;
-        document.getElementById('f_payee_name').value = exp.payee_name;
-        document.getElementById('f_description').value = exp.description;
-        toggleTxnFields();
-        document.getElementById('modal-form').classList.add('open');
-    } else if (type === 'view') {
+    if (type === 'view') {
         var exp = allExpenses.find(function(e) { return e.id === id; });
         if (!exp) return;
         var html = '';
@@ -977,36 +667,6 @@ function openModal(type, id) {
         document.getElementById('modal-reject').classList.add('open');
     }
 }
-
-function addCategoryInline() {
-    var name = prompt('Enter new expense category name:');
-    if (!name || name.trim() === '') return;
-    var groupName = prompt('Group name (optional, e.g. Operations, Admin):') || '';
-    var fd = new FormData();
-    fd.append('_token', <?= json_encode(csrf_token()) ?>);
-    fd.append('action', 'add_category');
-    fd.append('name', name.trim());
-    fd.append('group_name', groupName.trim());
-    fetch('expense-entry.php', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data && data.id) {
-                var sel = document.getElementById('f_category_id');
-                var opt = document.createElement('option');
-                opt.value = data.id;
-                opt.text = data.name + (data.group_name ? ' (' + data.group_name + ')' : '');
-                sel.add(opt);
-                sel.value = String(data.id);
-            } else {
-                alert(data && data.error ? data.error : 'Could not add category.');
-            }
-        })
-        .catch(function() { alert('Could not add category.'); });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    toggleTxnFields();
-});
 </script>
 <?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
