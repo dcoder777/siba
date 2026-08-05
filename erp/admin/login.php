@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                 </form>
                 <p style="text-align:center;margin-top:1rem;"><a href="register-admin.php" style="color:var(--primary-color);font-weight:600;font-size:.88rem;">Register as Admin &rarr;</a></p>
+                <p style="text-align:center;margin-top:1.2rem;font-size:.78rem;color:var(--muted-color);">Build v9e95d7f &middot; <?php echo date('Y-m-d H:i'); ?></p>
             </aside>
         </div>
     </section>
