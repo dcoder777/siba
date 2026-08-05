@@ -51,20 +51,38 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         <a class="nav-link<?= $activePage === 'masters.php' ? ' active' : '' ?>" href="masters.php">
             <span class="sidebar-icon">⚙</span><span>Masters</span>
         </a>
-        <a class="nav-link<?= $activePage === 'fee-structures.php' ? ' active' : '' ?>" href="fee-structures.php">
-            <span class="sidebar-icon">🏗</span><span>Fee Structure</span>
+        <a class="nav-link<?= in_array($activePage, ['fee-structure-new.php','student-fee-assignment.php','fee-demand.php','fee-collection-new.php','emi-management.php','discounts.php','outstanding-fees.php']) ? ' active' : '' ?>" href="fee-structure-new.php">
+            <span class="sidebar-icon">💰</span><span>Fee Management</span>
         </a>
-        <a class="nav-link<?= $activePage === 'fee-collection.php' ? ' active' : '' ?>" href="fee-collection.php">
-            <span class="sidebar-icon">💰</span><span>Fee Collection</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'expenses.php' ? ' active' : '' ?>" href="expenses.php">
+        <a class="nav-link<?= in_array($activePage, ['expense-entry.php','vendor-bills.php']) ? ' active' : '' ?>" href="expense-entry.php">
             <span class="sidebar-icon">📤</span><span>Expenses</span>
         </a>
-        <a class="nav-link<?= $activePage === 'accounts.php' ? ' active' : '' ?>" href="accounts.php">
+        <a class="nav-link<?= $activePage === 'cash-bank.php' ? ' active' : '' ?>" href="cash-bank.php">
             <span class="sidebar-icon">🏦</span><span>Cash & Bank</span>
         </a>
-        <a class="nav-link<?= $activePage === 'reports.php' ? ' active' : '' ?>" href="reports.php">
+        <a class="nav-link<?= $activePage === 'salary-setup.php' ? ' active' : '' ?>" href="salary-setup.php">
+            <span class="sidebar-icon">👥</span><span>Payroll</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'inventory.php' ? ' active' : '' ?>" href="inventory.php">
+            <span class="sidebar-icon">📦</span><span>Inventory</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'hostel-accounts.php' ? ' active' : '' ?>" href="hostel-accounts.php">
+            <span class="sidebar-icon">🏠</span><span>Hostel</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'transport-accounts.php' ? ' active' : '' ?>" href="transport-accounts.php">
+            <span class="sidebar-icon">🚌</span><span>Transport</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'budget.php' ? ' active' : '' ?>" href="budget.php">
+            <span class="sidebar-icon">📋</span><span>Budget</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'ledger-accounts.php' ? ' active' : '' ?>" href="ledger-accounts.php">
+            <span class="sidebar-icon">📒</span><span>Ledger</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'reports-new.php' ? ' active' : '' ?>" href="reports-new.php">
             <span class="sidebar-icon">📈</span><span>Reports</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'year-closing.php' ? ' active' : '' ?>" href="year-closing.php">
+            <span class="sidebar-icon">🔒</span><span>Year Closing</span>
         </a>
     </div>
 
