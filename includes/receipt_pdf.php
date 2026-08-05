@@ -13,85 +13,139 @@ if (!function_exists('siba_receipt_pdf')) {
     {
         $esc = static fn(string $s): string => str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $s);
 
-        $lines = [];
-        $lines[] = 'BT';
-        $lines[] = '/F1 16 Tf';
-        $lines[] = '0.29 0.33 0.39 rg';
-        $lines[] = '72 772 Td';
-        $lines[] = '(' . $esc('SIBA PUBLIC SCHOOL') . ') Tj';
-        $lines[] = 'ET';
-
-        $lines[] = 'BT';
-        $lines[] = '/F2 9 Tf';
-        $lines[] = '0.40 0.45 0.48 rg';
-        $lines[] = '72 758 Td';
-        $lines[] = '(' . $esc('WBBSE Affiliated | Chapra, West Bengal') . ') Tj';
-        $lines[] = 'ET';
-
-        $lines[] = 'BT';
-        $lines[] = '/F1 14 Tf';
-        $lines[] = '0.29 0.33 0.39 rg';
-        $lines[] = '72 716 Td';
-        $lines[] = '(' . $esc('APPLICATION RECEIPT') . ') Tj';
-        $lines[] = 'ET';
-
-        $lines[] = '0.85 0.85 0.85 RG';
-        $lines[] = '2 w';
-        $lines[] = '72 702 m 528 702 l S';
-
         $studentFullName = trim(implode(' ', array_filter([
             $app['first_name'] ?? '',
             $app['middle_name'] ?? '',
             $app['last_name'] ?? '',
         ]))) ?: (string) ($app['student_name'] ?? '');
 
+        $paymentStatus = (string) ($app['payment_status'] ?? 'Pending');
+        $appliedAt = (string) ($app['applied_at'] ?? '');
+        $appliedDate = $appliedAt !== '' ? date('d-m-Y h:i A', (int) strtotime($appliedAt)) : '';
+
+        $lines = [];
+
+        // Header band
+        $lines[] = '0.12 0.16 0.23 rg';           // dark slate
+        $lines[] = '0 0 595 90 re f';
+        $lines[] = '0.96 0.60 0.13 RG';            // accent line (reserved via rect below)
+        $lines[] = '0 90 595 3 re f';
+        $lines[] = '0.96 0.60 0.13 rg';
+
+        // School name
+        $lines[] = 'BT';
+        $lines[] = '/F1 20 Tf';
+        $lines[] = '1 1 1 rg';
+        $lines[] = '60 56 Td';
+        $lines[] = '(' . $esc('SIBA PUBLIC SCHOOL') . ') Tj';
+        $lines[] = 'ET';
+
+        $lines[] = 'BT';
+        $lines[] = '/F2 10 Tf';
+        $lines[] = '0.80 0.84 0.90 rg';
+        $lines[] = '60 42 Td';
+        $lines[] = '(' . $esc('WBBSE Affiliated | Chapra, West Bengal') . ') Tj';
+        $lines[] = 'ET';
+
+        // Receipt number top-right
+        $lines[] = 'BT';
+        $lines[] = '/F2 8 Tf';
+        $lines[] = '0.80 0.84 0.90 rg';
+        $lines[] = '400 62 Td';
+        $lines[] = '(' . $esc('RECEIPT NO.: ' . ($app['application_no'] ?? '')) . ') Tj';
+        $lines[] = 'ET';
+        $lines[] = 'BT';
+        $lines[] = '/F1 11 Tf';
+        $lines[] = '0.96 0.75 0.20 rg';
+        $lines[] = '400 48 Td';
+        $lines[] = '(' . $esc('APPLICATION RECEIPT') . ') Tj';
+        $lines[] = 'ET';
+
+        // Title
+        $lines[] = 'BT';
+        $lines[] = '/F1 15 Tf';
+        $lines[] = '0.12 0.16 0.23 rg';
+        $lines[] = '60 104 Td';
+        $lines[] = '(' . $esc('Application Acknowledgement Receipt') . ') Tj';
+        $lines[] = 'ET';
+        $lines[] = 'BT';
+        $lines[] = '/F2 9.5 Tf';
+        $lines[] = '0.45 0.50 0.55 rg';
+        $lines[] = '60 92 Td';
+        $lines[] = '(' . $esc('Thank you for applying to SIBA Public School.') . ') Tj';
+        $lines[] = 'ET';
+
+        $lines[] = '0.85 0.85 0.85 RG';
+        $lines[] = '1 w';
+        $lines[] = '60 82 m 535 82 l S';
+
+        // Sections
         $rows = [
+            ['APPLICATION DETAILS', true],
             ['Application No', $app['application_no'] ?? ''],
+            ['Date of Application', $appliedDate ?: ''],
             ['Student Name', $studentFullName],
             ['Date of Birth', $app['dob'] ?? ''],
             ['Class Applied', $app['class_sought'] ?? ''],
-            ["Father's Name", $app['father_name'] ?? ''],
-            ["Mother's Name", $app['mother_name'] ?? ''],
+            ['Application Status', $app['status'] ?? ''],
+            ['GUARDIAN DETAILS', true],
             ['Guardian Name', $app['parent_name'] ?? ''],
             ['Guardian Phone', $app['parent_phone'] ?? ''],
             ['Guardian Email', $app['parent_email'] ?? ''],
-            ['Status', $app['status'] ?? ''],
-            ['Payment Status', $app['payment_status'] ?? 'Pending'],
+            ["Father's Name", $app['father_name'] ?? ''],
+            ["Mother's Name", $app['mother_name'] ?? ''],
+            ['PAYMENT SUMMARY', true],
             ['Application Fee', 'Rs. 200'],
-            ['Applied On', $app['applied_at'] ?? ''],
+            ['Payment Status', $paymentStatus],
         ];
 
-        $y = 688;
-        foreach ($rows as [$k, $v]) {
+        $y = 500;
+        foreach ($rows as $row) {
+            $isSection = $row[1] === true;
+            if ($isSection) {
+                $y -= 6;
+                $lines[] = 'BT';
+                $lines[] = '/F1 9.5 Tf';
+                $lines[] = '0.96 0.55 0.05 rg';
+                $lines[] = '60 ' . $y . ' Td';
+                $lines[] = '(' . $esc($row[0]) . ') Tj';
+                $lines[] = 'ET';
+                $lines[] = '0.93 0.89 0.82 RG';
+                $lines[] = '0.8 w';
+                $lines[] = '60 ' . ($y - 4) . ' m 535 ' . ($y - 4) . ' l S';
+                $y -= 17;
+                continue;
+            }
             $lines[] = 'BT';
-            $lines[] = '/F2 9 Tf';
-            $lines[] = '0.40 0.45 0.48 rg';
-            $lines[] = '72 ' . $y . ' Td';
-            $lines[] = '(' . $esc($k) . ') Tj';
+            $lines[] = '/F2 9.5 Tf';
+            $lines[] = '0.45 0.50 0.55 rg';
+            $lines[] = '70 ' . $y . ' Td';
+            $lines[] = '(' . $esc($row[0]) . ') Tj';
             $lines[] = 'ET';
             $lines[] = 'BT';
-            $lines[] = '/F2 9 Tf';
+            $lines[] = '/F2 9.5 Tf';
             $lines[] = '0 0 0 rg';
             $lines[] = '210 ' . $y . ' Td';
-            $lines[] = '(' . $esc((string) $v) . ') Tj';
+            $lines[] = '(' . $esc((string) $row[1]) . ') Tj';
             $lines[] = 'ET';
             $lines[] = '0.90 0.90 0.90 RG';
-            $lines[] = '1 w';
-            $lines[] = '72 ' . ($y - 5) . ' m 528 ' . ($y - 5) . ' l S';
+            $lines[] = '0.6 w';
+            $lines[] = '70 ' . ($y - 5) . ' m 535 ' . ($y - 5) . ' l S';
             $y -= 17;
         }
 
+        // Footer
         $lines[] = 'BT';
-        $lines[] = '/F2 8 Tf';
-        $lines[] = '0.58 0.62 0.65 rg';
-        $lines[] = '72 120 Td';
+        $lines[] = '/F2 9 Tf';
+        $lines[] = '0.45 0.50 0.55 rg';
+        $lines[] = '60 56 Td';
         $lines[] = '(' . $esc('This is a computer-generated receipt. No signature required.') . ') Tj';
         $lines[] = 'ET';
         $lines[] = 'BT';
         $lines[] = '/F2 8 Tf';
-        $lines[] = '0.58 0.62 0.65 rg';
-        $lines[] = '72 108 Td';
-        $lines[] = '(' . $esc('SIBA Public School | All Rights Reserved') . ') Tj';
+        $lines[] = '0.12 0.16 0.23 rg';
+        $lines[] = '60 44 Td';
+        $lines[] = '(' . $esc('SIBA Public School | Chapra, West Bengal | All Rights Reserved') . ') Tj';
         $lines[] = 'ET';
 
         $content = implode("\n", $lines) . "\n";
