@@ -293,6 +293,7 @@ ensure_columns($pdo, 'income_categories', [
     'payment_mode' => "VARCHAR(50) NULL",
     'payment_id' => "VARCHAR(150) NULL",
     'status' => "VARCHAR(30) DEFAULT 'Pending'",
+    'is_active' => "TINYINT(1) NOT NULL DEFAULT 1",
     'created_by' => "INT NULL",
     'approved_by' => "INT NULL",
     'approved_at' => "DATETIME NULL",
