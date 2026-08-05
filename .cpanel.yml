@@ -1,10 +1,4 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/gdubkh4f5a2c/public_html
-    - /bin/mkdir -p $DEPLOYPATH
-    - /bin/cp -a . $DEPLOYPATH
-    - /bin/chmod 755 $DEPLOYPATH
-    - /usr/bin/find $DEPLOYPATH -type d -exec /bin/chmod 755 {} +
-    - /usr/bin/find $DEPLOYPATH -type f -exec /bin/chmod 644 {} +
-    - /bin/chmod 640 $DEPLOYPATH/erp/.env
+    - /bin/true
