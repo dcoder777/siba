@@ -48,21 +48,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $description = trim((string) ($_POST['description'] ?? ''));
             $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
             $paymentDate = trim((string) ($_POST['payment_date'] ?? ''));
-            $chequeNo = trim((string) ($_POST['cheque_no'] ?? ''));
+            $paymentId = trim((string) ($_POST['payment_id'] ?? ''));
             $transactionId = trim((string) ($_POST['transaction_id'] ?? ''));
             $payeeName = trim((string) ($_POST['payee_name'] ?? ''));
             $status = trim((string) ($_POST['status'] ?? 'Pending'));
             $validStatuses = ['Pending', 'Approved', 'Rejected', 'Cancelled'];
             $status = in_array($status, $validStatuses, true) ? $status : 'Pending';
 
-            if ($expenseDate === '' || $categoryId === 0) {
-                $error = 'Expense date and category are required.';
+            if ($expenseDate === '') {
+                $error = 'Expense date is required.';
             } else {
                 $catName = '';
-                $catRow = $pdo->prepare("SELECT name FROM expense_categories WHERE id=?");
-                $catRow->execute([$categoryId]);
-                $cat = $catRow->fetch();
-                if ($cat) { $catName = (string) $cat['name']; }
+                if ($categoryId > 0) {
+                    $catRow = $pdo->prepare("SELECT name FROM expense_categories WHERE id=?");
+                    $catRow->execute([$categoryId]);
+                    $cat = $catRow->fetch();
+                    if ($cat) { $catName = (string) $cat['name']; }
+                }
 
                 if (!$vendorName && $vendorId > 0) {
                     $vRow = $pdo->prepare("SELECT name FROM vendors WHERE id=?");
@@ -72,14 +74,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 }
 
                 if ($action === 'update_expense' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE expenses SET expense_date=?, category_id=?, category_name=?, vendor_id=?, vendor_name=?, bill_no=?, bill_date=?, amount=?, gst_amount=?, net_amount=?, description=?, payment_mode=?, payment_date=?, cheque_no=?, transaction_id=?, payee_name=?, status=? WHERE id=?");
-                    $stmt->execute([$expenseDate, $categoryId, $catName, $vendorId > 0 ? $vendorId : null, $vendorName ?: null, $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount, $description ?: null, $paymentMode ?: null, $paymentDate ?: null, $chequeNo ?: null, $transactionId ?: null, $payeeName ?: null, $status, $id]);
+                    $stmt = $pdo->prepare("UPDATE expenses SET expense_date=?, category_id=?, category_name=?, vendor_id=?, vendor_name=?, bill_no=?, bill_date=?, amount=?, gst_amount=?, net_amount=?, description=?, payment_mode=?, payment_date=?, payment_id=?, transaction_id=?, payee_name=?, status=? WHERE id=?");
+                    $stmt->execute([$expenseDate, $categoryId > 0 ? $categoryId : null, $catName ?: null, $vendorId > 0 ? $vendorId : null, $vendorName ?: null, $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount, $description ?: null, $paymentMode ?: null, $paymentDate ?: null, $paymentId ?: null, $transactionId ?: null, $payeeName ?: null, $status, $id]);
                     $success = 'Expense updated.';
                 } else {
                     $expenseNo = generate_expense_no($pdo);
                     $createdBy = (int) ($user['id'] ?? 0);
-                    $stmt = $pdo->prepare("INSERT INTO expenses (expense_no, expense_date, category_id, category_name, vendor_id, vendor_name, bill_no, bill_date, amount, gst_amount, net_amount, description, payment_mode, payment_date, cheque_no, transaction_id, payee_name, status, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                    $stmt->execute([$expenseNo, $expenseDate, $categoryId, $catName, $vendorId > 0 ? $vendorId : null, $vendorName ?: null, $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount, $description ?: null, $paymentMode ?: null, $paymentDate ?: null, $chequeNo ?: null, $transactionId ?: null, $payeeName ?: null, $status, $createdBy]);
+                    $stmt = $pdo->prepare("INSERT INTO expenses (expense_no, expense_date, category_id, category_name, vendor_id, vendor_name, bill_no, bill_date, amount, gst_amount, net_amount, description, payment_mode, payment_date, payment_id, transaction_id, payee_name, status, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                    $stmt->execute([$expenseNo, $expenseDate, $categoryId > 0 ? $categoryId : null, $catName ?: null, $vendorId > 0 ? $vendorId : null, $vendorName ?: null, $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount, $description ?: null, $paymentMode ?: null, $paymentDate ?: null, $paymentId ?: null, $transactionId ?: null, $payeeName ?: null, $status, $createdBy]);
                     $success = 'Expense created.';
                 }
                 header("Location: masters.php?tab=expense-categories");
@@ -251,6 +253,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 }
 
 // ─── Fetch data for each tab ───
+ensure_columns($pdo, 'expenses', [
+    'payment_id' => "VARCHAR(150) DEFAULT NULL",
+]);
+try { $pdo->exec("ALTER TABLE expenses MODIFY category_id INT UNSIGNED NULL"); } catch (Throwable) {}
+try { $pdo->exec("ALTER TABLE expenses MODIFY category_name VARCHAR(100) NULL"); } catch (Throwable) {}
 ensure_columns($pdo, 'income_categories', [
     'amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
 ]);
@@ -478,15 +485,6 @@ if (isset($_GET['edit'])) {
                             <input type="date" name="expense_date" required value="<?= e($editRecord['expense_date'] ?? date('Y-m-d')) ?>">
                         </div>
                         <div>
-                            <label>Category *</label>
-                            <select name="category_id" required>
-                                <option value="">-- Select --</option>
-                                <?php foreach ($expenseCategories as $cat): ?>
-                                    <option value="<?= (int) $cat['id'] ?>" <?= (isset($editRecord['category_id']) && (int) $editRecord['category_id'] === (int) $cat['id']) ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div>
                             <label>Vendor</label>
                             <select name="vendor_id" id="ee-vendor-id" onchange="document.getElementById('ee-vendor-name').value = this.options[this.selectedIndex].text;">
                                 <option value="0">-- Select Vendor --</option>
@@ -526,12 +524,12 @@ if (isset($_GET['edit'])) {
                             </select>
                         </div>
                         <div>
-                            <label>Payment Date</label>
-                            <input type="date" name="payment_date" value="<?= e($editRecord['payment_date'] ?? '') ?>">
+                            <label>Payment ID</label>
+                            <input type="text" name="payment_id" value="<?= e($editRecord['payment_id'] ?? '') ?>">
                         </div>
                         <div>
-                            <label>Cheque No</label>
-                            <input type="text" name="cheque_no" value="<?= e($editRecord['cheque_no'] ?? '') ?>">
+                            <label>Payment Date</label>
+                            <input type="date" name="payment_date" value="<?= e($editRecord['payment_date'] ?? '') ?>">
                         </div>
                         <div class="ee-txn-field">
                             <label>Transaction ID</label>
