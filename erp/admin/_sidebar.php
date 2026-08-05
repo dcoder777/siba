@@ -60,9 +60,6 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         <a class="nav-link<?= $activePage === 'salary-setup.php' ? ' active' : '' ?>" href="salary-setup.php">
             <span class="sidebar-icon">👥</span><span>Payroll</span>
         </a>
-        <a class="nav-link<?= $activePage === 'inventory.php' ? ' active' : '' ?>" href="inventory.php">
-            <span class="sidebar-icon">📦</span><span>Inventory</span>
-        </a>
         <a class="nav-link<?= $activePage === 'reports-new.php' ? ' active' : '' ?>" href="reports-new.php">
             <span class="sidebar-icon">📈</span><span>Reports</span>
         </a>
