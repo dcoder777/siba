@@ -2,9 +2,9 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require_admin_login();
+require_once __DIR__ . '/../../includes/application_fee.php';
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
-$pdo = $GLOBALS['pdo'];
 $pageTitle = 'Finance Dashboard';
 
 // Guard: if finance tables are missing, show empty dashboard instead of 500
@@ -40,10 +40,12 @@ $monthlyCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) F
 $outstandingFees = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active'");
 
 // Total Expenses (monthly)
-$monthlyExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status = 'Approved' AND MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())");
+$monthlyExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())");
 
-// Total Income (monthly, non-fee)
-$monthlyIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_records WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE())");
+// Total Income (monthly) — approved income_categories + paid application fees
+$monthlyIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND MONTH(income_date) = MONTH(CURDATE()) AND YEAR(income_date) = YEAR(CURDATE())");
+$monthlyAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND MONTH(applied_at) = MONTH(CURDATE()) AND YEAR(applied_at) = YEAR(CURDATE())");
+$totalMonthlyIncome = $monthlyIncome + $monthlyAppFeeIncome;
 
 // Recent Transactions
 $recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' ORDER BY fc.created_at DESC LIMIT 10");
@@ -126,13 +128,13 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                 <div class="kpi-sub">Approved expenses this month</div>
             </div>
             <div class="kpi-card highlight">
-                <div class="kpi-label">Monthly Income (Non-Fee)</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyIncome, 2) ?></div>
-                <div class="kpi-sub">Donations, grants & other income</div>
+                <div class="kpi-label">Monthly Income</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($totalMonthlyIncome, 2) ?></div>
+                <div class="kpi-sub">Approved income + application fees</div>
             </div>
-            <div class="kpi-card <?= ($monthlyCollection + $monthlyIncome - $monthlyExpenses) >= 0 ? 'success' : 'danger' ?>">
+            <div class="kpi-card <?= ($monthlyCollection + $totalMonthlyIncome - $monthlyExpenses) >= 0 ? 'success' : 'danger' ?>">
                 <div class="kpi-label">Net Surplus / Deficit</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyCollection + $monthlyIncome - $monthlyExpenses, 2) ?></div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyCollection + $totalMonthlyIncome - $monthlyExpenses, 2) ?></div>
                 <div class="kpi-sub">Income minus expenses this month</div>
             </div>
         </div>
@@ -149,7 +151,7 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                 <div style="height:240px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:8px;color:#94a3b8;font-size:.9rem;border:1px dashed #e2e8f0;">
                     <div style="text-align:center;">
                         <div style="font-size:2rem;margin-bottom:.5rem;">📊</div>
-                        <div>Income: Rs. <?= number_format($monthlyCollection + $monthlyIncome, 2) ?></div>
+                        <div>Income: Rs. <?= number_format($monthlyCollection + $totalMonthlyIncome, 2) ?></div>
                         <div>Expenses: Rs. <?= number_format($monthlyExpenses, 2) ?></div>
                     </div>
                 </div>
@@ -242,21 +244,21 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                 </div>
             </div>
             <div class="action-grid">
-                <a href="fee-collection.php">
+                <a href="fee-collection-new.php">
                     💳 New Fee Collection
                     <small>Record a new fee payment</small>
                 </a>
-                <a href="fee-structures.php">
+                <a href="fee-structure-new.php">
                     💰 New Fee Structure
                     <small>Create a fee structure</small>
                 </a>
-                <a href="expenses.php">
-                    📤 Record Expense
-                    <small>Log a new expense</small>
+                <a href="expense-entry.php">
+                    📤 View Expenses
+                    <small>Track all expense records</small>
                 </a>
-                <a href="income.php">
-                    📥 New Income
-                    <small>Record non-fee income</small>
+                <a href="income-entry.php">
+                    📥 View Income
+                    <small>Track all income records</small>
                 </a>
             </div>
         </section>
