@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
     $errors = [];
     if ($parentName === '') $errors['parent_name'] = 'Parent name is required.';
-    if ($parentEmail === '' || !filter_var($parentEmail, FILTER_VALIDATE_EMAIL)) $errors['parent_email'] = 'A valid parent email is required.';
+    if ($parentEmail !== '' && !filter_var($parentEmail, FILTER_VALIDATE_EMAIL)) $errors['parent_email'] = 'Please enter a valid email address.';
     if (strlen($parentPhone) !== 10) $errors['parent_phone'] = 'Parent phone must be exactly 10 digits.';
     if ($studentName === '') $errors['student_name'] = 'Student name is required.';
     if ($classSought === '' || !in_array($classSought, $classOptions, true)) $errors['class_sought'] = 'A valid class must be selected.';
@@ -105,10 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 throw new \RuntimeException('A parent with this phone number already exists.');
             }
 
-            $check = $pdo->prepare("SELECT id FROM users WHERE email = :email LIMIT 1");
-            $check->execute(['email' => $parentEmail]);
-            if ($check->fetch()) {
-                throw new \RuntimeException('A user with this email already exists.');
+            if ($parentEmail === '') {
+                $parentEmail = $parentPhone . '@sibapublicschool.com';
             }
 
             $stmt = $pdo->prepare("INSERT INTO parents (name, email, phone, password, created_at) VALUES (:name, :email, :phone, :password, NOW())");
@@ -256,10 +254,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $generatedPassword = $parentPassword;
 
             $emailSent = false;
-            $subject = 'SIBA Public School – Application Submitted & Parent Portal Credentials';
-            $loginUrl = $parentLoginUrl;
-            $receiptUrl = 'https://sibapublicschool.com/parent/receipt.php?app_id=' . $generatedAppId . '&download=1';
-            $emailBody = <<<HTML
+            if ($parentEmail !== $parentPhone . '@sibapublicschool.com') {
+                $subject = 'SIBA Public School – Application Submitted & Parent Portal Credentials';
+                $loginUrl = $parentLoginUrl;
+                $receiptUrl = 'https://sibapublicschool.com/parent/receipt.php?app_id=' . $generatedAppId . '&download=1';
+                $emailBody = <<<HTML
 <!doctype html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -285,15 +284,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 </body>
 </html>
 HTML;
-            $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibapublicschool.com\r\n";
-            try {
-                $emailSent = mail($parentEmail, $subject, $emailBody, $headers);
-            } catch (\Throwable) {
-                $emailSent = false;
+                $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: noreply@sibapublicschool.com\r\n";
+                try {
+                    $emailSent = mail($parentEmail, $subject, $emailBody, $headers);
+                } catch (\Throwable) {
+                    $emailSent = false;
+                }
             }
 
             $success = 'Application submitted successfully! Parent account and student application have been created.';
-            if (!$emailSent) {
+            if ($parentEmail === $parentPhone . '@sibapublicschool.com') {
+                $success .= ' No email was provided — credentials are shown below. Please share them with the parent.';
+            } elseif (!$emailSent) {
                 $success .= ' Email notification could not be sent; please share the credentials manually (shown below).';
             } else {
                 $success .= ' An email with login credentials has been sent to the parent.';
@@ -383,7 +385,7 @@ function field_feedback(string $field, array $errors): string {
                         <?= field_feedback('parent_name', $errors) ?>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label" for="parent_email">Email Address *</label>
+                        <label class="form-label" for="parent_email">Email Address <span class="text-muted">(Optional)</span></label>
                         <input class="form-control<?= field_error('parent_email', $errors) ?>" id="parent_email" name="parent_email" type="email" value="<?= e($_POST['parent_email'] ?? '') ?>">
                         <?= field_feedback('parent_email', $errors) ?>
                     </div>
