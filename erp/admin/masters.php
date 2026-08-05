@@ -13,6 +13,15 @@ function generate_expense_no(PDO $pdo): string
     return 'EXP-' . $year . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
 }
 
+function generate_income_no(PDO $pdo): string
+{
+    $year = date('Y');
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM income_categories WHERE YEAR(created_at) = ?");
+    $stmt->execute([$year]);
+    $next = (int) $stmt->fetchColumn() + 1;
+    return 'INC-' . $year . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+}
+
 $user = admin_user();
 $pageTitle = 'Masters';
 $error = '';
@@ -102,20 +111,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         if ($action === 'create_income_category' || $action === 'update_income_category') {
             $id = (int) ($_POST['id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
-            $description = trim((string) ($_POST['description'] ?? ''));
             $amount = (float) ($_POST['amount'] ?? 0);
-            $isActive = 1;
+            $incomeDate = trim((string) ($_POST['income_date'] ?? ''));
+            $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
+            $paymentId = trim((string) ($_POST['payment_id'] ?? ''));
+            $description = trim((string) ($_POST['description'] ?? ''));
             if ($name === '') {
-                $error = 'Category name is required.';
+                $error = 'Income name is required.';
+            } elseif ($amount <= 0) {
+                $error = 'Amount must be greater than zero.';
             } else {
                 if ($action === 'update_income_category' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE income_categories SET name=?, description=?, amount=?, is_active=? WHERE id=?");
-                    $stmt->execute([$name, $description, $amount, $isActive, $id]);
-                    $success = 'Income category updated.';
+                    $stmt = $pdo->prepare("UPDATE income_categories SET name=?, amount=?, income_date=?, payment_mode=?, payment_id=?, description=?, is_active=1 WHERE id=?");
+                    $stmt->execute([$name, $amount, $incomeDate ?: null, $paymentMode ?: null, $paymentId ?: null, $description ?: null, $id]);
+                    $success = 'Income updated.';
                 } else {
-                    $stmt = $pdo->prepare("INSERT INTO income_categories (name, description, amount, is_active) VALUES (?,?,?,?)");
-                    $stmt->execute([$name, $description, $amount, $isActive]);
-                    $success = 'Income category created.';
+                    $incomeNo = generate_income_no($pdo);
+                    $uid = (int) ($user['id'] ?? 0);
+                    $stmt = $pdo->prepare("INSERT INTO income_categories (income_no, income_date, name, description, amount, payment_mode, payment_id, status, is_active, created_by) VALUES (?,?,?,?,?,?,?,'Pending',1,?)");
+                    $stmt->execute([$incomeNo, $incomeDate ?: null, $name, $description ?: null, $amount, $paymentMode ?: null, $paymentId ?: null, $uid]);
+                    $success = 'Income created.';
                 }
                 header("Location: masters.php?tab=income-categories");
                 exit;
@@ -260,13 +275,22 @@ try { $pdo->exec("ALTER TABLE expenses MODIFY category_id INT UNSIGNED NULL"); }
 try { $pdo->exec("ALTER TABLE expenses MODIFY category_name VARCHAR(100) NULL"); } catch (Throwable) {}
 ensure_columns($pdo, 'income_categories', [
     'amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+    'income_no' => "VARCHAR(50) NULL",
+    'income_date' => "DATE NULL",
+    'payment_mode' => "VARCHAR(50) NULL",
+    'payment_id' => "VARCHAR(150) NULL",
+    'status' => "VARCHAR(30) DEFAULT 'Pending'",
+    'created_by' => "INT NULL",
+    'approved_by' => "INT NULL",
+    'approved_at' => "DATETIME NULL",
+    'reject_reason' => "TEXT NULL",
 ]);
 ensure_columns($pdo, 'applications', [
     'payment_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 200.00",
 ]);
 $expenseCategories = $pdo->query("SELECT * FROM expense_categories ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 $expenses = $pdo->query("SELECT e.*, ec.name AS category_label, v.name AS vendor_label FROM expenses e LEFT JOIN expense_categories ec ON ec.id = e.category_id LEFT JOIN vendors v ON v.id = e.vendor_id ORDER BY e.id DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC);
-$incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY COALESCE(income_date, created_at) DESC")->fetchAll(PDO::FETCH_ASSOC);
 $paidApplications = $pdo->query("SELECT a.id, a.application_no, a.student_name, a.class_sought, a.payment_amount, a.payment_method, a.payment_status, a.applied_at, p.name AS parent_name, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.payment_status = 'Paid' AND a.deleted_at IS NULL ORDER BY a.applied_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -590,8 +614,11 @@ if (isset($_GET['edit'])) {
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>Income No</th>
+                            <th>Date</th>
                             <th>Name</th>
                             <th>Amount</th>
+                            <th>Mode</th>
                             <th>Note</th>
                             <th>Actions</th>
                         </tr>
@@ -600,9 +627,12 @@ if (isset($_GET['edit'])) {
                         <?php $i = 1; foreach ($incomeCategories as $row): ?>
                         <tr>
                             <td style="color:#94a3b8;"><?= $i++ ?></td>
+                            <td style="font-family:monospace;font-size:.82rem;"><?= e($row['income_no'] ?? '') ?: '—' ?></td>
+                            <td style="white-space:nowrap;"><?= $row['income_date'] ? date('d-m-Y', strtotime($row['income_date'])) : '—' ?></td>
                             <td><strong><?= e($row['name']) ?></strong></td>
                             <td>&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
-                            <td style="max-width:200px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
+                            <td><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
+                            <td style="max-width:150px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=income-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
@@ -674,8 +704,25 @@ if (isset($_GET['edit'])) {
                             <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
                         </div>
                         <div>
-                            <label>Amount</label>
-                            <input name="amount" type="number" step="0.01" min="0" value="<?= e((string) ($editRecord['amount'] ?? '0')) ?>">
+                            <label>Income Date</label>
+                            <input type="date" name="income_date" value="<?= e($editRecord['income_date'] ?? date('Y-m-d')) ?>">
+                        </div>
+                        <div>
+                            <label>Amount *</label>
+                            <input name="amount" type="number" step="0.01" min="0.01" value="<?= e((string) ($editRecord['amount'] ?? '0')) ?>">
+                        </div>
+                        <div>
+                            <label>Payment Mode</label>
+                            <select name="payment_mode">
+                                <option value="">-- Select --</option>
+                                <?php foreach (['Cash', 'Cheque', 'UPI', 'Bank Transfer', 'Card', 'Online'] as $pm): ?>
+                                    <option value="<?= $pm ?>" <?= (isset($editRecord['payment_mode']) && $editRecord['payment_mode'] === $pm) ? 'selected' : '' ?>><?= $pm ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Payment ID</label>
+                            <input type="text" name="payment_id" value="<?= e($editRecord['payment_id'] ?? '') ?>" placeholder="Transaction / Ref No">
                         </div>
                         <div class="full-col">
                             <label>Note</label>

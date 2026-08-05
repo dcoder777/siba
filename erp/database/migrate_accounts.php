@@ -86,10 +86,19 @@ $tables = [
 
 "CREATE TABLE IF NOT EXISTS `income_categories` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `income_no` VARCHAR(50) NULL,
+    `income_date` DATE NULL,
     `name` VARCHAR(100) NOT NULL,
     `description` TEXT DEFAULT NULL,
     `amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    `payment_mode` VARCHAR(50) NULL,
+    `payment_id` VARCHAR(150) NULL,
+    `status` VARCHAR(30) DEFAULT 'Pending',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` INT NULL,
+    `approved_by` INT NULL,
+    `approved_at` DATETIME NULL,
+    `reject_reason` TEXT NULL,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
