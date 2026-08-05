@@ -504,10 +504,14 @@ if (isset($_GET['edit'])) {
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
-        .tab-bar{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid #e5e7eb;overflow-x:auto;white-space:nowrap;scrollbar-width:thin;}
-        .tab-bar a{padding:.6rem 1.2rem;font-size:.85rem;font-weight:500;color:#64748b;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;}
-        .tab-bar a.active{color:#2563eb;border-bottom-color:#2563eb;}
-        .tab-bar a:hover{color:#2563eb;}
+        .layout-split{display:grid;grid-template-columns:220px 1fr;gap:1.25rem;align-items:start}
+        .list-panel{position:sticky;top:1.5rem;max-height:calc(100vh - 3rem);overflow-y:auto}
+        .detail-panel{min-height:400px}
+        .master-nav{display:flex;flex-direction:column;gap:2px}
+        .master-nav a{display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;font-size:.85rem;font-weight:500;color:#64748b;text-decoration:none;border-radius:6px;transition:all .12s ease;border:1px solid transparent}
+        .master-nav a:hover{background:#f1f5f9;color:#1e293b}
+        .master-nav a.active{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;font-weight:600}
+        .master-nav a .nav-icon{width:18px;text-align:center;font-size:.9rem}
         .app-table{width:100%;border-collapse:collapse;font-size:.875rem;}
         .app-table th{text-align:left;padding:.65rem .5rem;border-bottom:2px solid #e2e8f0;color:#64748b;font-weight:600;white-space:nowrap;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;}
         .app-table td{padding:.65rem .5rem;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
@@ -529,6 +533,7 @@ if (isset($_GET['edit'])) {
         .coming-soon p{font-size:.9rem;max-width:400px;margin:0 auto;}
         .flash{background:#d1fae5;border:1px solid #a7f3d0;border-radius:8px;padding:.75rem 1rem;color:#065f46;margin-bottom:1rem;}
         .flash-error{background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1rem;color:#991b1b;margin-bottom:1rem;}
+        @media(max-width:960px){.layout-split{grid-template-columns:1fr}.list-panel{position:static;max-height:none}}
     </style>
 </head>
 <body>
@@ -553,23 +558,47 @@ if (isset($_GET['edit'])) {
             <div class="flash"><?= e($success) ?></div>
         <?php endif; ?>
 
-        <div class="tab-bar">
-            <a href="?tab=schools" class="<?= $tab === 'schools' ? 'active' : '' ?>">Schools</a>
-            <a href="?tab=financial-years" class="<?= $tab === 'financial-years' ? 'active' : '' ?>">Financial Years</a>
-            <a href="?tab=academic-years" class="<?= $tab === 'academic-years' ? 'active' : '' ?>">Academic Years</a>
-            <a href="?tab=fee-heads" class="<?= $tab === 'fee-heads' ? 'active' : '' ?>">Fee Heads</a>
-            <a href="?tab=expense-categories" class="<?= $tab === 'expense-categories' ? 'active' : '' ?>">Expense Categories</a>
-            <a href="?tab=income-categories" class="<?= $tab === 'income-categories' ? 'active' : '' ?>">Income Categories</a>
-            <a href="?tab=vendors" class="<?= $tab === 'vendors' ? 'active' : '' ?>">Vendors</a>
-            <a href="?tab=bank-accounts" class="<?= $tab === 'bank-accounts' ? 'active' : '' ?>">Bank Accounts</a>
-            <a href="?tab=payment-modes" class="<?= $tab === 'payment-modes' ? 'active' : '' ?>">Payment Modes</a>
-            <a href="?tab=budget-heads" class="<?= $tab === 'budget-heads' ? 'active' : '' ?>">Budget Heads</a>
-            <a href="?tab=asset-categories" class="<?= $tab === 'asset-categories' ? 'active' : '' ?>">Asset Categories</a>
-            <a href="?tab=payroll-components" class="<?= $tab === 'payroll-components' ? 'active' : '' ?>">Payroll</a>
-            <a href="?tab=inventory-items" class="<?= $tab === 'inventory-items' ? 'active' : '' ?>">Inventory</a>
-            <a href="?tab=hostel-fee" class="<?= $tab === 'hostel-fee' ? 'active' : '' ?>">Hostel Fee</a>
-            <a href="?tab=transport-fee" class="<?= $tab === 'transport-fee' ? 'active' : '' ?>">Transport Fee</a>
-        </div>
+        <div class="layout-split">
+            <!-- LEFT: Master Categories Nav -->
+            <div class="list-panel">
+                <div class="panel" style="padding:1rem;">
+                    <div class="section-title" style="margin-bottom:.75rem;">
+                        <div>
+                            <h2 style="font-size:1rem;">Master Data</h2>
+                            <p style="font-size:.78rem;">Select a category</p>
+                        </div>
+                    </div>
+                    <nav class="master-nav">
+                        <?php
+                        $masterTabs = [
+                            'schools' => ['icon' => '🏫', 'label' => 'Schools'],
+                            'financial-years' => ['icon' => '📅', 'label' => 'Financial Years'],
+                            'academic-years' => ['icon' => '🎓', 'label' => 'Academic Years'],
+                            'fee-heads' => ['icon' => '💰', 'label' => 'Fee Heads'],
+                            'expense-categories' => ['icon' => '📤', 'label' => 'Expense Categories'],
+                            'income-categories' => ['icon' => '📥', 'label' => 'Income Categories'],
+                            'vendors' => ['icon' => '🤝', 'label' => 'Vendors'],
+                            'bank-accounts' => ['icon' => '🏦', 'label' => 'Bank Accounts'],
+                            'payment-modes' => ['icon' => '💳', 'label' => 'Payment Modes'],
+                            'budget-heads' => ['icon' => '📋', 'label' => 'Budget Heads'],
+                            'asset-categories' => ['icon' => '📦', 'label' => 'Asset Categories'],
+                            'payroll-components' => ['icon' => '👥', 'label' => 'Payroll'],
+                            'inventory-items' => ['icon' => '📦', 'label' => 'Inventory'],
+                            'hostel-fee' => ['icon' => '🏠', 'label' => 'Hostel Fee'],
+                            'transport-fee' => ['icon' => '🚌', 'label' => 'Transport Fee'],
+                        ];
+                        foreach ($masterTabs as $key => $m): ?>
+                            <a href="?tab=<?= $key ?>" class="<?= $tab === $key ? 'active' : '' ?>">
+                                <span class="nav-icon"><?= $m['icon'] ?></span>
+                                <?= $m['label'] ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- RIGHT: Tab Content -->
+            <div class="detail-panel">
 
         <!-- ======================== SCHOOLS ======================== -->
         <?php if ($tab === 'schools'): ?>
@@ -1811,6 +1840,9 @@ if (isset($_GET['edit'])) {
             </div>
         </section>
         <?php endif; ?>
+
+            </div><!-- /.detail-panel -->
+        </div><!-- /.layout-split -->
 
     </main>
 </div>
