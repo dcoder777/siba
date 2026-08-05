@@ -10,14 +10,13 @@ $error = '';
 $success = '';
 
 $validTabs = [
-    'financial-years', 'academic-years', 'fee-heads',
     'expense-categories', 'income-categories', 'vendors', 'bank-accounts',
-    'asset-categories', 'inventory-items', 'transport-fee'
+    'asset-categories', 'inventory-items'
 ];
 
 $tab = trim((string) ($_GET['tab'] ?? 'schools'));
 if (!in_array($tab, $validTabs, true)) {
-    $tab = 'financial-years';
+    $tab = 'expense-categories';
 }
 
 // ─── Handle POST actions ───
@@ -25,109 +24,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['master_action'] ?? ''));
 
     try {
-        // ─── Financial Years ───
-        if ($action === 'create_financial_year' || $action === 'update_financial_year') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $label = trim((string) ($_POST['label'] ?? ''));
-            $startDate = trim((string) ($_POST['start_date'] ?? ''));
-            $endDate = trim((string) ($_POST['end_date'] ?? ''));
-            $status = in_array(trim((string) ($_POST['status'] ?? '')), ['Open', 'Closed'], true) ? trim((string) $_POST['status']) : 'Open';
-            if ($label === '' || $startDate === '' || $endDate === '') {
-                $error = 'Label, start date and end date are required.';
-            } else {
-                if ($action === 'update_financial_year' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE financial_years SET label=?, start_date=?, end_date=?, status=? WHERE id=?");
-                    $stmt->execute([$label, $startDate, $endDate, $status, $id]);
-                    $success = 'Financial year updated.';
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO financial_years (label, start_date, end_date, status) VALUES (?,?,?,?)");
-                    $stmt->execute([$label, $startDate, $endDate, $status]);
-                    $success = 'Financial year created.';
-                }
-                header("Location: masters.php?tab=financial-years");
-                exit;
-            }
-        }
-        if ($action === 'delete_financial_year') {
-            $id = (int) ($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $pdo->prepare("DELETE FROM financial_years WHERE id=?")->execute([$id]);
-                $success = 'Financial year deleted.';
-                header("Location: masters.php?tab=financial-years");
-                exit;
-            }
-        }
-
-        // ─── Academic Years ───
-        if ($action === 'create_academic_year' || $action === 'update_academic_year') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $label = trim((string) ($_POST['label'] ?? ''));
-            $startDate = trim((string) ($_POST['start_date'] ?? ''));
-            $endDate = trim((string) ($_POST['end_date'] ?? ''));
-            $status = in_array(trim((string) ($_POST['status'] ?? '')), ['Active', 'Closed'], true) ? trim((string) $_POST['status']) : 'Active';
-            if ($label === '' || $startDate === '' || $endDate === '') {
-                $error = 'Label, start date and end date are required.';
-            } else {
-                if ($action === 'update_academic_year' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE academic_years SET label=?, start_date=?, end_date=?, status=? WHERE id=?");
-                    $stmt->execute([$label, $startDate, $endDate, $status, $id]);
-                    $success = 'Academic year updated.';
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO academic_years (label, start_date, end_date, status) VALUES (?,?,?,?)");
-                    $stmt->execute([$label, $startDate, $endDate, $status]);
-                    $success = 'Academic year created.';
-                }
-                header("Location: masters.php?tab=academic-years");
-                exit;
-            }
-        }
-        if ($action === 'delete_academic_year') {
-            $id = (int) ($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $pdo->prepare("DELETE FROM academic_years WHERE id=?")->execute([$id]);
-                $success = 'Academic year deleted.';
-                header("Location: masters.php?tab=academic-years");
-                exit;
-            }
-        }
-
-        // ─── Fee Heads ───
-        if ($action === 'create_fee_head' || $action === 'update_fee_head') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $name = trim((string) ($_POST['name'] ?? ''));
-            $category = trim((string) ($_POST['category'] ?? ''));
-            $defaultAmount = (float) ($_POST['default_amount'] ?? 0);
-            $frequency = in_array(trim((string) ($_POST['frequency'] ?? '')), ['Monthly', 'Annual', 'One-Time', 'Quarterly'], true) ? trim((string) $_POST['frequency']) : 'Monthly';
-            $isRefundable = isset($_POST['is_refundable']) ? 1 : 0;
-            $lateFeeApplicable = isset($_POST['late_fee_applicable']) ? 1 : 0;
-            $isActive = isset($_POST['is_active']) ? 1 : 0;
-            $sortOrder = (int) ($_POST['sort_order'] ?? 0);
-            if ($name === '') {
-                $error = 'Fee head name is required.';
-            } else {
-                if ($action === 'update_fee_head' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE fee_heads SET name=?, category=?, default_amount=?, frequency=?, is_refundable=?, late_fee_applicable=?, is_active=?, sort_order=? WHERE id=?");
-                    $stmt->execute([$name, $category, $defaultAmount, $frequency, $isRefundable, $lateFeeApplicable, $isActive, $sortOrder, $id]);
-                    $success = 'Fee head updated.';
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO fee_heads (name, category, default_amount, frequency, is_refundable, late_fee_applicable, is_active, sort_order) VALUES (?,?,?,?,?,?,?,?)");
-                    $stmt->execute([$name, $category, $defaultAmount, $frequency, $isRefundable, $lateFeeApplicable, $isActive, $sortOrder]);
-                    $success = 'Fee head created.';
-                }
-                header("Location: masters.php?tab=fee-heads");
-                exit;
-            }
-        }
-        if ($action === 'delete_fee_head') {
-            $id = (int) ($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $pdo->prepare("DELETE FROM fee_heads WHERE id=?")->execute([$id]);
-                $success = 'Fee head deleted.';
-                header("Location: masters.php?tab=fee-heads");
-                exit;
-            }
-        }
-
         // ─── Expense Categories ───
         if ($action === 'create_expense_category' || $action === 'update_expense_category') {
             $id = (int) ($_POST['id'] ?? 0);
@@ -310,10 +206,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 }
 
 // ─── Fetch data for each tab ───
-$schools = [];
-$financialYears = $pdo->query("SELECT * FROM financial_years ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-$academicYears = $pdo->query("SELECT * FROM academic_years ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-$feeHeads = $pdo->query("SELECT * FROM fee_heads ORDER BY sort_order ASC, name ASC")->fetchAll(PDO::FETCH_ASSOC);
 $expenseCategories = $pdo->query("SELECT * FROM expense_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -327,21 +219,6 @@ if (isset($_GET['edit'])) {
     $editId = (int) $_GET['edit'];
     $editType = $tab;
     switch ($tab) {
-        case 'financial-years':
-            $stmt = $pdo->prepare("SELECT * FROM financial_years WHERE id=?");
-            $stmt->execute([$editId]);
-            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-        case 'academic-years':
-            $stmt = $pdo->prepare("SELECT * FROM academic_years WHERE id=?");
-            $stmt->execute([$editId]);
-            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-        case 'fee-heads':
-            $stmt = $pdo->prepare("SELECT * FROM fee_heads WHERE id=?");
-            $stmt->execute([$editId]);
-            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
         case 'expense-categories':
             $stmt = $pdo->prepare("SELECT * FROM expense_categories WHERE id=?");
             $stmt->execute([$editId]);
@@ -446,16 +323,12 @@ if (isset($_GET['edit'])) {
                     <nav class="master-nav">
                         <?php
                         $masterTabs = [
-                            'financial-years' => ['icon' => '📅', 'label' => 'Financial Years'],
-                            'academic-years' => ['icon' => '🎓', 'label' => 'Academic Years'],
-                            'fee-heads' => ['icon' => '💰', 'label' => 'Fee Heads'],
                             'expense-categories' => ['icon' => '📤', 'label' => 'Expense Categories'],
                             'income-categories' => ['icon' => '📥', 'label' => 'Income Categories'],
                             'vendors' => ['icon' => '🤝', 'label' => 'Vendors'],
                             'bank-accounts' => ['icon' => '🏦', 'label' => 'Bank Accounts'],
                             'asset-categories' => ['icon' => '📦', 'label' => 'Asset Categories'],
                             'inventory-items' => ['icon' => '📦', 'label' => 'Inventory'],
-                            'transport-fee' => ['icon' => '🚌', 'label' => 'Transport Fee'],
                         ];
                         foreach ($masterTabs as $key => $m): ?>
                             <a href="?tab=<?= $key ?>" class="<?= $tab === $key ? 'active' : '' ?>">
@@ -470,318 +343,6 @@ if (isset($_GET['edit'])) {
             <!-- RIGHT: Tab Content -->
             <div class="detail-panel">
 
-        <!-- ======================== FINANCIAL YEARS ======================== -->
-        <?php if ($tab === 'financial-years'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Financial Years</h2>
-                    <p>Define financial year periods for accounting and reporting.</p>
-                </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('fyModal').classList.add('show')">+ Add Financial Year</button>
-            </div>
-
-            <?php if (empty($financialYears)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No financial years defined yet.</p>
-            <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="app-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Label</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $i = 1; foreach ($financialYears as $row): ?>
-                        <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['label']) ?></strong></td>
-                            <td><?= e($row['start_date']) ?></td>
-                            <td><?= e($row['end_date']) ?></td>
-                            <td><span class="badge <?= ($row['status'] ?? '') === 'Open' ? 'badge-open' : 'badge-closed' ?>"><?= e($row['status'] ?? '') ?></span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=financial-years&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this financial year?')">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_financial_year">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-        </section>
-
-        <div id="fyModal" class="modal-backdrop <?= ($editRecord && $editType === 'financial-years') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'financial-years') ? 'Edit Financial Year' : 'Add Financial Year' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
-                </div>
-                <form method="post">
-                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'financial-years') ? 'update_financial_year' : 'create_financial_year' ?>">
-                    <?php if ($editRecord && $editType === 'financial-years'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
-                    <div class="field-grid">
-                        <div>
-                            <label>Label *</label>
-                            <input name="label" type="text" required value="<?= e($editRecord['label'] ?? '') ?>" placeholder="e.g. FY 2025-26">
-                        </div>
-                        <div>
-                            <label>Start Date *</label>
-                            <input name="start_date" type="date" required value="<?= e($editRecord['start_date'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>End Date *</label>
-                            <input name="end_date" type="date" required value="<?= e($editRecord['end_date'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Status</label>
-                            <select name="status">
-                                <option value="Open" <?= ($editRecord['status'] ?? '') === 'Open' ? 'selected' : '' ?>>Open</option>
-                                <option value="Closed" <?= ($editRecord['status'] ?? '') === 'Closed' ? 'selected' : '' ?>>Closed</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'financial-years') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=financial-years" class="btn btn-soft">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- ======================== ACADEMIC YEARS ======================== -->
-        <?php if ($tab === 'academic-years'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Academic Years</h2>
-                    <p>Define academic sessions for student enrollments and fee structures.</p>
-                </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('ayModal').classList.add('show')">+ Add Academic Year</button>
-            </div>
-
-            <?php if (empty($academicYears)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No academic years defined yet.</p>
-            <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="app-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Label</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $i = 1; foreach ($academicYears as $row): ?>
-                        <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['label']) ?></strong></td>
-                            <td><?= e($row['start_date']) ?></td>
-                            <td><?= e($row['end_date']) ?></td>
-                            <td><span class="badge <?= ($row['status'] ?? '') === 'Active' ? 'badge-active' : 'badge-closed' ?>"><?= e($row['status'] ?? '') ?></span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=academic-years&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this academic year?')">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_academic_year">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-        </section>
-
-        <div id="ayModal" class="modal-backdrop <?= ($editRecord && $editType === 'academic-years') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'academic-years') ? 'Edit Academic Year' : 'Add Academic Year' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
-                </div>
-                <form method="post">
-                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'academic-years') ? 'update_academic_year' : 'create_academic_year' ?>">
-                    <?php if ($editRecord && $editType === 'academic-years'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
-                    <div class="field-grid">
-                        <div>
-                            <label>Label *</label>
-                            <input name="label" type="text" required value="<?= e($editRecord['label'] ?? '') ?>" placeholder="e.g. 2025-26">
-                        </div>
-                        <div>
-                            <label>Start Date *</label>
-                            <input name="start_date" type="date" required value="<?= e($editRecord['start_date'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>End Date *</label>
-                            <input name="end_date" type="date" required value="<?= e($editRecord['end_date'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Status</label>
-                            <select name="status">
-                                <option value="Active" <?= ($editRecord['status'] ?? '') === 'Active' ? 'selected' : '' ?>>Active</option>
-                                <option value="Closed" <?= ($editRecord['status'] ?? '') === 'Closed' ? 'selected' : '' ?>>Closed</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'academic-years') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=academic-years" class="btn btn-soft">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- ======================== FEE HEADS ======================== -->
-        <?php if ($tab === 'fee-heads'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Fee Heads</h2>
-                    <p>Define fee components used across fee structures — tuition, transport, hostel, etc.</p>
-                </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('fhModal').classList.add('show')">+ Add Fee Head</button>
-            </div>
-
-            <?php if (empty($feeHeads)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No fee heads defined yet.</p>
-            <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="app-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th>Default Amount</th>
-                            <th>Frequency</th>
-                            <th>Refundable</th>
-                            <th>Late Fee</th>
-                            <th>Status</th>
-                            <th>Sort</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $i = 1; foreach ($feeHeads as $row): ?>
-                        <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['name']) ?></strong></td>
-                            <td><?= e($row['category'] ?? '—') ?></td>
-                            <td>Rs. <?= number_format((float) ($row['default_amount'] ?? 0), 2) ?></td>
-                            <td><span class="badge" style="background:#e0e7ff;color:#3730a3;"><?= e($row['frequency'] ?? 'Monthly') ?></span></td>
-                            <td><span class="badge <?= ($row['is_refundable'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['is_refundable'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['late_fee_applicable'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['late_fee_applicable'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
-                            <td><?= (int) ($row['sort_order'] ?? 0) ?></td>
-                            <td>
-                                <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=fee-heads&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this fee head?')">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_fee_head">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-        </section>
-
-        <div id="fhModal" class="modal-backdrop <?= ($editRecord && $editType === 'fee-heads') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'fee-heads') ? 'Edit Fee Head' : 'Add Fee Head' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
-                </div>
-                <form method="post">
-                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'fee-heads') ? 'update_fee_head' : 'create_fee_head' ?>">
-                    <?php if ($editRecord && $editType === 'fee-heads'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
-                    <div class="field-grid">
-                        <div>
-                            <label>Name *</label>
-                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Category</label>
-                            <input name="category" type="text" value="<?= e($editRecord['category'] ?? '') ?>" placeholder="e.g. Tuition, Transport">
-                        </div>
-                        <div>
-                            <label>Default Amount (Rs.)</label>
-                            <input name="default_amount" type="number" step="0.01" min="0" value="<?= e((string) ($editRecord['default_amount'] ?? '0')) ?>">
-                        </div>
-                        <div>
-                            <label>Frequency</label>
-                            <select name="frequency">
-                                <option value="Monthly" <?= ($editRecord['frequency'] ?? '') === 'Monthly' ? 'selected' : '' ?>>Monthly</option>
-                                <option value="Annual" <?= ($editRecord['frequency'] ?? '') === 'Annual' ? 'selected' : '' ?>>Annual</option>
-                                <option value="One-Time" <?= ($editRecord['frequency'] ?? '') === 'One-Time' ? 'selected' : '' ?>>One-Time</option>
-                                <option value="Quarterly" <?= ($editRecord['frequency'] ?? '') === 'Quarterly' ? 'selected' : '' ?>>Quarterly</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Sort Order</label>
-                            <input name="sort_order" type="number" value="<?= (int) ($editRecord['sort_order'] ?? 0) ?>">
-                        </div>
-                        <div class="full-col" style="display:flex;gap:1.5rem;flex-wrap:wrap;">
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_refundable" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_refundable'] ?? 0) ? 'checked' : '' ?>>
-                                Refundable
-                            </label>
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="late_fee_applicable" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['late_fee_applicable'] ?? 0) ? 'checked' : '' ?>>
-                                Late Fee Applicable
-                            </label>
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_active" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_active'] ?? 1) ? 'checked' : '' ?>>
-                                Active
-                            </label>
-                        </div>
-                    </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'fee-heads') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=fee-heads" class="btn btn-soft">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- ======================== EXPENSE CATEGORIES ======================== -->
         <?php if ($tab === 'expense-categories'): ?>
@@ -1329,23 +890,6 @@ if (isset($_GET['edit'])) {
                 <h3>Inventory Management</h3>
                 <p>Complete inventory management with stock tracking, item categories, and procurement workflows will be available from the Inventory page.</p>
                 <a href="inventory.php" class="btn" style="margin-top:1rem;">Go to Inventory</a>
-            </div>
-        </section>
-        <?php endif; ?>
-
-        <!-- ======================== TRANSPORT FEE (Coming Soon) ======================== -->
-        <?php if ($tab === 'transport-fee'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Transport Fee Masters</h2>
-                    <p>Manage transport fee structures, route-wise charges, and pickup/drop point pricing.</p>
-                </div>
-            </div>
-            <div class="coming-soon">
-                <h3>Transport Accounts</h3>
-                <p>Transport fee management with route-wise billing, distance-based pricing, and transport-specific fee allocation will be available from the Transport Accounts page.</p>
-                <a href="transport-accounts.php" class="btn" style="margin-top:1rem;">Go to Transport Accounts</a>
             </div>
         </section>
         <?php endif; ?>
