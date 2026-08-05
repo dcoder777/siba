@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['master_action'] ?? ''));
 
     try {
-        // ─── Expense Categories ───
+        // ─── Expense ───
         if ($action === 'create_expense_category' || $action === 'update_expense_category') {
             $id = (int) ($_POST['id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
 
-        // ─── Income Categories ───
+        // ─── Income ───
         if ($action === 'create_income_category' || $action === 'update_income_category') {
             $id = (int) ($_POST['id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
 
-        // ─── Asset Categories ───
+        // ─── Assets ───
         if ($action === 'create_asset_category' || $action === 'update_asset_category') {
             $id = (int) ($_POST['id'] ?? 0);
             $name = trim((string) ($_POST['name'] ?? ''));
@@ -323,11 +323,11 @@ if (isset($_GET['edit'])) {
                     <nav class="master-nav">
                         <?php
                         $masterTabs = [
-                            'expense-categories' => ['icon' => '📤', 'label' => 'Expense Categories'],
-                            'income-categories' => ['icon' => '📥', 'label' => 'Income Categories'],
+                            'expense-categories' => ['icon' => '📤', 'label' => 'Expense'],
+                            'income-categories' => ['icon' => '📥', 'label' => 'Income'],
                             'vendors' => ['icon' => '🤝', 'label' => 'Vendors'],
                             'bank-accounts' => ['icon' => '🏦', 'label' => 'Bank Accounts'],
-                            'asset-categories' => ['icon' => '📦', 'label' => 'Asset Categories'],
+                            'asset-categories' => ['icon' => '📦', 'label' => 'Assets'],
                             'inventory-items' => ['icon' => '📦', 'label' => 'Inventory'],
                         ];
                         foreach ($masterTabs as $key => $m): ?>
@@ -349,10 +349,10 @@ if (isset($_GET['edit'])) {
         <section class="panel" style="padding:1.25rem;">
             <div class="section-title">
                 <div>
-                    <h2>Expense Categories</h2>
+                    <h2>Expense</h2>
                     <p>Classify expenses by category and group for budgeting and reporting.</p>
                 </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('ecModal').classList.add('show')">+ Add Category</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('ecModal').classList.add('show')">+ Add Expense</button>
             </div>
 
             <?php if (empty($expenseCategories)): ?>
@@ -383,7 +383,7 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=expense-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this expense category?')">
+                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this expense?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_expense_category">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
@@ -402,7 +402,7 @@ if (isset($_GET['edit'])) {
         <div id="ecModal" class="modal-backdrop <?= ($editRecord && $editType === 'expense-categories') ? 'show' : '' ?>">
             <div class="modal">
                 <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'expense-categories') ? 'Edit Expense Category' : 'Add Expense Category' ?></h2>
+                    <h2><?= ($editRecord && $editType === 'expense-categories') ? 'Edit Expense' : 'Add Expense' ?></h2>
                     <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
                 </div>
                 <form method="post">
@@ -449,10 +449,10 @@ if (isset($_GET['edit'])) {
         <section class="panel" style="padding:1.25rem;">
             <div class="section-title">
                 <div>
-                    <h2>Income Categories</h2>
+                    <h2>Income</h2>
                     <p>Classify income sources for tracking and financial reporting.</p>
                 </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('icModal').classList.add('show')">+ Add Category</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('icModal').classList.add('show')">+ Add Income</button>
             </div>
 
             <?php if (empty($incomeCategories)): ?>
@@ -479,7 +479,7 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=income-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this income category?')">
+                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this income?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_income_category">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
@@ -498,7 +498,7 @@ if (isset($_GET['edit'])) {
         <div id="icModal" class="modal-backdrop <?= ($editRecord && $editType === 'income-categories') ? 'show' : '' ?>">
             <div class="modal">
                 <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'income-categories') ? 'Edit Income Category' : 'Add Income Category' ?></h2>
+                    <h2><?= ($editRecord && $editType === 'income-categories') ? 'Edit Income' : 'Add Income' ?></h2>
                     <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
                 </div>
                 <form method="post">
@@ -788,10 +788,10 @@ if (isset($_GET['edit'])) {
         <section class="panel" style="padding:1.25rem;">
             <div class="section-title">
                 <div>
-                    <h2>Asset Categories</h2>
+                    <h2>Assets</h2>
                     <p>Classify fixed assets and set default depreciation rates.</p>
                 </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('acModal').classList.add('show')">+ Add Category</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('acModal').classList.add('show')">+ Add Asset</button>
             </div>
 
             <?php if (empty($assetCategories)): ?>
@@ -820,7 +820,7 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=asset-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this asset category?')">
+                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this asset?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_asset_category">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
@@ -839,7 +839,7 @@ if (isset($_GET['edit'])) {
         <div id="acModal" class="modal-backdrop <?= ($editRecord && $editType === 'asset-categories') ? 'show' : '' ?>">
             <div class="modal">
                 <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'asset-categories') ? 'Edit Asset Category' : 'Add Asset Category' ?></h2>
+                    <h2><?= ($editRecord && $editType === 'asset-categories') ? 'Edit Asset' : 'Add Asset' ?></h2>
                     <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
                 </div>
                 <form method="post">
