@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../../includes/application_fee.php';
 require_admin_login();
 
 function generate_expense_no(PDO $pdo): string
@@ -236,9 +237,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $category = in_array($category, $validCategories, true) ? $category : 'Other';
             $frequency = in_array($frequency, $validFrequencies, true) ? $frequency : 'One-Time';
             $isActive = isset($_POST['is_active']) ? 1 : 0;
+            if ($category === 'Application Fee') {
+                $frequency = 'One-Time';
+                $className = '';
+            }
             if ($name === '') {
                 $error = 'Fee name is required.';
-            } else {
+            } elseif ($category === 'Application Fee') {
+                $chk = $pdo->prepare("SELECT id FROM fee_heads WHERE category = 'Application Fee' AND id != ? LIMIT 1");
+                $chk->execute([$id > 0 ? $id : 0]);
+                if ($chk->fetch()) {
+                    $error = 'Only one Application Fee entry is allowed. Edit the existing one instead.';
+                }
+            }
+            if ($error === '') {
                 if ($action === 'update_fee_head' && $id > 0) {
                     $stmt = $pdo->prepare("UPDATE fee_heads SET name=?, category=?, class_name=?, default_amount=?, frequency=?, is_active=? WHERE id=?");
                     $stmt->execute([$name, $category, $className ?: null, $defaultAmount, $frequency, $isActive, $id]);
@@ -298,6 +310,13 @@ ensure_columns($pdo, 'fee_heads', [
     'class_name' => "VARCHAR(100) DEFAULT NULL",
 ]);
 $feeHeads = $pdo->query("SELECT * FROM fee_heads ORDER BY category, sort_order, name")->fetchAll(PDO::FETCH_ASSOC);
+$hasApplicationFee = false;
+foreach ($feeHeads as $fh) {
+    if (($fh['category'] ?? '') === 'Application Fee') {
+        $hasApplicationFee = true;
+        break;
+    }
+}
 
 // ─── Edit records ───
 $editRecord = null;
@@ -676,7 +695,7 @@ if (isset($_GET['edit'])) {
                             <td><?= e($app['student_name']) ?></td>
                             <td><?= e($app['class_sought']) ?></td>
                             <td><?= e($app['parent_name'] ?? '—') ?><br><small style="color:#94a3b8;"><?= e($app['parent_phone'] ?? '') ?></small></td>
-                            <td>&#8377; <?= number_format((float) ($app['payment_amount'] ?? 200), 2) ?></td>
+                            <td>&#8377; <?= number_format((float) ($app['payment_amount'] ?? 0) ?: get_application_fee_amount($pdo), 2) ?></td>
                             <td style="white-space:nowrap;"><?= date('d-m-Y', strtotime($app['applied_at'])) ?></td>
                         </tr>
                         <?php endforeach; ?>
@@ -995,7 +1014,7 @@ if (isset($_GET['edit'])) {
             <div class="section-title">
                 <div>
                     <h2>Fees Management</h2>
-                    <p>Define fee heads for classes, applications, donations, and other charges with tenure settings.</p>
+                    <p>Define fee heads for classes, applications, donations, and other charges. Application Fee allows only 1 entry and is used site-wide.</p>
                 </div>
                 <button type="button" class="btn btn-sm" onclick="document.getElementById('fhModal').classList.add('show')">+ Add Fee</button>
             </div>
@@ -1068,8 +1087,13 @@ if (isset($_GET['edit'])) {
                             <select name="category">
                                 <?php
                                 $categories = ['Class Fee', 'Application Fee', 'Admission Fee', 'Donation', 'Exam Fee', 'Transport Fee', 'Hostel Fee', 'Other'];
-                                foreach ($categories as $cat): ?>
-                                    <option value="<?= $cat ?>" <?= (isset($editRecord['category']) && $editRecord['category'] === $cat) ? 'selected' : '' ?>><?= $cat ?></option>
+                                $editingAppFee = ($editRecord && ($editRecord['category'] ?? '') === 'Application Fee');
+                                foreach ($categories as $cat):
+                                    if ($cat === 'Application Fee' && $hasApplicationFee && !$editingAppFee) {
+                                        continue;
+                                    }
+                                ?>
+                                    <option value="<?= $cat ?>" <?= (isset($editRecord['category']) && $editRecord['category'] === $cat) ? 'selected' : '' ?>><?= $cat ?><?= $cat === 'Application Fee' ? ' (only 1 allowed)' : '' ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

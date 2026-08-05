@@ -160,7 +160,7 @@ if (!function_exists('siba_receipt_pdf')) {
             ["Father's Name", $app['father_name'] ?? ''],
             ["Mother's Name", $app['mother_name'] ?? ''],
             ['PAYMENT SUMMARY', true],
-            ['Application Fee', 'Rs. 200'],
+            ['Application Fee', 'Rs. ' . number_format((float) ($app['payment_amount'] ?? (defined('APPLICATION_FEE') ? APPLICATION_FEE : 200)), 2)],
             ['Payment Status', $paymentStatus],
         ];
 

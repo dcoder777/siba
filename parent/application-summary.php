@@ -1,6 +1,7 @@
 <?php
 $pageTitle = "Application Summary";
 require_once('../includes/db_connect.php');
+require_once('../includes/application_fee.php');
 include('../includes/portal_header.php');
 include('../includes/portal_sidebar.php');
 
@@ -16,6 +17,10 @@ if (!$fullApp) {
 
 $paidCheck = $conn->query("SELECT * FROM fees WHERE application_id='$app_id' AND fee_type='application' AND status='Paid' LIMIT 1");
 $feePaid = $paidCheck->fetch_assoc();
+$appFeeDisplay = (float) ($fullApp['payment_amount'] ?? 0);
+if ($appFeeDisplay <= 0) {
+    $appFeeDisplay = get_application_fee_amount($conn);
+}
 $appNo = $fullApp['application_no'] ?? 'SBA-' . date('Y') . '-' . str_pad($app_id, 4, '0', STR_PAD_LEFT);
 $fullName = trim(($fullApp['first_name'] ?? '') . ' ' . ($fullApp['middle_name'] ?? '') . ' ' . ($fullApp['last_name'] ?? ''));
 if (!$fullName) $fullName = $fullApp['student_name'];
@@ -60,7 +65,7 @@ if (!$fullName) $fullName = $fullApp['student_name'];
 <?php if ($feePaid): ?>
 <div class="alert alert-success" style="margin-bottom:1.5rem;">
     <i class="fas fa-check-circle"></i>
-    <strong>Payment Successful!</strong> Application fee of ₹<?php echo number_format(APPLICATION_FEE); ?> has been paid.
+    <strong>Payment Successful!</strong> Application fee of ₹<?php echo number_format($appFeeDisplay, 2); ?> has been paid.
     (Payment ID: <?php echo htmlspecialchars($feePaid['razorpay_payment_id'] ?? 'N/A'); ?>)
 </div>
 <?php endif; ?>

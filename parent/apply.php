@@ -1,8 +1,10 @@
 <?php
 $pageTitle = "Admission Application";
 require_once('../includes/db_connect.php');
+require_once('../includes/application_fee.php');
 include('../includes/portal_header.php');
 include('../includes/portal_sidebar.php');
+ensure_application_payment_amount_column($conn);
 
 if ($hasApp) {
     header("Location: dashboard.php"); exit();
@@ -323,10 +325,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && (isset($_POST['submit_application'])
             $appNo = generateApplicationNo($conn);
             $payStatus = isset($_POST['submit_and_pay']) ? 'Pending' : 'Pending';
 
+            $appFeeAmount = get_application_fee_amount($conn);
             $sql = "INSERT INTO applications SET
                 parent_id = '$parent_id',
                 application_no = '$appNo',
                 payment_status = '$payStatus',
+                payment_amount = '$appFeeAmount',
                 first_name = '$first_name',
                 middle_name = '$middle_name',
                 last_name = '$last_name',

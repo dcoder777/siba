@@ -1,6 +1,7 @@
 <?php
 $pageTitle = "Pay Application Fee";
 require_once('../includes/db_connect.php');
+require_once('../includes/application_fee.php');
 include('../includes/portal_header.php');
 include('../includes/portal_sidebar.php');
 
@@ -27,7 +28,10 @@ if ($cols->num_rows === 0) {
 
 $error   = '';
 $success = '';
-$fee_amount = APPLICATION_FEE;
+$fee_amount = (float) ($fullApp['payment_amount'] ?? 0);
+if ($fee_amount <= 0) {
+    $fee_amount = get_application_fee_amount($conn);
+}
 
 // Check if already paid
 $paidCheck = $conn->query("SELECT id, razorpay_payment_id FROM fees WHERE application_id='$app_id' AND fee_type='application' AND status='Paid'");

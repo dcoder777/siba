@@ -59,7 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_payment']) && 
             $appData = $appStmt->fetch(PDO::FETCH_ASSOC);
             $oldPaymentStatus = (string) ($appData['payment_status'] ?? '');
 
-            $pdo->prepare("UPDATE applications SET payment_status = :status WHERE id = :id")->execute(['status' => $newStatus, 'id' => $appId]);
+            require_once __DIR__ . '/../../includes/application_fee.php';
+            ensure_application_payment_amount_column($pdo);
+            $payAmt = (float) ($appData['payment_amount'] ?? 0);
+            if ($payAmt <= 0) {
+                $payAmt = get_application_fee_amount($pdo);
+            }
+            $pdo->prepare("UPDATE applications SET payment_status = :status, payment_amount = :amt WHERE id = :id")->execute(['status' => $newStatus, 'amt' => $payAmt, 'id' => $appId]);
             $success = 'Payment status updated to ' . $newStatus . '.';
 
             if ($oldPaymentStatus !== $newStatus && !empty($appData['parent_email'])) {

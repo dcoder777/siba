@@ -29,6 +29,11 @@ $appliedAt = (string) ($app['applied_at'] ?? '');
 $appliedDate = $appliedAt !== '' ? date('d-m-Y h:i A', (int) strtotime($appliedAt)) : '';
 $paymentStatus = (string) ($app['payment_status'] ?? 'Pending');
 $isPaid = $paymentStatus === 'Paid';
+require_once __DIR__ . '/../../includes/application_fee.php';
+$appFeeAmount = (float) ($app['payment_amount'] ?? 0);
+if ($appFeeAmount <= 0) {
+    $appFeeAmount = get_application_fee_amount($pdo);
+}
 
 $download = (isset($_GET['download']) && $_GET['download'] === '1');
 
@@ -169,7 +174,7 @@ if ($download) {
             <div class="payment-box">
                 <div>
                     <div class="fee-label">Application Fee</div>
-                    <div class="fee-amount">₹200 <small>INR</small></div>
+                    <div class="fee-amount">₹<?= number_format($appFeeAmount, 2) ?> <small>INR</small></div>
                 </div>
                 <div class="pay-status">
                     <span class="lbl">Status</span>

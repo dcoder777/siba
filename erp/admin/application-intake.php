@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../../includes/application_fee.php';
 require_admin_login();
+ensure_application_payment_amount_column($pdo);
 
 $user = admin_user();
 $isSuperAdmin = ($user['role'] ?? '') === 'admin';
@@ -215,7 +217,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $appCount = (int) $countStmt->fetch()['c'];
             $appNo = $prefix . str_pad((string) ($appCount + 1), 4, '0', STR_PAD_LEFT);
 
-            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, application_no, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, caste, disability, disability_details, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, father_aadhaar_no, mother_name, mother_occupation, mother_aadhaar_no, guardian_name, guardian_occupation, family_annual_income, father_voter_no, mother_voter_no, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, photo, caste_cert, father_photo, mother_photo, father_aadhaar, mother_aadhaar, father_voter, mother_voter, disability_cert, guardian_signature, payment_method, payment_status, status, applied_at) VALUES (:parent_id, :application_no, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :caste, :disability, :disability_details, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :father_aadhaar_no, :mother_name, :mother_occupation, :mother_aadhaar_no, :guardian_name, :guardian_occupation, :family_annual_income, :father_voter_no, :mother_voter_no, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, :photo, :caste_cert, :father_photo, :mother_photo, :father_aadhaar, :mother_aadhaar, :father_voter, :mother_voter, :disability_cert, :guardian_signature, :payment_method, :payment_status, 'Application started', NOW())");
+            $appFeeAmount = get_application_fee_amount($pdo);
+            $stmt = $pdo->prepare("INSERT INTO applications (parent_id, application_no, student_name, first_name, middle_name, last_name, dob, gender, religion, blood_group, aadhaar_no, caste, disability, disability_details, previous_school, previous_class, class_sought, address_line1, address_line2, post_office, police_station, district, village_city, pin, state, country, father_name, father_occupation, father_aadhaar_no, mother_name, mother_occupation, mother_aadhaar_no, guardian_name, guardian_occupation, family_annual_income, father_voter_no, mother_voter_no, address, birth_cert, aadhaar, leaving_cert, prev_marksheet, photo, caste_cert, father_photo, mother_photo, father_aadhaar, mother_aadhaar, father_voter, mother_voter, disability_cert, guardian_signature, payment_method, payment_status, payment_amount, status, applied_at) VALUES (:parent_id, :application_no, :student_name, :first_name, :middle_name, :last_name, :dob, :gender, :religion, :blood_group, :aadhaar_no, :caste, :disability, :disability_details, :previous_school, :previous_class, :class_sought, :address_line1, :address_line2, :post_office, :police_station, :district, :village_city, :pin, :state, :country, :father_name, :father_occupation, :father_aadhaar_no, :mother_name, :mother_occupation, :mother_aadhaar_no, :guardian_name, :guardian_occupation, :family_annual_income, :father_voter_no, :mother_voter_no, :address, :birth_cert, :aadhaar, :leaving_cert, :prev_marksheet, :photo, :caste_cert, :father_photo, :mother_photo, :father_aadhaar, :mother_aadhaar, :father_voter, :mother_voter, :disability_cert, :guardian_signature, :payment_method, :payment_status, :payment_amount, 'Application started', NOW())");
             $stmt->execute([
                 'parent_id' => $parentId, 'application_no' => $appNo, 'student_name' => $studentName, 'first_name' => $firstName,
                 'middle_name' => $middleName ?: null, 'last_name' => $lastName ?: null, 'dob' => $dob,
@@ -243,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 'father_aadhaar' => $fatherAadhaar ?: null, 'mother_aadhaar' => $motherAadhaar ?: null,
                 'father_voter' => $fatherVoter ?: null, 'mother_voter' => $motherVoter ?: null,
                 'disability_cert' => $disabilityCert ?: null, 'guardian_signature' => $guardianSig ?: null,
-                'payment_method' => $paymentMethod, 'payment_status' => 'Pending',
+                'payment_method' => $paymentMethod, 'payment_status' => 'Pending', 'payment_amount' => $appFeeAmount,
             ]);
 
             $generatedAppId = (int) $pdo->lastInsertId();
