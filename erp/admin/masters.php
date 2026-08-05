@@ -10,8 +10,7 @@ $error = '';
 $success = '';
 
 $validTabs = [
-    'expense-categories', 'income-categories', 'vendors', 'bank-accounts',
-    'asset-categories', 'inventory-items'
+    'expense-categories', 'income-categories', 'vendors', 'bank-accounts'
 ];
 
 $tab = trim((string) ($_GET['tab'] ?? 'schools'));
@@ -167,39 +166,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
 
-        // ─── Assets ───
-        if ($action === 'create_asset_category' || $action === 'update_asset_category') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $name = trim((string) ($_POST['name'] ?? ''));
-            $description = trim((string) ($_POST['description'] ?? ''));
-            $defaultDepreciationRate = (float) ($_POST['default_depreciation_rate'] ?? 0);
-            $isActive = isset($_POST['is_active']) ? 1 : 0;
-            if ($name === '') {
-                $error = 'Category name is required.';
-            } else {
-                if ($action === 'update_asset_category' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE asset_categories SET name=?, description=?, default_depreciation_rate=?, is_active=? WHERE id=?");
-                    $stmt->execute([$name, $description, $defaultDepreciationRate, $isActive, $id]);
-                    $success = 'Asset category updated.';
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO asset_categories (name, description, default_depreciation_rate, is_active) VALUES (?,?,?,?)");
-                    $stmt->execute([$name, $description, $defaultDepreciationRate, $isActive]);
-                    $success = 'Asset category created.';
-                }
-                header("Location: masters.php?tab=asset-categories");
-                exit;
-            }
-        }
-        if ($action === 'delete_asset_category') {
-            $id = (int) ($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $pdo->prepare("DELETE FROM asset_categories WHERE id=?")->execute([$id]);
-                $success = 'Asset category deleted.';
-                header("Location: masters.php?tab=asset-categories");
-                exit;
-            }
-        }
-
     } catch (Throwable $e) {
         $error = 'Operation failed: ' . $e->getMessage();
     }
@@ -210,7 +176,6 @@ $expenseCategories = $pdo->query("SELECT * FROM expense_categories ORDER BY id D
 $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-$assetCategories = $pdo->query("SELECT * FROM asset_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 // ─── Edit records ───
 $editRecord = null;
@@ -236,11 +201,6 @@ if (isset($_GET['edit'])) {
             break;
         case 'bank-accounts':
             $stmt = $pdo->prepare("SELECT * FROM bank_accounts WHERE id=?");
-            $stmt->execute([$editId]);
-            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-        case 'asset-categories':
-            $stmt = $pdo->prepare("SELECT * FROM asset_categories WHERE id=?");
             $stmt->execute([$editId]);
             $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
             break;
@@ -325,10 +285,8 @@ if (isset($_GET['edit'])) {
                         $masterTabs = [
                             'expense-categories' => ['icon' => '📤', 'label' => 'Expense'],
                             'income-categories' => ['icon' => '📥', 'label' => 'Income'],
-                            'vendors' => ['icon' => '🤝', 'label' => 'Vendors'],
+                            'vendors' => ['icon' => '🤝', 'label' => 'Vendors Master'],
                             'bank-accounts' => ['icon' => '🏦', 'label' => 'Bank Accounts'],
-                            'asset-categories' => ['icon' => '📦', 'label' => 'Assets'],
-                            'inventory-items' => ['icon' => '📦', 'label' => 'Inventory'],
                         ];
                         foreach ($masterTabs as $key => $m): ?>
                             <a href="?tab=<?= $key ?>" class="<?= $tab === $key ? 'active' : '' ?>">
@@ -781,117 +739,6 @@ if (isset($_GET['edit'])) {
                 </form>
             </div>
         </div>
-        <?php endif; ?>
-
-        <!-- ======================== ASSET CATEGORIES ======================== -->
-        <?php if ($tab === 'asset-categories'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Assets</h2>
-                    <p>Classify fixed assets and set default depreciation rates.</p>
-                </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('acModal').classList.add('show')">+ Add Asset</button>
-            </div>
-
-            <?php if (empty($assetCategories)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No asset categories defined yet.</p>
-            <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="app-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Depreciation Rate (%)</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $i = 1; foreach ($assetCategories as $row): ?>
-                        <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['name']) ?></strong></td>
-                            <td style="max-width:300px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
-                            <td><?= number_format((float) ($row['default_depreciation_rate'] ?? 0), 2) ?>%</td>
-                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=asset-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this asset?')">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_asset_category">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-        </section>
-
-        <div id="acModal" class="modal-backdrop <?= ($editRecord && $editType === 'asset-categories') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'asset-categories') ? 'Edit Asset' : 'Add Asset' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
-                </div>
-                <form method="post">
-                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'asset-categories') ? 'update_asset_category' : 'create_asset_category' ?>">
-                    <?php if ($editRecord && $editType === 'asset-categories'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
-                    <div class="field-grid">
-                        <div>
-                            <label>Name *</label>
-                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Default Depreciation Rate (%)</label>
-                            <input name="default_depreciation_rate" type="number" step="0.01" min="0" max="100" value="<?= e((string) ($editRecord['default_depreciation_rate'] ?? '0')) ?>">
-                        </div>
-                        <div class="full-col">
-                            <label>Description</label>
-                            <textarea name="description" rows="2"><?= e($editRecord['description'] ?? '') ?></textarea>
-                        </div>
-                        <div class="full-col">
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_active" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_active'] ?? 1) ? 'checked' : '' ?>>
-                                Active
-                            </label>
-                        </div>
-                    </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'asset-categories') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=asset-categories" class="btn btn-soft">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- ======================== INVENTORY ITEMS (Coming Soon) ======================== -->
-        <?php if ($tab === 'inventory-items'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Inventory Items</h2>
-                    <p>Manage stock items, categories, and inventory tracking.</p>
-                </div>
-            </div>
-            <div class="coming-soon">
-                <h3>Inventory Management</h3>
-                <p>Complete inventory management with stock tracking, item categories, and procurement workflows will be available from the Inventory page.</p>
-                <a href="inventory.php" class="btn" style="margin-top:1rem;">Go to Inventory</a>
-            </div>
-        </section>
         <?php endif; ?>
 
             </div><!-- /.detail-panel -->
