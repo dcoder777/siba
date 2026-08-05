@@ -66,23 +66,8 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         <a class="nav-link<?= $activePage === 'inventory.php' ? ' active' : '' ?>" href="inventory.php">
             <span class="sidebar-icon">📦</span><span>Inventory</span>
         </a>
-        <a class="nav-link<?= $activePage === 'hostel-accounts.php' ? ' active' : '' ?>" href="hostel-accounts.php">
-            <span class="sidebar-icon">🏠</span><span>Hostel</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'transport-accounts.php' ? ' active' : '' ?>" href="transport-accounts.php">
-            <span class="sidebar-icon">🚌</span><span>Transport</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'budget.php' ? ' active' : '' ?>" href="budget.php">
-            <span class="sidebar-icon">📋</span><span>Budget</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'ledger-accounts.php' ? ' active' : '' ?>" href="ledger-accounts.php">
-            <span class="sidebar-icon">📒</span><span>Ledger</span>
-        </a>
         <a class="nav-link<?= $activePage === 'reports-new.php' ? ' active' : '' ?>" href="reports-new.php">
             <span class="sidebar-icon">📈</span><span>Reports</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'year-closing.php' ? ' active' : '' ?>" href="year-closing.php">
-            <span class="sidebar-icon">🔒</span><span>Year Closing</span>
         </a>
     </div>
 
