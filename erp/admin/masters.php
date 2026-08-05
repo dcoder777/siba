@@ -687,33 +687,33 @@ if (isset($_GET['edit'])) {
         </section>
 
         <div id="icModal" class="modal-backdrop <?= ($editRecord && $editType === 'income-categories') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'income-categories') ? 'Edit Income' : 'Add Income' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
+            <div class="modal" style="max-width:640px;border-radius:14px;padding:0;overflow:hidden;">
+                <div class="modal-head" style="padding:1.1rem 1.4rem;border-bottom:1px solid #e2e8f0;">
+                    <h2 style="font-size:1.15rem;font-weight:700;margin:0;"><?= ($editRecord && $editType === 'income-categories') ? 'Edit Income' : 'Add Income' ?></h2>
+                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))" style="font-size:1.3rem;color:#94a3b8;">&times;</button>
                 </div>
-                <form method="post">
+                <form method="post" style="padding:1.25rem 1.4rem 1.4rem;">
                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                     <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'income-categories') ? 'update_income_category' : 'create_income_category' ?>">
                     <?php if ($editRecord && $editType === 'income-categories'): ?>
                         <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
                     <?php endif; ?>
-                    <div class="field-grid">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.25rem;">
                         <div>
-                            <label>Name *</label>
-                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
+                            <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Income Date *</label>
+                            <input type="date" name="income_date" required value="<?= e($editRecord['income_date'] ?? '') ?>" style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;">
                         </div>
                         <div>
-                            <label>Income Date</label>
-                            <input type="date" name="income_date" value="<?= e($editRecord['income_date'] ?? date('Y-m-d')) ?>">
+                            <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Name *</label>
+                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>" placeholder="SOURCE OF INCOME" style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;">
                         </div>
                         <div>
-                            <label>Amount *</label>
-                            <input name="amount" type="number" step="0.01" min="0.01" value="<?= e((string) ($editRecord['amount'] ?? '0')) ?>">
+                            <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Amount (Rs.) *</label>
+                            <input name="amount" type="number" step="0.01" min="0.01" required value="<?= e((string) ($editRecord['amount'] ?? '')) ?>" style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;">
                         </div>
                         <div>
-                            <label>Payment Mode</label>
-                            <select name="payment_mode">
+                            <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Payment Mode</label>
+                            <select name="payment_mode" style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;background:#fff;">
                                 <option value="">-- Select --</option>
                                 <?php foreach (['Cash', 'Cheque', 'UPI', 'Bank Transfer', 'Card', 'Online'] as $pm): ?>
                                     <option value="<?= $pm ?>" <?= (isset($editRecord['payment_mode']) && $editRecord['payment_mode'] === $pm) ? 'selected' : '' ?>><?= $pm ?></option>
@@ -721,17 +721,17 @@ if (isset($_GET['edit'])) {
                             </select>
                         </div>
                         <div>
-                            <label>Payment ID</label>
-                            <input type="text" name="payment_id" value="<?= e($editRecord['payment_id'] ?? '') ?>" placeholder="Transaction / Ref No">
+                            <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Payment ID</label>
+                            <input type="text" name="payment_id" value="<?= e($editRecord['payment_id'] ?? '') ?>" placeholder="TRANSACTION / CHEQUE / REF NO" style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;">
                         </div>
-                        <div class="full-col">
-                            <label>Note</label>
-                            <textarea name="description" rows="2"><?= e($editRecord['description'] ?? '') ?></textarea>
+                        <div style="grid-column:1 / -1;">
+                            <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Note</label>
+                            <textarea name="description" rows="3" placeholder="Additional description..." style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;resize:vertical;"><?= e($editRecord['description'] ?? '') ?></textarea>
                         </div>
                     </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'income-categories') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=income-categories" class="btn btn-soft">Cancel</a>
+                    <div style="margin-top:1.5rem;display:flex;gap:.75rem;align-items:center;">
+                        <button type="submit" style="background:#059669;color:#fff;border:none;padding:.65rem 1.4rem;border-radius:999px;font-weight:600;font-size:.9rem;cursor:pointer;"><?= ($editRecord && $editType === 'income-categories') ? 'Update Income' : 'Save Income' ?></button>
+                        <a href="?tab=income-categories" style="background:#fff;color:#334155;border:1px solid #cbd5e1;padding:.65rem 1.4rem;border-radius:999px;font-weight:600;font-size:.9rem;text-decoration:none;">Cancel</a>
                     </div>
                 </form>
             </div>
