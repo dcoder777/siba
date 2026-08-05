@@ -2,7 +2,7 @@
 require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
-$pdo = $GLOBALS['pdo'] ?? null;
+
 
 if (!$pdo) {
     die('Database connection not available');

@@ -7,7 +7,7 @@ require_admin_login();
 
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
-$pdo = $GLOBALS['pdo'];
+
 $error = '';
 $success = '';
 

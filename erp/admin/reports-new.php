@@ -5,7 +5,7 @@ require_admin_login();
 
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
-$pdo = $GLOBALS['pdo'];
+
 $pageTitle = 'Reports & Analytics';
 
 $reportId = (int) ($_GET['report'] ?? 0);

@@ -5,7 +5,7 @@ require_admin_login();
 
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
-$pdo = $GLOBALS['pdo'];
+
 $pageTitle = 'Outstanding Fees';
 
 $sessionFilter = trim((string) ($_GET['session'] ?? ''));

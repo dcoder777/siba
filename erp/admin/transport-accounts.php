@@ -4,7 +4,7 @@ require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
 $user = admin_user();
-$pdo = $GLOBALS['pdo'];
+
 $pageTitle = 'Transport Accounts';
 $error = '';
 $success = '';
