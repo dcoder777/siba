@@ -10,15 +10,14 @@ $error = '';
 $success = '';
 
 $validTabs = [
-    'schools', 'financial-years', 'academic-years', 'fee-heads',
+    'financial-years', 'academic-years', 'fee-heads',
     'expense-categories', 'income-categories', 'vendors', 'bank-accounts',
-    'payment-modes', 'budget-heads', 'asset-categories',
-    'payroll-components', 'inventory-items', 'hostel-fee', 'transport-fee'
+    'asset-categories', 'inventory-items', 'transport-fee'
 ];
 
 $tab = trim((string) ($_GET['tab'] ?? 'schools'));
 if (!in_array($tab, $validTabs, true)) {
-    $tab = 'schools';
+    $tab = 'financial-years';
 }
 
 // ─── Handle POST actions ───
@@ -26,45 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['master_action'] ?? ''));
 
     try {
-        // ─── Schools ───
-        if ($action === 'create_school' || $action === 'update_school') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $schoolName = trim((string) ($_POST['school_name'] ?? ''));
-            $schoolCode = trim((string) ($_POST['school_code'] ?? ''));
-            $branchName = trim((string) ($_POST['branch_name'] ?? ''));
-            $address = trim((string) ($_POST['address'] ?? ''));
-            $contactNumber = trim((string) ($_POST['contact_number'] ?? ''));
-            $email = trim((string) ($_POST['email'] ?? ''));
-            $pan = trim((string) ($_POST['pan'] ?? ''));
-            $tan = trim((string) ($_POST['tan'] ?? ''));
-            $gstNumber = trim((string) ($_POST['gst_number'] ?? ''));
-            $isActive = isset($_POST['is_active']) ? 1 : 0;
-            if ($schoolName === '') {
-                $error = 'School name is required.';
-            } else {
-                if ($action === 'update_school' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE schools SET school_name=?, school_code=?, branch_name=?, address=?, contact_number=?, email=?, pan=?, tan=?, gst_number=?, is_active=? WHERE id=?");
-                    $stmt->execute([$schoolName, $schoolCode, $branchName, $address, $contactNumber, $email, $pan, $tan, $gstNumber, $isActive, $id]);
-                    $success = 'School updated successfully.';
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO schools (school_name, school_code, branch_name, address, contact_number, email, pan, tan, gst_number, is_active) VALUES (?,?,?,?,?,?,?,?,?,?)");
-                    $stmt->execute([$schoolName, $schoolCode, $branchName, $address, $contactNumber, $email, $pan, $tan, $gstNumber, $isActive]);
-                    $success = 'School created successfully.';
-                }
-                header("Location: masters.php?tab=schools");
-                exit;
-            }
-        }
-        if ($action === 'delete_school') {
-            $id = (int) ($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $pdo->prepare("DELETE FROM schools WHERE id=?")->execute([$id]);
-                $success = 'School deleted.';
-                header("Location: masters.php?tab=schools");
-                exit;
-            }
-        }
-
         // ─── Financial Years ───
         if ($action === 'create_financial_year' || $action === 'update_financial_year') {
             $id = (int) ($_POST['id'] ?? 0);
@@ -311,74 +271,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
 
-        // ─── Payment Modes ───
-        if ($action === 'create_payment_mode' || $action === 'update_payment_mode') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $name = trim((string) ($_POST['name'] ?? ''));
-            $isOnline = isset($_POST['is_online']) ? 1 : 0;
-            $txnIdRequired = isset($_POST['transaction_id_required']) ? 1 : 0;
-            $bankDetailsRequired = isset($_POST['bank_details_required']) ? 1 : 0;
-            $chequeDetailsRequired = isset($_POST['cheque_details_required']) ? 1 : 0;
-            $emiAllowed = isset($_POST['emi_allowed']) ? 1 : 0;
-            $status = in_array(trim((string) ($_POST['status'] ?? '')), ['Active', 'Inactive'], true) ? trim((string) $_POST['status']) : 'Active';
-            if ($name === '') {
-                $error = 'Payment mode name is required.';
-            } else {
-                if ($action === 'update_payment_mode' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE payment_modes SET name=?, is_online=?, transaction_id_required=?, bank_details_required=?, cheque_details_required=?, emi_allowed=?, status=? WHERE id=?");
-                    $stmt->execute([$name, $isOnline, $txnIdRequired, $bankDetailsRequired, $chequeDetailsRequired, $emiAllowed, $status, $id]);
-                    $success = 'Payment mode updated.';
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO payment_modes (name, is_online, transaction_id_required, bank_details_required, cheque_details_required, emi_allowed, status) VALUES (?,?,?,?,?,?,?)");
-                    $stmt->execute([$name, $isOnline, $txnIdRequired, $bankDetailsRequired, $chequeDetailsRequired, $emiAllowed, $status]);
-                    $success = 'Payment mode created.';
-                }
-                header("Location: masters.php?tab=payment-modes");
-                exit;
-            }
-        }
-        if ($action === 'delete_payment_mode') {
-            $id = (int) ($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $pdo->prepare("DELETE FROM payment_modes WHERE id=?")->execute([$id]);
-                $success = 'Payment mode deleted.';
-                header("Location: masters.php?tab=payment-modes");
-                exit;
-            }
-        }
-
-        // ─── Budget Heads ───
-        if ($action === 'create_budget_head' || $action === 'update_budget_head') {
-            $id = (int) ($_POST['id'] ?? 0);
-            $name = trim((string) ($_POST['name'] ?? ''));
-            $description = trim((string) ($_POST['description'] ?? ''));
-            $isActive = isset($_POST['is_active']) ? 1 : 0;
-            if ($name === '') {
-                $error = 'Budget head name is required.';
-            } else {
-                if ($action === 'update_budget_head' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE budget_heads SET name=?, description=?, is_active=? WHERE id=?");
-                    $stmt->execute([$name, $description, $isActive, $id]);
-                    $success = 'Budget head updated.';
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO budget_heads (name, description, is_active) VALUES (?,?,?)");
-                    $stmt->execute([$name, $description, $isActive]);
-                    $success = 'Budget head created.';
-                }
-                header("Location: masters.php?tab=budget-heads");
-                exit;
-            }
-        }
-        if ($action === 'delete_budget_head') {
-            $id = (int) ($_POST['id'] ?? 0);
-            if ($id > 0) {
-                $pdo->prepare("DELETE FROM budget_heads WHERE id=?")->execute([$id]);
-                $success = 'Budget head deleted.';
-                header("Location: masters.php?tab=budget-heads");
-                exit;
-            }
-        }
-
         // ─── Asset Categories ───
         if ($action === 'create_asset_category' || $action === 'update_asset_category') {
             $id = (int) ($_POST['id'] ?? 0);
@@ -418,7 +310,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 }
 
 // ─── Fetch data for each tab ───
-$schools = $pdo->query("SELECT * FROM schools ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$schools = [];
 $financialYears = $pdo->query("SELECT * FROM financial_years ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $academicYears = $pdo->query("SELECT * FROM academic_years ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $feeHeads = $pdo->query("SELECT * FROM fee_heads ORDER BY sort_order ASC, name ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -426,8 +318,6 @@ $expenseCategories = $pdo->query("SELECT * FROM expense_categories ORDER BY id D
 $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-$paymentModes = $pdo->query("SELECT * FROM payment_modes ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-$budgetHeads = $pdo->query("SELECT * FROM budget_heads ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $assetCategories = $pdo->query("SELECT * FROM asset_categories ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 // ─── Edit records ───
@@ -437,11 +327,6 @@ if (isset($_GET['edit'])) {
     $editId = (int) $_GET['edit'];
     $editType = $tab;
     switch ($tab) {
-        case 'schools':
-            $stmt = $pdo->prepare("SELECT * FROM schools WHERE id=?");
-            $stmt->execute([$editId]);
-            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
         case 'financial-years':
             $stmt = $pdo->prepare("SELECT * FROM financial_years WHERE id=?");
             $stmt->execute([$editId]);
@@ -474,16 +359,6 @@ if (isset($_GET['edit'])) {
             break;
         case 'bank-accounts':
             $stmt = $pdo->prepare("SELECT * FROM bank_accounts WHERE id=?");
-            $stmt->execute([$editId]);
-            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-        case 'payment-modes':
-            $stmt = $pdo->prepare("SELECT * FROM payment_modes WHERE id=?");
-            $stmt->execute([$editId]);
-            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
-            break;
-        case 'budget-heads':
-            $stmt = $pdo->prepare("SELECT * FROM budget_heads WHERE id=?");
             $stmt->execute([$editId]);
             $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
             break;
@@ -571,7 +446,6 @@ if (isset($_GET['edit'])) {
                     <nav class="master-nav">
                         <?php
                         $masterTabs = [
-                            'schools' => ['icon' => '🏫', 'label' => 'Schools'],
                             'financial-years' => ['icon' => '📅', 'label' => 'Financial Years'],
                             'academic-years' => ['icon' => '🎓', 'label' => 'Academic Years'],
                             'fee-heads' => ['icon' => '💰', 'label' => 'Fee Heads'],
@@ -579,12 +453,8 @@ if (isset($_GET['edit'])) {
                             'income-categories' => ['icon' => '📥', 'label' => 'Income Categories'],
                             'vendors' => ['icon' => '🤝', 'label' => 'Vendors'],
                             'bank-accounts' => ['icon' => '🏦', 'label' => 'Bank Accounts'],
-                            'payment-modes' => ['icon' => '💳', 'label' => 'Payment Modes'],
-                            'budget-heads' => ['icon' => '📋', 'label' => 'Budget Heads'],
                             'asset-categories' => ['icon' => '📦', 'label' => 'Asset Categories'],
-                            'payroll-components' => ['icon' => '👥', 'label' => 'Payroll'],
                             'inventory-items' => ['icon' => '📦', 'label' => 'Inventory'],
-                            'hostel-fee' => ['icon' => '🏠', 'label' => 'Hostel Fee'],
                             'transport-fee' => ['icon' => '🚌', 'label' => 'Transport Fee'],
                         ];
                         foreach ($masterTabs as $key => $m): ?>
@@ -599,130 +469,6 @@ if (isset($_GET['edit'])) {
 
             <!-- RIGHT: Tab Content -->
             <div class="detail-panel">
-
-        <!-- ======================== SCHOOLS ======================== -->
-        <?php if ($tab === 'schools'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Schools</h2>
-                    <p>Manage school profiles, branches, and registration details.</p>
-                </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('schoolModal').classList.add('show')">+ Add School</button>
-            </div>
-
-            <?php if (empty($schools)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No schools defined yet.</p>
-            <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="app-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>School Name</th>
-                            <th>Code</th>
-                            <th>Branch</th>
-                            <th>Contact</th>
-                            <th>Email</th>
-                            <th>GST</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $i = 1; foreach ($schools as $row): ?>
-                        <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['school_name']) ?></strong></td>
-                            <td><?= e($row['school_code'] ?? '') ?></td>
-                            <td><?= e($row['branch_name'] ?? '') ?></td>
-                            <td><?= e($row['contact_number'] ?? '') ?></td>
-                            <td><?= e($row['email'] ?? '') ?></td>
-                            <td><?= e($row['gst_number'] ?? '') ?></td>
-                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=schools&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this school?')">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_school">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-        </section>
-
-        <div id="schoolModal" class="modal-backdrop <?= ($editRecord && $editType === 'schools') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'schools') ? 'Edit School' : 'Add School' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
-                </div>
-                <form method="post">
-                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'schools') ? 'update_school' : 'create_school' ?>">
-                    <?php if ($editRecord && $editType === 'schools'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
-                    <div class="field-grid">
-                        <div>
-                            <label>School Name *</label>
-                            <input name="school_name" type="text" required value="<?= e($editRecord['school_name'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>School Code</label>
-                            <input name="school_code" type="text" value="<?= e($editRecord['school_code'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Branch Name</label>
-                            <input name="branch_name" type="text" value="<?= e($editRecord['branch_name'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Contact Number</label>
-                            <input name="contact_number" type="text" value="<?= e($editRecord['contact_number'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Email</label>
-                            <input name="email" type="email" value="<?= e($editRecord['email'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>PAN</label>
-                            <input name="pan" type="text" value="<?= e($editRecord['pan'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>TAN</label>
-                            <input name="tan" type="text" value="<?= e($editRecord['tan'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>GST Number</label>
-                            <input name="gst_number" type="text" value="<?= e($editRecord['gst_number'] ?? '') ?>">
-                        </div>
-                        <div class="full-col">
-                            <label>Address</label>
-                            <textarea name="address" rows="2"><?= e($editRecord['address'] ?? '') ?></textarea>
-                        </div>
-                        <div class="full-col">
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_active" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_active'] ?? 1) ? 'checked' : '' ?>>
-                                Active
-                            </label>
-                        </div>
-                    </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'schools') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=schools" class="btn btn-soft">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <!-- ======================== FINANCIAL YEARS ======================== -->
         <?php if ($tab === 'financial-years'): ?>
@@ -1476,209 +1222,6 @@ if (isset($_GET['edit'])) {
         </div>
         <?php endif; ?>
 
-        <!-- ======================== PAYMENT MODES ======================== -->
-        <?php if ($tab === 'payment-modes'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Payment Modes</h2>
-                    <p>Configure payment methods with transaction and validation rules.</p>
-                </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('pmModal').classList.add('show')">+ Add Payment Mode</button>
-            </div>
-
-            <?php if (empty($paymentModes)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No payment modes defined yet.</p>
-            <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="app-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>Online</th>
-                            <th>TXN ID Required</th>
-                            <th>Bank Details</th>
-                            <th>Cheque Details</th>
-                            <th>EMI Allowed</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $i = 1; foreach ($paymentModes as $row): ?>
-                        <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['name']) ?></strong></td>
-                            <td><span class="badge <?= ($row['is_online'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['is_online'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['transaction_id_required'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['transaction_id_required'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['bank_details_required'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['bank_details_required'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['cheque_details_required'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['cheque_details_required'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['emi_allowed'] ?? 0) ? 'badge-yes' : 'badge-no' ?>"><?= ($row['emi_allowed'] ?? 0) ? 'Yes' : 'No' ?></span></td>
-                            <td><span class="badge <?= ($row['status'] ?? '') === 'Active' ? 'badge-active' : 'badge-inactive' ?>"><?= e($row['status'] ?? '') ?></span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=payment-modes&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this payment mode?')">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_payment_mode">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-        </section>
-
-        <div id="pmModal" class="modal-backdrop <?= ($editRecord && $editType === 'payment-modes') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'payment-modes') ? 'Edit Payment Mode' : 'Add Payment Mode' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
-                </div>
-                <form method="post">
-                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'payment-modes') ? 'update_payment_mode' : 'create_payment_mode' ?>">
-                    <?php if ($editRecord && $editType === 'payment-modes'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
-                    <div class="field-grid">
-                        <div>
-                            <label>Name *</label>
-                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
-                        </div>
-                        <div>
-                            <label>Status</label>
-                            <select name="status">
-                                <option value="Active" <?= ($editRecord['status'] ?? '') === 'Active' ? 'selected' : '' ?>>Active</option>
-                                <option value="Inactive" <?= ($editRecord['status'] ?? '') === 'Inactive' ? 'selected' : '' ?>>Inactive</option>
-                            </select>
-                        </div>
-                        <div class="full-col" style="display:flex;gap:1.5rem;flex-wrap:wrap;">
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_online" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_online'] ?? 0) ? 'checked' : '' ?>>
-                                Online Payment
-                            </label>
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="transaction_id_required" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['transaction_id_required'] ?? 0) ? 'checked' : '' ?>>
-                                Transaction ID Required
-                            </label>
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="bank_details_required" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['bank_details_required'] ?? 0) ? 'checked' : '' ?>>
-                                Bank Details Required
-                            </label>
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="cheque_details_required" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['cheque_details_required'] ?? 0) ? 'checked' : '' ?>>
-                                Cheque Details Required
-                            </label>
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="emi_allowed" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['emi_allowed'] ?? 0) ? 'checked' : '' ?>>
-                                EMI Allowed
-                            </label>
-                        </div>
-                    </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'payment-modes') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=payment-modes" class="btn btn-soft">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- ======================== BUDGET HEADS ======================== -->
-        <?php if ($tab === 'budget-heads'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Budget Heads</h2>
-                    <p>Define budget heads for allocating and tracking departmental budgets.</p>
-                </div>
-                <button type="button" class="btn btn-sm" onclick="document.getElementById('bhModal').classList.add('show')">+ Add Budget Head</button>
-            </div>
-
-            <?php if (empty($budgetHeads)): ?>
-                <p style="text-align:center;padding:2rem;color:#94a3b8;">No budget heads defined yet.</p>
-            <?php else: ?>
-            <div style="overflow-x:auto;">
-                <table class="app-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $i = 1; foreach ($budgetHeads as $row): ?>
-                        <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td><strong><?= e($row['name']) ?></strong></td>
-                            <td style="max-width:300px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
-                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=budget-heads&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this budget head?')">
-                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="master_action" value="delete_budget_head">
-                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
-                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
-        </section>
-
-        <div id="bhModal" class="modal-backdrop <?= ($editRecord && $editType === 'budget-heads') ? 'show' : '' ?>">
-            <div class="modal">
-                <div class="modal-head">
-                    <h2><?= ($editRecord && $editType === 'budget-heads') ? 'Edit Budget Head' : 'Add Budget Head' ?></h2>
-                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
-                </div>
-                <form method="post">
-                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'budget-heads') ? 'update_budget_head' : 'create_budget_head' ?>">
-                    <?php if ($editRecord && $editType === 'budget-heads'): ?>
-                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
-                    <?php endif; ?>
-                    <div class="field-grid">
-                        <div>
-                            <label>Name *</label>
-                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>">
-                        </div>
-                        <div class="full-col">
-                            <label>Description</label>
-                            <textarea name="description" rows="2"><?= e($editRecord['description'] ?? '') ?></textarea>
-                        </div>
-                        <div class="full-col">
-                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
-                                <input type="checkbox" name="is_active" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_active'] ?? 1) ? 'checked' : '' ?>>
-                                Active
-                            </label>
-                        </div>
-                    </div>
-                    <div class="action-row" style="margin-top:1.5rem;">
-                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'budget-heads') ? 'Update' : 'Add' ?></button>
-                        <a href="?tab=budget-heads" class="btn btn-soft">Cancel</a>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <!-- ======================== ASSET CATEGORIES ======================== -->
         <?php if ($tab === 'asset-categories'): ?>
         <section class="panel" style="padding:1.25rem;">
@@ -1773,23 +1316,6 @@ if (isset($_GET['edit'])) {
         </div>
         <?php endif; ?>
 
-        <!-- ======================== PAYROLL COMPONENTS (Coming Soon) ======================== -->
-        <?php if ($tab === 'payroll-components'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Payroll Components</h2>
-                    <p>Manage salary components — earnings, deductions, and employer contributions.</p>
-                </div>
-            </div>
-            <div class="coming-soon">
-                <h3>Payroll Setup</h3>
-                <p>Full payroll component management will be available from the Salary Setup page. Configure earnings, deductions, and employer contributions there.</p>
-                <a href="salary-setup.php" class="btn" style="margin-top:1rem;">Go to Salary Setup</a>
-            </div>
-        </section>
-        <?php endif; ?>
-
         <!-- ======================== INVENTORY ITEMS (Coming Soon) ======================== -->
         <?php if ($tab === 'inventory-items'): ?>
         <section class="panel" style="padding:1.25rem;">
@@ -1803,23 +1329,6 @@ if (isset($_GET['edit'])) {
                 <h3>Inventory Management</h3>
                 <p>Complete inventory management with stock tracking, item categories, and procurement workflows will be available from the Inventory page.</p>
                 <a href="inventory.php" class="btn" style="margin-top:1rem;">Go to Inventory</a>
-            </div>
-        </section>
-        <?php endif; ?>
-
-        <!-- ======================== HOSTEL FEE (Coming Soon) ======================== -->
-        <?php if ($tab === 'hostel-fee'): ?>
-        <section class="panel" style="padding:1.25rem;">
-            <div class="section-title">
-                <div>
-                    <h2>Hostel Fee Masters</h2>
-                    <p>Manage hostel fee structures, room charges, and mess fee categories.</p>
-                </div>
-            </div>
-            <div class="coming-soon">
-                <h3>Hostel Accounts</h3>
-                <p>Hostel fee management with room-wise charges, mess fee allocation, and hostel-specific billing will be available from the Hostel Accounts page.</p>
-                <a href="hostel-accounts.php" class="btn" style="margin-top:1rem;">Go to Hostel Accounts</a>
             </div>
         </section>
         <?php endif; ?>
