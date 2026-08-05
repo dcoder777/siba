@@ -54,6 +54,9 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         <a class="nav-link<?= in_array($activePage, ['expense-entry.php','vendor-bills.php']) ? ' active' : '' ?>" href="expense-entry.php">
             <span class="sidebar-icon">📤</span><span>Expenses</span>
         </a>
+        <a class="nav-link<?= $activePage === 'income-entry.php' ? ' active' : '' ?>" href="income-entry.php">
+            <span class="sidebar-icon">💰</span><span>Income</span>
+        </a>
         <a class="nav-link<?= $activePage === 'cash-bank.php' ? ' active' : '' ?>" href="cash-bank.php">
             <span class="sidebar-icon">🏦</span><span>Cash & Bank</span>
         </a>
