@@ -8,6 +8,33 @@
  */
 declare(strict_types=1);
 
+if (!function_exists('siba_jpeg_size')) {
+    function siba_jpeg_size(string $file): ?array
+    {
+        $data = @file_get_contents($file);
+        if ($data === false || strlen($data) < 4) {
+            return null;
+        }
+        $len = strlen($data);
+        $i = 2;
+        while ($i + 9 < $len) {
+            if ($data[$i] !== "\xFF") {
+                $i++;
+                continue;
+            }
+            $marker = ord($data[$i + 1]);
+            if ($marker >= 0xC0 && $marker <= 0xCF && $marker !== 0xC4 && $marker !== 0xC8 && $marker !== 0xCC) {
+                $height = (ord($data[$i + 5]) << 8) | ord($data[$i + 6]);
+                $width  = (ord($data[$i + 7]) << 8) | ord($data[$i + 8]);
+                return [$width, $height];
+            }
+            $seg = (ord($data[$i + 2]) << 8) | ord($data[$i + 3]);
+            $i += 2 + $seg;
+        }
+        return null;
+    }
+}
+
 if (!function_exists('siba_receipt_pdf')) {
     function siba_receipt_pdf(array $app): string
     {
@@ -23,27 +50,55 @@ if (!function_exists('siba_receipt_pdf')) {
         $appliedAt = (string) ($app['applied_at'] ?? '');
         $appliedDate = $appliedAt !== '' ? date('d-m-Y h:i A', (int) strtotime($appliedAt)) : '';
 
+        // Load school logo (JPEG) for embedding
+        $logoFile = dirname(__DIR__) . '/assets/images/logo.jpg';
+        $logoData = is_file($logoFile) ? @file_get_contents($logoFile) : false;
+        $logoSize = ($logoData !== false) ? siba_jpeg_size($logoFile) : null;
+        if ($logoSize) {
+            $aspect = $logoSize[0] / $logoSize[1];
+            if ($aspect >= 1) {
+                $logoW = 92;
+                $logoH = max(1, (int) round($logoW / $aspect));
+            } else {
+                $logoH = 46;
+                $logoW = max(1, (int) round($logoH * $aspect));
+            }
+        } else {
+            $logoW = 60;
+            $logoH = 60;
+        }
+        $logoX = 48;
+        $logoY = (int) round((90 - $logoH) / 2);
+        $brandX = $logoSize ? '150' : '60';
+
         $lines = [];
 
         // Header band
         $lines[] = '0.12 0.16 0.23 rg';           // dark slate
         $lines[] = '0 0 595 90 re f';
-        $lines[] = '0.96 0.60 0.13 RG';            // accent line (reserved via rect below)
-        $lines[] = '0 90 595 3 re f';
         $lines[] = '0.96 0.60 0.13 rg';
+        $lines[] = '0 90 595 3 re f';
+
+        // Logo (if available)
+        if ($logoSize) {
+            $lines[] = 'q';
+            $lines[] = $logoW . ' 0 0 ' . $logoH . ' ' . $logoX . ' ' . $logoY . ' cm';
+            $lines[] = '/Im1 Do';
+            $lines[] = 'Q';
+        }
 
         // School name
         $lines[] = 'BT';
         $lines[] = '/F1 20 Tf';
         $lines[] = '1 1 1 rg';
-        $lines[] = '60 56 Td';
+        $lines[] = $brandX . ' 56 Td';
         $lines[] = '(' . $esc('SIBA PUBLIC SCHOOL') . ') Tj';
         $lines[] = 'ET';
 
         $lines[] = 'BT';
         $lines[] = '/F2 10 Tf';
         $lines[] = '0.80 0.84 0.90 rg';
-        $lines[] = '60 42 Td';
+        $lines[] = $brandX . ' 42 Td';
         $lines[] = '(' . $esc('WBBSE Affiliated | Chapra, West Bengal') . ') Tj';
         $lines[] = 'ET';
 
@@ -165,14 +220,21 @@ if (!function_exists('siba_receipt_pdf')) {
         };
 
         $catalogId = $addObject("<< /Type /Catalog /Pages 2 0 R >>");
-        $pagesId = $addObject("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
-        $pageId = $addObject("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>");
+        $pagesId = $addObject("<< /Type /Pages /Kids [6 0 R] /Count 1 >>");
         $f1Id = $addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
         $f2Id = $addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        $imgId = 0;
+        if ($logoSize) {
+            $imgBody = "<< /Type /XObject /Subtype /Image /Width {$logoSize[0]} /Height {$logoSize[1]} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " . strlen($logoData) . " >>\nstream\n" . $logoData . "\nendstream";
+            $imgId = $addObject($imgBody);
+        }
+        $xobjRef = $imgId ? " /XObject << /Im1 {$imgId} 0 R >>" : '';
+        $contentsObjNum = $imgId ? 7 : 6;
+        $pageId = $addObject("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>{$xobjRef} >> /Contents {$contentsObjNum} 0 R >>");
 
         $compressed = gzcompress($content, 9);
         $offsets[] = strlen($pdf);
-        $pdf .= "6 0 obj\n<< /Length " . strlen($compressed) . " /Filter /FlateDecode >>\nstream\n" . $compressed . "\nendstream\nendobj\n";
+        $pdf .= "{$contentsObjNum} 0 obj\n<< /Length " . strlen($compressed) . " /Filter /FlateDecode >>\nstream\n" . $compressed . "\nendstream\nendobj\n";
 
         $totalObjects = $objectCount + 1;
 
