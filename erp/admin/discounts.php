@@ -2,15 +2,18 @@
 require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
-
-
 if (!$pdo) {
     die('Database connection not available');
 }
 
+ensure_columns($pdo, 'discounts', [
+    'student_id' => "INT UNSIGNED NOT NULL DEFAULT 0",
+    'admission_no' => "VARCHAR(50) DEFAULT '' AFTER student_name",
+]);
+
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verify_csrf($_POST['csrf_token'] ?? '');
+    verify_csrf();
 
     $action = $_POST['action'] ?? '';
 

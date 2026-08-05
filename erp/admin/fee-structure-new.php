@@ -88,6 +88,20 @@ try {
     )");
 } catch (Throwable $e) {}
 
+// ─── Add missing columns to existing tables ───
+ensure_columns($pdo, 'fee_heads', [
+    'category' => "VARCHAR(100)",
+    'default_amount' => "DECIMAL(12,2) DEFAULT 0",
+    'frequency' => "VARCHAR(30) DEFAULT 'One-Time'",
+    'is_refundable' => "TINYINT(1) DEFAULT 0",
+    'late_fee_applicable' => "TINYINT(1) DEFAULT 0",
+    'is_mandatory' => "TINYINT(1) DEFAULT 1",
+    'is_active' => "TINYINT(1) DEFAULT 1",
+    'sort_order' => "INT DEFAULT 0",
+    'created_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    'updated_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+]);
+
 // ─── Add new columns to legacy tables if missing ───
 try {
     $cols = array_map(static fn(array $r): string => (string) $r['Field'], $pdo->query("DESCRIBE fee_structures")->fetchAll());

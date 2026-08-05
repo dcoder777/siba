@@ -82,7 +82,7 @@ function generate_emi_schedule(PDO $pdo, array $data): int {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if (!verify_csrf($_POST['csrf_token'] ?? '')) {
+    if (!verify_csrf()) {
         set_flash('error', 'Invalid CSRF token.');
         header('Location: emi-management.php');
         exit;

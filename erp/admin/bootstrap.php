@@ -225,6 +225,36 @@ function menu_for_roles(array $roles, array $allowedModules = []): array
     return $filtered;
 }
 
+function ensure_columns(PDO $pdo, string $table, array $cols): void
+{
+    try {
+        $existing = array_map(static fn(array $r): string => (string) $r['Field'], $pdo->query("DESCRIBE `{$table}`")->fetchAll());
+        foreach ($cols as $col => $def) {
+            if (!in_array($col, $existing, true)) {
+                $pdo->exec("ALTER TABLE `{$table}` ADD COLUMN `{$col}` {$def}");
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
+function redirect(string $url): void
+{
+    header('Location: ' . $url);
+    exit;
+}
+
+function set_flash(string $type, string $msg): void
+{
+    $_SESSION['flash'] = ['type' => $type, 'message' => $msg];
+}
+
+function get_flash(): ?array
+{
+    $flash = $_SESSION['flash'] ?? null;
+    unset($_SESSION['flash']);
+    return $flash;
+}
+
 function entity_config(): array
 {
     return [

@@ -2,7 +2,22 @@
 require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
-$pdo = $pdo ?? null;
+ensure_columns($pdo, 'ledger_entries', [
+    'reconciliation_status' => "VARCHAR(30) DEFAULT 'Unreconciled'",
+    'cheque_status' => "VARCHAR(30) DEFAULT 'Uncleared'",
+]);
+
+ensure_columns($pdo, 'payroll_items', [
+    'pay_date' => "DATE DEFAULT NULL AFTER payment_date",
+    'status' => "VARCHAR(30) DEFAULT 'Pending' AFTER payment_status",
+]);
+
+ensure_columns($pdo, 'fee_structures', [
+    'academic_year_id' => "INT DEFAULT NULL",
+    'student_category' => "VARCHAR(50) DEFAULT 'General'",
+    'emi_allowed' => "TINYINT(1) DEFAULT 0",
+    'is_active' => "TINYINT(1) DEFAULT 1",
+]);
 
 function checklist_items(PDO $pdo, int $fyId): array
 {

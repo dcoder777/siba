@@ -2,6 +2,17 @@
 require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
+ensure_columns($pdo, 'student_fee_assignments', [
+    'section_name' => "VARCHAR(50) DEFAULT NULL AFTER class_name",
+    'transport_required' => "TINYINT(1) NOT NULL DEFAULT 0 AFTER fee_structure_id",
+    'hostel_required' => "TINYINT(1) NOT NULL DEFAULT 0 AFTER transport_required",
+    'discount_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER hostel_required",
+    'emi_plan' => "VARCHAR(50) DEFAULT NULL AFTER discount_amount",
+    'effective_date' => "DATE DEFAULT NULL AFTER emi_plan",
+    'is_active' => "TINYINT(1) NOT NULL DEFAULT 1 AFTER academic_session",
+    'updated_at' => "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at",
+]);
+
 /* ── helper functions ────────────────────────────────────────────── */
 function student_options(PDO $pdo): array {
     $stmt = $pdo->query("

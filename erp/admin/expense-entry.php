@@ -68,6 +68,51 @@ try {
     )");
 } catch (\Throwable $e) {}
 
+// ─── Add missing columns to existing tables ───
+ensure_columns($pdo, 'expense_categories', [
+    'group_name' => "VARCHAR(100) DEFAULT ''",
+    'description' => "TEXT",
+    'approval_required' => "TINYINT(1) DEFAULT 1",
+    'is_active' => "TINYINT(1) DEFAULT 1",
+    'created_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    'updated_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+]);
+
+ensure_columns($pdo, 'vendors', [
+    'vendor_code' => "VARCHAR(50)",
+    'mobile' => "VARCHAR(50)",
+    'email' => "VARCHAR(255)",
+    'gst_number' => "VARCHAR(50)",
+    'is_active' => "TINYINT(1) DEFAULT 1",
+    'created_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    'updated_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+]);
+
+ensure_columns($pdo, 'expenses', [
+    'category_id' => "INT",
+    'category_name' => "VARCHAR(255) DEFAULT ''",
+    'vendor_id' => "INT",
+    'vendor_name' => "VARCHAR(255) DEFAULT ''",
+    'bill_no' => "VARCHAR(100)",
+    'bill_date' => "DATE",
+    'gst_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0",
+    'net_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 0",
+    'description' => "TEXT",
+    'bill_file' => "VARCHAR(500)",
+    'payment_mode' => "VARCHAR(50)",
+    'payment_date' => "DATE",
+    'cheque_no' => "VARCHAR(100)",
+    'transaction_id' => "VARCHAR(255)",
+    'payee_name' => "VARCHAR(255)",
+    'status' => "ENUM('Pending','Approved','Rejected','Cancelled') DEFAULT 'Pending'",
+    'approved_by' => "INT",
+    'approved_at' => "DATETIME",
+    'reject_reason' => "TEXT",
+    'created_by' => "INT",
+    'created_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+    'updated_at' => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+]);
+
 // ─── Helpers ───
 
 function expense_categories_options(PDO $pdo): array
