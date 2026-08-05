@@ -1,4 +1,4 @@
 ---
 deployment:
   tasks:
-    - cp -Rf * ../public_html/
+    - /bin/bash -c 'cp -Rf * ../../public_html/'
