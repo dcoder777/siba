@@ -60,6 +60,7 @@ $tables = [
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(100) NOT NULL,
     `category` VARCHAR(50) DEFAULT NULL,
+    `class_name` VARCHAR(100) DEFAULT NULL,
     `default_amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
     `frequency` ENUM('Monthly','Annual','One-Time','Quarterly') NOT NULL DEFAULT 'Monthly',
     `is_refundable` TINYINT(1) NOT NULL DEFAULT 0,

@@ -10,7 +10,8 @@ $error = '';
 $success = '';
 
 $validTabs = [
-    'expense-categories', 'income-categories', 'vendors', 'bank-accounts'
+    'expense-categories', 'income-categories', 'vendors', 'bank-accounts',
+    'fees-management'
 ];
 
 $tab = trim((string) ($_GET['tab'] ?? 'schools'));
@@ -168,6 +169,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
 
+        // ─── Fees Management ───
+        if ($action === 'create_fee_head' || $action === 'update_fee_head') {
+            $id = (int) ($_POST['id'] ?? 0);
+            $name = trim((string) ($_POST['name'] ?? ''));
+            $category = trim((string) ($_POST['category'] ?? ''));
+            $className = trim((string) ($_POST['class_name'] ?? ''));
+            $defaultAmount = (float) ($_POST['default_amount'] ?? 0);
+            $frequency = trim((string) ($_POST['frequency'] ?? 'One-Time'));
+            $validCategories = ['Class Fee', 'Application Fee', 'Admission Fee', 'Donation', 'Exam Fee', 'Transport Fee', 'Hostel Fee', 'Other'];
+            $validFrequencies = ['One-Time', 'Monthly', 'Quarterly', 'Annual'];
+            $category = in_array($category, $validCategories, true) ? $category : 'Other';
+            $frequency = in_array($frequency, $validFrequencies, true) ? $frequency : 'One-Time';
+            $isActive = isset($_POST['is_active']) ? 1 : 0;
+            if ($name === '') {
+                $error = 'Fee name is required.';
+            } else {
+                if ($action === 'update_fee_head' && $id > 0) {
+                    $stmt = $pdo->prepare("UPDATE fee_heads SET name=?, category=?, class_name=?, default_amount=?, frequency=?, is_active=? WHERE id=?");
+                    $stmt->execute([$name, $category, $className ?: null, $defaultAmount, $frequency, $isActive, $id]);
+                    $success = 'Fee head updated.';
+                } else {
+                    $stmt = $pdo->prepare("INSERT INTO fee_heads (name, category, class_name, default_amount, frequency, is_active) VALUES (?,?,?,?,?,?)");
+                    $stmt->execute([$name, $category, $className ?: null, $defaultAmount, $frequency, $isActive]);
+                    $success = 'Fee head created.';
+                }
+                header("Location: masters.php?tab=fees-management");
+                exit;
+            }
+        }
+        if ($action === 'delete_fee_head') {
+            $id = (int) ($_POST['id'] ?? 0);
+            if ($id > 0) {
+                $pdo->prepare("DELETE FROM fee_heads WHERE id=?")->execute([$id]);
+                $success = 'Fee head deleted.';
+                header("Location: masters.php?tab=fees-management");
+                exit;
+            }
+        }
+
     } catch (Throwable $e) {
         $error = 'Operation failed: ' . $e->getMessage();
     }
@@ -189,6 +229,10 @@ $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY id DES
 $paidApplications = $pdo->query("SELECT a.id, a.application_no, a.student_name, a.class_sought, a.payment_amount, a.payment_method, a.payment_status, a.applied_at, p.name AS parent_name, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.payment_status = 'Paid' AND a.deleted_at IS NULL ORDER BY a.applied_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 $bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+ensure_columns($pdo, 'fee_heads', [
+    'class_name' => "VARCHAR(100) DEFAULT NULL",
+]);
+$feeHeads = $pdo->query("SELECT * FROM fee_heads ORDER BY category, sort_order, name")->fetchAll(PDO::FETCH_ASSOC);
 
 // ─── Edit records ───
 $editRecord = null;
@@ -214,6 +258,11 @@ if (isset($_GET['edit'])) {
             break;
         case 'bank-accounts':
             $stmt = $pdo->prepare("SELECT * FROM bank_accounts WHERE id=?");
+            $stmt->execute([$editId]);
+            $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
+            break;
+        case 'fees-management':
+            $stmt = $pdo->prepare("SELECT * FROM fee_heads WHERE id=?");
             $stmt->execute([$editId]);
             $editRecord = $stmt->fetch(PDO::FETCH_ASSOC);
             break;
@@ -300,6 +349,7 @@ if (isset($_GET['edit'])) {
                             'income-categories' => ['icon' => '📥', 'label' => 'Income'],
                             'vendors' => ['icon' => '🤝', 'label' => 'Vendors Master'],
                             'bank-accounts' => ['icon' => '🏦', 'label' => 'Bank Accounts'],
+                            'fees-management' => ['icon' => '💰', 'label' => 'Fees Management'],
                         ];
                         foreach ($masterTabs as $key => $m): ?>
                             <a href="?tab=<?= $key ?>" class="<?= $tab === $key ? 'active' : '' ?>">
@@ -800,6 +850,131 @@ if (isset($_GET['edit'])) {
                     <div class="action-row" style="margin-top:1.5rem;">
                         <button type="submit" class="btn"><?= ($editRecord && $editType === 'bank-accounts') ? 'Update' : 'Add' ?></button>
                         <a href="?tab=bank-accounts" class="btn btn-soft">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- ======================== FEES MANAGEMENT ======================== -->
+        <?php if ($tab === 'fees-management'): ?>
+        <section class="panel" style="padding:1.25rem;">
+            <div class="section-title">
+                <div>
+                    <h2>Fees Management</h2>
+                    <p>Define fee heads for classes, applications, donations, and other charges with tenure settings.</p>
+                </div>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('fhModal').classList.add('show')">+ Add Fee</button>
+            </div>
+
+            <?php if (empty($feeHeads)): ?>
+                <p style="text-align:center;padding:2rem;color:#94a3b8;">No fee heads defined yet.</p>
+            <?php else: ?>
+            <div style="overflow-x:auto;">
+                <table class="app-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Class</th>
+                            <th>Amount</th>
+                            <th>Tenure</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $i = 1; foreach ($feeHeads as $row): ?>
+                        <tr>
+                            <td style="color:#94a3b8;"><?= $i++ ?></td>
+                            <td><strong><?= e($row['name']) ?></strong></td>
+                            <td><span class="badge" style="background:#e0f2fe;color:#0369a1;"><?= e($row['category'] ?: '—') ?></span></td>
+                            <td><?= e($row['class_name'] ?? '') ?: '—' ?></td>
+                            <td>&#8377; <?= number_format((float) ($row['default_amount'] ?? 0), 2) ?></td>
+                            <td><span class="badge" style="background:#fef3c7;color:#92400e;"><?= e($row['frequency'] ?? 'One-Time') ?></span></td>
+                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <a class="btn-icon" href="?tab=fees-management&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
+                                    <form method="post" class="inline-form" onsubmit="return confirm('Delete this fee head?')">
+                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="master_action" value="delete_fee_head">
+                                        <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
+                                        <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </section>
+
+        <div id="fhModal" class="modal-backdrop <?= ($editRecord && $editType === 'fees-management') ? 'show' : '' ?>">
+            <div class="modal">
+                <div class="modal-head">
+                    <h2><?= ($editRecord && $editType === 'fees-management') ? 'Edit Fee' : 'Add Fee' ?></h2>
+                    <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))">&times;</button>
+                </div>
+                <form method="post">
+                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="master_action" value="<?= ($editRecord && $editType === 'fees-management') ? 'update_fee_head' : 'create_fee_head' ?>">
+                    <?php if ($editRecord && $editType === 'fees-management'): ?>
+                        <input type="hidden" name="id" value="<?= (int) $editRecord['id'] ?>">
+                    <?php endif; ?>
+                    <div class="field-grid">
+                        <div>
+                            <label>Name *</label>
+                            <input name="name" type="text" required value="<?= e($editRecord['name'] ?? '') ?>" placeholder="e.g. Tuition Fee, Admission Fee">
+                        </div>
+                        <div>
+                            <label>Category</label>
+                            <select name="category">
+                                <?php
+                                $categories = ['Class Fee', 'Application Fee', 'Admission Fee', 'Donation', 'Exam Fee', 'Transport Fee', 'Hostel Fee', 'Other'];
+                                foreach ($categories as $cat): ?>
+                                    <option value="<?= $cat ?>" <?= (isset($editRecord['category']) && $editRecord['category'] === $cat) ? 'selected' : '' ?>><?= $cat ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Class (if applicable)</label>
+                            <select name="class_name">
+                                <option value="">— All / Not class-specific —</option>
+                                <?php
+                                $classes = ['Nursery', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+                                foreach ($classes as $cls): ?>
+                                    <option value="<?= $cls ?>" <?= (isset($editRecord['class_name']) && $editRecord['class_name'] === $cls) ? 'selected' : '' ?>><?= $cls ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Amount</label>
+                            <input name="default_amount" type="number" step="0.01" min="0" value="<?= e((string) ($editRecord['default_amount'] ?? '0')) ?>">
+                        </div>
+                        <div>
+                            <label>Tenure</label>
+                            <select name="frequency">
+                                <?php
+                                $frequencies = ['One-Time' => 'One-Time', 'Monthly' => 'Monthly', 'Quarterly' => 'Quarterly', 'Annual' => 'Yearly'];
+                                foreach ($frequencies as $freqValue => $freqLabel): ?>
+                                    <option value="<?= $freqValue ?>" <?= (isset($editRecord['frequency']) && $editRecord['frequency'] === $freqValue) ? 'selected' : '' ?>><?= $freqLabel ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="full-col">
+                            <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:400;margin-bottom:0;">
+                                <input type="checkbox" name="is_active" value="1" style="width:auto;min-height:auto;accent-color:#2563eb;" <?= ($editRecord['is_active'] ?? 1) ? 'checked' : '' ?>>
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                    <div class="action-row" style="margin-top:1.5rem;">
+                        <button type="submit" class="btn"><?= ($editRecord && $editType === 'fees-management') ? 'Update' : 'Add' ?></button>
+                        <a href="?tab=fees-management" class="btn btn-soft">Cancel</a>
                     </div>
                 </form>
             </div>
