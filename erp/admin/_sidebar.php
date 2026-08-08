@@ -62,6 +62,7 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         </a>
     </div>
 
+    <?php if ($isOwner): ?>
     <div class="nav-group">
         <div class="nav-title">HR</div>
         <a class="nav-link<?= $activePage === 'salary-setup.php' ? ' active' : '' ?>" href="salary-setup.php">
@@ -75,6 +76,7 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
             <span class="sidebar-icon">📈</span><span>Reports</span>
         </a>
     </div>
+    <?php endif; ?>
 
     <?php if ($isOwner): ?>
     <div class="nav-group">
