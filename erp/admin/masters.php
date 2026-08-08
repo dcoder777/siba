@@ -708,7 +708,7 @@ if (isset($_GET['edit'])) {
         </section>
 
         <div id="icModal" class="modal-backdrop <?= ($editRecord && $editType === 'income-categories') ? 'show' : '' ?>">
-            <div class="modal" style="max-width:640px;border-radius:14px;padding:0;overflow:hidden;">
+            <div class="modal" style="max-width:640px;border-radius:14px;padding:0;overflow:auto;">
                 <div class="modal-head" style="padding:1.1rem 1.4rem;border-bottom:1px solid #e2e8f0;">
                     <h2 style="font-size:1.15rem;font-weight:700;margin:0;"><?= ($editRecord && $editType === 'income-categories') ? 'Edit Income' : 'Add Income' ?></h2>
                     <button type="button" class="icon-btn" onclick="closeModal(this.closest('.modal-backdrop'))" style="font-size:1.3rem;color:#94a3b8;">&times;</button>
