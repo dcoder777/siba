@@ -307,6 +307,11 @@ $expenses = $pdo->query("SELECT e.*, ec.name AS category_label, v.name AS vendor
 $incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY COALESCE(income_date, created_at) DESC")->fetchAll(PDO::FETCH_ASSOC);
 $paidApplications = $pdo->query("SELECT a.id, a.application_no, a.student_name, a.class_sought, a.payment_amount, a.payment_method, a.payment_status, a.applied_at, p.name AS parent_name, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.payment_status = 'Paid' AND a.deleted_at IS NULL ORDER BY a.applied_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Vendor expenses summary
+$vendorExpenses = $pdo->query("SELECT vendor_id, vendor_name, COALESCE(SUM(net_amount),0) AS total_expense, COUNT(*) AS expense_count FROM expenses WHERE vendor_id IS NOT NULL AND status != 'Cancelled' GROUP BY vendor_id, vendor_name ORDER BY total_expense DESC")->fetchAll(PDO::FETCH_ASSOC);
+$vendorExpenseMap = [];
+foreach ($vendorExpenses as $ve) { $vendorExpenseMap[(int) $ve['vendor_id']] = $ve; }
 $bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 ensure_columns($pdo, 'fee_heads', [
     'class_name' => "VARCHAR(100) DEFAULT NULL",
@@ -784,6 +789,7 @@ if (isset($_GET['edit'])) {
                             <th>Email</th>
                             <th>GST</th>
                             <th>PAN</th>
+                            <th style="text-align:right;">Total Expense</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -793,11 +799,12 @@ if (isset($_GET['edit'])) {
                         <tr>
                             <td style="color:#94a3b8;"><?= $i++ ?></td>
                             <td><?= e($row['vendor_code'] ?? '') ?></td>
-                            <td><strong><?= e($row['name']) ?></strong></td>
+                            <td><strong style="cursor:pointer;color:#2563eb;text-decoration:underline;" onclick="showVendorExpenses(<?= (int) $row['id'] ?>, '<?= e($row['name']) ?>')"><?= e($row['name']) ?></strong></td>
                             <td><?= e($row['mobile'] ?? '') ?></td>
                             <td><?= e($row['email'] ?? '') ?></td>
                             <td><?= e($row['gst_number'] ?? '') ?></td>
                             <td><?= e($row['pan'] ?? '') ?></td>
+                            <td style="text-align:right;"><strong><?= isset($vendorExpenseMap[(int) $row['id']]) ? 'Rs. ' . number_format((float) $vendorExpenseMap[(int) $row['id']]['total_expense'], 2) : '—' ?></strong></td>
                             <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
                             <td>
                                 <div class="action-btns">
@@ -1187,6 +1194,46 @@ document.addEventListener('keydown', function(e) {
         });
     }
 });
+
+var vendorExpenses = <?= json_encode(array_map(fn(array $e) => [
+    'vendor_id' => (int) $e['vendor_id'],
+    'expense_no' => $e['expense_no'] ?? '',
+    'expense_date' => $e['expense_date'] ?? '',
+    'category_name' => $e['category_name'] ?? '',
+    'description' => $e['description'] ?? '',
+    'net_amount' => (float) $e['net_amount'],
+    'status' => $e['status'] ?? '',
+], $expenses)) ?>;
+
+function showVendorExpenses(vendorId, vendorName) {
+    var filtered = vendorExpenses.filter(function(e) { return e.vendor_id === vendorId; });
+    var total = filtered.reduce(function(sum, e) { return sum + e.net_amount; }, 0);
+    var html = '<table class="app-table" style="width:100%;font-size:.85rem;">' +
+        '<thead><tr><th>Date</th><th>Expense No</th><th>Category</th><th>Description</th><th style="text-align:right;">Amount</th><th>Status</th></tr></thead><tbody>';
+    if (filtered.length === 0) {
+        html += '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:#94a3b8;">No expenses found for this vendor.</td></tr>';
+    } else {
+        filtered.forEach(function(e) {
+            html += '<tr><td>' + e.expense_date + '</td><td><code>' + e.expense_no + '</code></td><td>' + (e.category_name || '—') + '</td><td>' + (e.description || '—') + '</td><td style="text-align:right;font-weight:600;">Rs. ' + e.net_amount.toLocaleString('en-IN', {minimumFractionDigits:2}) + '</td><td>' + e.status + '</td></tr>';
+        });
+    }
+    html += '</tbody></table>';
+    html += '<div style="margin-top:1rem;text-align:right;font-size:.95rem;font-weight:700;color:#1e293b;">Total: Rs. ' + total.toLocaleString('en-IN', {minimumFractionDigits:2}) + ' (' + filtered.length + ' expenses)</div>';
+    document.getElementById('vendorExpName').textContent = vendorName;
+    document.getElementById('vendorExpBody').innerHTML = html;
+    document.getElementById('vendorExpModal').classList.add('show');
+}
 </script>
+
+<div id="vendorExpModal" class="modal-backdrop">
+    <div class="modal" style="max-width:800px;border-radius:14px;padding:0;overflow:auto;">
+        <div class="modal-head" style="padding:1.1rem 1.4rem;border-bottom:1px solid #e2e8f0;">
+            <h2 style="font-size:1.15rem;font-weight:700;margin:0;">Expenses – <span id="vendorExpName"></span></h2>
+            <button type="button" class="icon-btn" onclick="closeModal(document.getElementById('vendorExpModal'))" style="font-size:1.3rem;color:#94a3b8;">&times;</button>
+        </div>
+        <div id="vendorExpBody" style="padding:1.25rem 1.4rem;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
 </body>
 </html>
