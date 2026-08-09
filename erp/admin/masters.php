@@ -378,9 +378,9 @@ if (isset($_GET['edit'])) {
         .master-nav a:hover{background:#f1f5f9;color:#1e293b}
         .master-nav a.active{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;font-weight:600}
         .master-nav a .nav-icon{width:18px;text-align:center;font-size:.9rem}
-        .app-table{width:100%;border-collapse:collapse;font-size:.875rem;}
-        .app-table th{text-align:left;padding:.65rem .5rem;border-bottom:2px solid #e2e8f0;color:#64748b;font-weight:600;white-space:nowrap;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;}
-        .app-table td{padding:.65rem .5rem;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
+        .app-table{width:100%;border-collapse:collapse;font-size:.8rem;}
+        .app-table th{text-align:left;padding:.5rem .4rem;border-bottom:2px solid #e2e8f0;color:#64748b;font-weight:600;white-space:nowrap;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;}
+        .app-table td{padding:.45rem .4rem;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
         .app-table tr:hover td{background:#f8fafc;}
         .badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.75rem;font-weight:600;}
         .badge-yes{background:#d1fae5;color:#065f46;}
@@ -476,15 +476,15 @@ if (isset($_GET['edit'])) {
                 <p style="text-align:center;padding:2rem;color:#94a3b8;">No expenses recorded yet.</p>
             <?php else: ?>
             <div style="overflow-x:auto;">
-                <table class="app-table">
+                <table class="app-table" style="font-size:.8rem;">
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Expense No</th>
+                            <th>Exp No</th>
                             <th>Date</th>
                             <th>Category</th>
                             <th>Vendor</th>
-                            <th>Amount</th>
+                            <th style="text-align:right;">Amount</th>
                             <th>Note</th>
                             <th>Mode</th>
                             <th>Status</th>
@@ -495,13 +495,13 @@ if (isset($_GET['edit'])) {
                         <?php $i = 1; foreach ($expenses as $row): ?>
                         <tr>
                             <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td style="font-family:monospace;font-size:.82rem;"><?= e($row['expense_no']) ?></td>
-                            <td style="white-space:nowrap;"><?= date('d-m-Y', strtotime($row['expense_date'])) ?></td>
-                            <td><span class="badge" style="background:#e0f2fe;color:#0369a1;"><?= e($row['category_label'] ?? $row['category_name'] ?? '—') ?></span></td>
-                            <td><?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?: '—' ?></td>
-                            <td>&#8377; <?= number_format((float) $row['net_amount'], 2) ?></td>
-                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['description'] ?? '') ?>"><?= e($row['description'] ?? '—') ?></td>
-                            <td><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
+                            <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;"><?= e($row['expense_no']) ?></td>
+                            <td style="white-space:nowrap;font-size:.8rem;"><?= date('d-m-Y', strtotime($row['expense_date'])) ?></td>
+                            <td><span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:.72rem;padding:.1rem .4rem;"><?= e($row['category_label'] ?? $row['category_name'] ?? '—') ?></span></td>
+                            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?>"><?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?: '—' ?></td>
+                            <td style="text-align:right;white-space:nowrap;">&#8377; <?= number_format((float) $row['net_amount'], 2) ?></td>
+                            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['description'] ?? '') ?>"><?= e($row['description'] ?? '—') ?></td>
+                            <td style="white-space:nowrap;"><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
                             <td><?php
                                 $statusColors = ['Pending' => '#fef3c7,#92400e', 'Approved' => '#d1fae5,#065f46', 'Rejected' => '#fee2e2,#991b1b', 'Cancelled' => '#e2e8f0,#475569'];
                                 $sc = $statusColors[$row['status']] ?? '#fef3c7,#92400e';
