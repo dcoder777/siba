@@ -11,6 +11,7 @@ use modules\Operations\OperationsController;
 use modules\Reports\ReportController;
 use modules\Admissions\AdmissionController;
 use modules\Students\StudentController;
+use modules\Parents\ParentController;
 
 return function (Router $router, array $context): void {
     $auth = new AuthController($context['pdo']);
@@ -21,6 +22,7 @@ return function (Router $router, array $context): void {
     $hr = new HRController($context['pdo']);
     $reports = new ReportController($context['pdo']);
     $admissions = new AdmissionController($context['pdo']);
+    $parents = new ParentController($context['pdo']);
 
     $router->add('POST', '/api/v1/auth/login', fn() => $auth->login(), false);
     $router->add('GET', '/api/v1/auth/me', fn($_, $ctx) => $auth->me($ctx), true);
@@ -120,6 +122,12 @@ return function (Router $router, array $context): void {
     $router->add('POST', '/api/v1/admissions/register-parent', fn() => $admissions->registerParent(), false);
     $router->add('GET', '/api/v1/admissions/applications', fn() => $admissions->list(), true, ['admin'], 'admissions');
     $router->add('POST', '/api/v1/admissions/apply', fn() => $admissions->apply(), true, ['admin'], 'admissions');
+
+    // Parents
+    $router->add('GET', '/api/v1/parents', fn() => $parents->list(), true, ['admin'], 'parents');
+    $router->add('GET', '/api/v1/parents/{id}', fn($p) => $parents->get($p), true, ['admin'], 'parents');
+    $router->add('PUT', '/api/v1/parents/{id}', fn($p) => $parents->update($p), true, ['admin'], 'parents');
+    $router->add('GET', '/api/v1/parents/{id}/applications', fn($p) => $parents->applications($p), true, ['admin'], 'parents');
 
     $router->add('GET', '/api/v1/reports/dashboard', fn() => $reports->dashboard(), true, ['admin', 'finance', 'hr'], 'reports');
     $router->add('GET', '/api/v1/reports/payroll-export', fn() => $reports->payrollExport(), true, ['admin', 'hr', 'finance'], 'reports');
