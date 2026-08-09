@@ -333,7 +333,7 @@ $editMode = $editRow !== null;
                                 <td style="color:#94a3b8;"><?= $i++ ?></td>
                                 <td style="font-family:monospace;font-size:.82rem;"><?= e($row['vendor_code'] ?? '') ?></td>
                                 <td>
-                                    <strong style="cursor:pointer;color:#2563eb;text-decoration:underline;" onclick="viewVendor(<?= (int) $row['id'] ?>)"><?= e($row['name']) ?></strong>
+                                    <strong style="cursor:pointer;color:#2563eb;text-decoration:underline;" onclick="window.location.href='vendor-expenses.php?id=<?= (int) $row['id'] ?>'"><?= e($row['name']) ?></strong>
                                 </td>
                                 <td><?= e($row['mobile'] ?? '') ?></td>
                                 <td><?= e($row['email'] ?? '') ?></td>
