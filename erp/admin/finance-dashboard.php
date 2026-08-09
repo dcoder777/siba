@@ -133,6 +133,21 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
         <!-- KPI Cards -->
         <?php $periodLabel = e(date('d M', strtotime($filterFrom))) . ' – ' . e(date('d M Y', strtotime($filterTo))); ?>
         <div class="kpi-grid">
+            <div class="kpi-card warning">
+                <div class="kpi-label">Total Expenses</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyExpenses, 2) ?></div>
+                <div class="kpi-sub"><?= $periodLabel ?></div>
+            </div>
+            <div class="kpi-card highlight">
+                <div class="kpi-label">Total Income</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($totalMonthlyIncome, 2) ?></div>
+                <div class="kpi-sub">Approved income + application fees</div>
+            </div>
+            <div class="kpi-card <?= ($totalMonthlyIncome - $monthlyExpenses) >= 0 ? 'success' : 'danger' ?>">
+                <div class="kpi-label">Net Surplus / Deficit</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($totalMonthlyIncome - $monthlyExpenses, 2) ?></div>
+                <div class="kpi-sub">Income minus expenses for period</div>
+            </div>
             <div class="kpi-card success">
                 <div class="kpi-label">Today's Collection</div>
                 <div class="kpi-value kpi-value-currency">Rs. <?= number_format($todayCollection, 2) ?></div>
@@ -147,21 +162,6 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                 <div class="kpi-label">Outstanding Fees</div>
                 <div class="kpi-value kpi-value-currency">Rs. <?= number_format($outstandingFees, 2) ?></div>
                 <div class="kpi-sub">Total balance from active accounts</div>
-            </div>
-            <div class="kpi-card warning">
-                <div class="kpi-label">Period Expenses</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyExpenses, 2) ?></div>
-                <div class="kpi-sub"><?= $periodLabel ?></div>
-            </div>
-            <div class="kpi-card highlight">
-                <div class="kpi-label">Period Income</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($totalMonthlyIncome, 2) ?></div>
-                <div class="kpi-sub">Approved income + application fees</div>
-            </div>
-            <div class="kpi-card <?= ($monthlyCollection + $totalMonthlyIncome - $monthlyExpenses) >= 0 ? 'success' : 'danger' ?>">
-                <div class="kpi-label">Net Surplus / Deficit</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyCollection + $totalMonthlyIncome - $monthlyExpenses, 2) ?></div>
-                <div class="kpi-sub">Income minus expenses for period</div>
             </div>
         </div>
 
