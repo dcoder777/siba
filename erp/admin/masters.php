@@ -118,14 +118,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $paymentMode = trim((string) ($_POST['payment_mode'] ?? ''));
             $paymentId = trim((string) ($_POST['payment_id'] ?? ''));
             $description = trim((string) ($_POST['description'] ?? ''));
+            $incStatus = trim((string) ($_POST['status'] ?? 'Pending'));
             if ($name === '') {
                 $error = 'Income name is required.';
             } elseif ($amount <= 0) {
                 $error = 'Amount must be greater than zero.';
             } else {
                 if ($action === 'update_income_category' && $id > 0) {
-                    $stmt = $pdo->prepare("UPDATE income_categories SET name=?, amount=?, income_date=?, payment_mode=?, payment_id=?, description=?, is_active=1 WHERE id=?");
-                    $stmt->execute([$name, $amount, $incomeDate ?: null, $paymentMode ?: null, $paymentId ?: null, $description ?: null, $id]);
+                    $stmt = $pdo->prepare("UPDATE income_categories SET name=?, amount=?, income_date=?, payment_mode=?, payment_id=?, description=?, status=?, is_active=1 WHERE id=?");
+                    $stmt->execute([$name, $amount, $incomeDate ?: null, $paymentMode ?: null, $paymentId ?: null, $description ?: null, $incStatus, $id]);
                     $success = 'Income updated.';
                 } else {
                     $incomeNo = generate_income_no($pdo);
@@ -603,7 +604,7 @@ if (isset($_GET['edit'])) {
                                 <small style="color:#64748b;">Current: <?= e($editRecord['bill_file']) ?></small>
                             <?php endif; ?>
                         </div>
-                        <?php if ($isOwner && $editRecord && $editType === 'expense-categories'): ?>
+                        <?php if ($editRecord && $editType === 'expense-categories'): ?>
                         <div>
                             <label>Status</label>
                             <select name="status">
@@ -768,6 +769,16 @@ if (isset($_GET['edit'])) {
                             <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Note</label>
                             <textarea name="description" rows="3" placeholder="Additional description..." style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;resize:vertical;"><?= e($editRecord['description'] ?? '') ?></textarea>
                         </div>
+                        <?php if ($editRecord && $editType === 'income-categories'): ?>
+                        <div>
+                            <label style="display:block;font-weight:600;margin-bottom:.4rem;font-size:.875rem;color:#334155;">Status</label>
+                            <select name="status" style="width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.9rem;background:#fff;">
+                                <?php foreach (['Pending', 'Approved', 'Rejected', 'Received'] as $st): ?>
+                                    <option value="<?= $st ?>" <?= (isset($editRecord['status']) && $editRecord['status'] === $st) ? 'selected' : '' ?>><?= $st ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     <div style="margin-top:1.5rem;display:flex;gap:.75rem;align-items:center;">
                         <button type="submit" style="background:#059669;color:#fff;border:none;padding:.65rem 1.4rem;border-radius:999px;font-weight:600;font-size:.9rem;cursor:pointer;"><?= ($editRecord && $editType === 'income-categories') ? 'Update Income' : 'Save Income' ?></button>
