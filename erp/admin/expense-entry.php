@@ -480,6 +480,7 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                 <th>Vendor</th>
                                 <th>Bill No</th>
                                 <th>Amount</th>
+                                <th></th>
                                 <th>GST</th>
                                 <th>Net Amount</th>
                                 <th>Payment Mode</th>
@@ -502,6 +503,7 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                     <td><strong><?= e($r['vendor_name'] ?: '—') ?></strong></td>
                                     <td><?= e($r['bill_no'] ?? '—') ?></td>
                                     <td>Rs. <?= number_format((float) $r['amount'], 2) ?></td>
+                                    <td><?php if (!empty($r['description'])): ?><span title="<?= e($r['description']) ?>" style="cursor:pointer;color:#2563eb;font-size:.9rem;" title="View note">📝</span><?php endif; ?></td>
                                     <td>Rs. <?= number_format((float) $r['gst_amount'], 2) ?></td>
                                     <td><strong>Rs. <?= number_format((float) $r['net_amount'], 2) ?></strong></td>
                                     <td><?= e($r['payment_mode'] ?? '—') ?></td>
