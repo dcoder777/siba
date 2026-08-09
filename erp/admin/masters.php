@@ -23,6 +23,32 @@ function generate_income_no(PDO $pdo): string
     return 'INC-' . $year . '-' . str_pad((string) $next, 5, '0', STR_PAD_LEFT);
 }
 
+function render_pagination(int $currentPage, int $totalPages, int $totalRecords, int $perPage, int $offset, string $paramKey): string
+{
+    if ($totalPages <= 1) return '';
+    $html = '<div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">';
+    $html .= '<div style="font-size:.85rem;color:#64748b;">Showing ' . ($offset + 1) . '–' . min($offset + $perPage, $totalRecords) . ' of ' . $totalRecords . '</div>';
+    $html .= '<div class="page-links">';
+    $params = $_GET;
+    if ($currentPage > 1) {
+        $params[$paramKey] = $currentPage - 1;
+        $html .= '<a href="?' . http_build_query($params) . '">← Prev</a>';
+    }
+    $start = max(1, $currentPage - 2);
+    $end = min($totalPages, $currentPage + 2);
+    for ($p = $start; $p <= $end; $p++) {
+        $params[$paramKey] = $p;
+        $cls = $p === $currentPage ? ' class="active"' : '';
+        $html .= '<a href="?' . http_build_query($params) . '"' . $cls . '>' . $p . '</a>';
+    }
+    if ($currentPage < $totalPages) {
+        $params[$paramKey] = $currentPage + 1;
+        $html .= '<a href="?' . http_build_query($params) . '">Next →</a>';
+    }
+    $html .= '</div></div>';
+    return $html;
+}
+
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
 $pageTitle = 'Masters';
@@ -305,16 +331,43 @@ ensure_columns($pdo, 'applications', [
     'payment_amount' => "DECIMAL(12,2) NOT NULL DEFAULT 200.00",
 ]);
 $expenseCategories = $pdo->query("SELECT * FROM expense_categories ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
-$expenses = $pdo->query("SELECT e.*, ec.name AS category_label, v.name AS vendor_label FROM expenses e LEFT JOIN expense_categories ec ON ec.id = e.category_id LEFT JOIN vendors v ON v.id = e.vendor_id ORDER BY e.id DESC LIMIT 200")->fetchAll(PDO::FETCH_ASSOC);
-$incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY COALESCE(income_date, created_at) DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+// ─── Pagination helper ───
+$mPerPage = 20;
+$mTab = $tab;
+
+// Expenses pagination
+$mExpPage = max(1, (int) ($_GET['ep'] ?? 1));
+$mExpOffset = ($mExpPage - 1) * $mPerPage;
+$mExpTotal = (int) $pdo->query("SELECT COUNT(*) FROM expenses")->fetchColumn();
+$mExpTotalPages = max(1, (int) ceil($mExpTotal / $mPerPage));
+$expenses = $pdo->query("SELECT e.*, ec.name AS category_label, v.name AS vendor_label FROM expenses e LEFT JOIN expense_categories ec ON ec.id = e.category_id LEFT JOIN vendors v ON v.id = e.vendor_id ORDER BY e.id DESC LIMIT $mPerPage OFFSET $mExpOffset")->fetchAll(PDO::FETCH_ASSOC);
+
+// Income pagination
+$mIncPage = max(1, (int) ($_GET['ip'] ?? 1));
+$mIncOffset = ($mIncPage - 1) * $mPerPage;
+$mIncTotal = (int) $pdo->query("SELECT COUNT(*) FROM income_categories")->fetchColumn();
+$mIncTotalPages = max(1, (int) ceil($mIncTotal / $mPerPage));
+$incomeCategories = $pdo->query("SELECT * FROM income_categories ORDER BY COALESCE(income_date, created_at) DESC LIMIT $mPerPage OFFSET $mIncOffset")->fetchAll(PDO::FETCH_ASSOC);
 $paidApplications = $pdo->query("SELECT a.id, a.application_no, a.student_name, a.class_sought, a.payment_amount, a.payment_method, a.payment_status, a.applied_at, p.name AS parent_name, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.payment_status = 'Paid' AND a.deleted_at IS NULL ORDER BY a.applied_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Vendors pagination
+$mVndPage = max(1, (int) ($_GET['vp'] ?? 1));
+$mVndOffset = ($mVndPage - 1) * $mPerPage;
+$mVndTotal = (int) $pdo->query("SELECT COUNT(*) FROM vendors")->fetchColumn();
+$mVndTotalPages = max(1, (int) ceil($mVndTotal / $mPerPage));
+$vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC LIMIT $mPerPage OFFSET $mVndOffset")->fetchAll(PDO::FETCH_ASSOC);
 
 // Vendor expenses summary
 $vendorExpenses = $pdo->query("SELECT vendor_id, vendor_name, COALESCE(SUM(net_amount),0) AS total_expense, COUNT(*) AS expense_count FROM expenses WHERE vendor_id IS NOT NULL AND status != 'Cancelled' GROUP BY vendor_id, vendor_name ORDER BY total_expense DESC")->fetchAll(PDO::FETCH_ASSOC);
 $vendorExpenseMap = [];
 foreach ($vendorExpenses as $ve) { $vendorExpenseMap[(int) $ve['vendor_id']] = $ve; }
-$bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+// Bank accounts pagination
+$mBaPage = max(1, (int) ($_GET['bp'] ?? 1));
+$mBaOffset = ($mBaPage - 1) * $mPerPage;
+$mBaTotal = (int) $pdo->query("SELECT COUNT(*) FROM bank_accounts")->fetchColumn();
+$mBaTotalPages = max(1, (int) ceil($mBaTotal / $mPerPage));
+$bankAccounts = $pdo->query("SELECT * FROM bank_accounts ORDER BY id DESC LIMIT $mPerPage OFFSET $mBaOffset")->fetchAll(PDO::FETCH_ASSOC);
 ensure_columns($pdo, 'fee_heads', [
     'class_name' => "VARCHAR(100) DEFAULT NULL",
 ]);
@@ -405,6 +458,12 @@ if (isset($_GET['edit'])) {
         .sortable:hover{color:#2563eb;}
         .sort-icon{font-size:.7rem;margin-left:3px;opacity:.4;}
         .sortable.sort-asc .sort-icon,.sortable.sort-desc .sort-icon{opacity:1;color:#2563eb;}
+        .page-links{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;}
+        .page-links a,.page-links span{min-height:34px;padding:.38rem .65rem;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;text-decoration:none;font-size:.82rem;}
+        .page-links a:hover{background:#f1f5f9;}
+        .page-links .active{background:#64748b;border-color:#64748b;color:#fff;}
+        .vendor-table-wrap{overflow-x:auto;max-width:100%;}
+        .vendor-table-wrap .app-table{min-width:900px;}
     </style>
 </head>
 <body>
@@ -524,6 +583,7 @@ if (isset($_GET['edit'])) {
                     </tbody>
                 </table>
             </div>
+            <?= render_pagination($mExpPage, $mExpTotalPages, $mExpTotal, $mPerPage, $mExpOffset, 'ep') ?>
             <?php endif; ?>
         </section>
 
@@ -690,6 +750,7 @@ if (isset($_GET['edit'])) {
                     </tbody>
                 </table>
             </div>
+            <?= render_pagination($mIncPage, $mIncTotalPages, $mIncTotal, $mPerPage, $mIncOffset, 'ip') ?>
             <?php endif; ?>
 
             <h3 style="font-size:1rem;color:#22c55e;margin:1.5rem 0 .5rem;">&#9679; Application Fee Income (Automatic)</h3>
@@ -807,7 +868,7 @@ if (isset($_GET['edit'])) {
                 <input type="text" id="vendorSearchInput" placeholder="Search vendors..." oninput="filterVendorTable()" style="flex:1;max-width:360px;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;outline:none;">
                 <span id="vendorCount" style="font-size:.82rem;color:#64748b;"><?= count($vendors) ?> vendors</span>
             </div>
-            <div style="overflow-x:auto;">
+            <div class="vendor-table-wrap">
                 <table class="app-table" id="vendorTable">
                     <thead>
                         <tr>
@@ -853,6 +914,7 @@ if (isset($_GET['edit'])) {
                     </tbody>
                 </table>
             </div>
+            <?= render_pagination($mVndPage, $mVndTotalPages, $mVndTotal, $mPerPage, $mVndOffset, 'vp') ?>
             <?php endif; ?>
         </section>
 
@@ -985,6 +1047,7 @@ if (isset($_GET['edit'])) {
                     </tbody>
                 </table>
             </div>
+            <?= render_pagination($mBaPage, $mBaTotalPages, $mBaTotal, $mPerPage, $mBaOffset, 'bp') ?>
             <?php endif; ?>
         </section>
 
