@@ -403,6 +403,7 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
                                     <th>Vendor</th>
                                     <th>Bill No</th>
                                     <th>Amount</th>
+                                    <th>Note</th>
                                     <th>GST</th>
                                     <th>Net Amt</th>
                                     <th>Mode</th>
@@ -420,6 +421,7 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
                                         <td><strong><?= e($r['vendor_name']) ?></strong></td>
                                         <td><?= e($r['bill_no'] ?? '—') ?></td>
                                         <td>Rs. <?= number_format((float) $r['amount'], 2) ?></td>
+                                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($r['description'] ?? '') ?>"><?= e($r['description'] ?? '—') ?></td>
                                         <td>Rs. <?= number_format((float) $r['gst_amount'], 2) ?></td>
                                         <td><strong>Rs. <?= number_format((float) $r['net_amount'], 2) ?></strong></td>
                                         <td><?= e($r['payment_mode'] ?? '—') ?></td>
