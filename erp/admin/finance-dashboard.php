@@ -69,6 +69,17 @@ $todayCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM fee_collections W
 
 // Expenses count for sidebar badge
 $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
+
+// ─── Current Month (always fixed — ignores date filter) ───
+$cmStart = date('Y-m-01');
+$cmEnd = date('Y-m-t');
+$cmExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$cmStart, $cmEnd]);
+$cmIncomeApproved = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$cmStart, $cmEnd]);
+$cmAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$cmStart, $cmEnd]);
+$cmTotalIncome = $cmIncomeApproved + $cmAppFeeIncome;
+$cmCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$cmStart, $cmEnd]);
+$cmPendingExpenses = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
+$cmPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active' AND balance > 0");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -162,6 +173,45 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                 <div class="kpi-label">Outstanding Fees</div>
                 <div class="kpi-value kpi-value-currency">Rs. <?= number_format($outstandingFees, 2) ?></div>
                 <div class="kpi-sub">Total balance from active accounts</div>
+            </div>
+        </div>
+
+        <!-- Current Month Overview (Fixed — not affected by date filter) -->
+        <?php $cmLabel = e(date('F Y')); ?>
+        <div style="margin-bottom:.75rem;">
+            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">📅 Current Month – <?= $cmLabel ?></h2>
+            <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;">These values are fixed and do not change with the date filter above.</p>
+        </div>
+        <div class="kpi-grid">
+            <div class="kpi-card success">
+                <div class="kpi-label">Fee Collection</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmCollection, 2) ?></div>
+                <div class="kpi-sub"><?= $cmLabel ?> total fee collections</div>
+            </div>
+            <div class="kpi-card highlight">
+                <div class="kpi-label">Total Income</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmTotalIncome, 2) ?></div>
+                <div class="kpi-sub">Approved income + application fees</div>
+            </div>
+            <div class="kpi-card warning">
+                <div class="kpi-label">Total Expenses</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmExpenses, 2) ?></div>
+                <div class="kpi-sub">Approved + pending expenses</div>
+            </div>
+            <div class="kpi-card <?= ($cmTotalIncome - $cmExpenses) >= 0 ? 'success' : 'danger' ?>">
+                <div class="kpi-label">Net Surplus / Deficit</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmTotalIncome - $cmExpenses, 2) ?></div>
+                <div class="kpi-sub">Income minus expenses</div>
+            </div>
+            <div class="kpi-card danger">
+                <div class="kpi-label">Outstanding Dues</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmPendingDues, 2) ?></div>
+                <div class="kpi-sub">Total balance from active accounts</div>
+            </div>
+            <div class="kpi-card warning">
+                <div class="kpi-label">Pending Expenses</div>
+                <div class="kpi-value"><?= $cmPendingExpenses ?></div>
+                <div class="kpi-sub">Expenses awaiting approval</div>
             </div>
         </div>
 
