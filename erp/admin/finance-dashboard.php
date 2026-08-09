@@ -7,16 +7,18 @@ $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
 $pageTitle = 'Finance Dashboard';
 
-// Date filter
+// Date filter — applies ONLY to the "Filtered Period" section, defaults to current month
 $filterFrom = trim((string) ($_GET['from'] ?? ''));
 $filterTo = trim((string) ($_GET['to'] ?? ''));
 $filterApplied = ($filterFrom !== '' || $filterTo !== '');
-
-// Default: current month
 if ($filterFrom === '' && $filterTo === '') {
     $filterFrom = date('Y-m-01');
     $filterTo = date('Y-m-t');
 }
+
+// Fixed period: Jan 2026 to today (for top overview — never changes)
+$fixedFrom = '2026-01-01';
+$fixedTo = date('Y-m-d');
 
 // Guard: if finance tables are missing, show empty dashboard instead of 500
 function finance_scalar(PDO $pdo, string $sql, array $params = []): float
@@ -41,22 +43,23 @@ function finance_rows(PDO $pdo, string $sql, array $params = []): array
     }
 }
 
-// Today's Collection (ignores date filter — always today)
+// ─── Top Section: Jan 2026 to Today (always fixed) ───
+$topExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$fixedFrom, $fixedTo]);
+$topIncomeApproved = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$fixedFrom, $fixedTo]);
+$topAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$fixedFrom, $fixedTo]);
+$topTotalIncome = $topIncomeApproved + $topAppFeeIncome;
+$topCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$fixedFrom, $fixedTo]);
 $todayCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
-
-// Monthly Collection (filtered)
-$monthlyCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$filterFrom, $filterTo]);
-
-// Outstanding Fees (not date-filtered — always current)
 $outstandingFees = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active'");
 
-// Total Expenses (filtered)
-$monthlyExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$filterFrom, $filterTo]);
-
-// Total Income (filtered) — approved income_categories + paid application fees
-$monthlyIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$filterFrom, $filterTo]);
-$monthlyAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$filterFrom, $filterTo]);
-$totalMonthlyIncome = $monthlyIncome + $monthlyAppFeeIncome;
+// ─── Filtered Period Section (defaults to current month, changes with filter) ───
+$filteredExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$filterFrom, $filterTo]);
+$filteredIncomeApproved = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$filterFrom, $filterTo]);
+$filteredAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$filterFrom, $filterTo]);
+$filteredTotalIncome = $filteredIncomeApproved + $filteredAppFeeIncome;
+$filteredCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$filterFrom, $filterTo]);
+$filteredPendingExpenses = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
+$filteredPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active' AND balance > 0");
 
 // Recent Transactions (filtered)
 $recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' AND fc.payment_date >= ? AND fc.payment_date <= ? ORDER BY fc.created_at DESC LIMIT 10", [$filterFrom, $filterTo]);
@@ -69,17 +72,6 @@ $todayCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM fee_collections W
 
 // Expenses count for sidebar badge
 $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
-
-// ─── Current Month (always fixed — ignores date filter) ───
-$cmStart = date('Y-m-01');
-$cmEnd = date('Y-m-t');
-$cmExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$cmStart, $cmEnd]);
-$cmIncomeApproved = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$cmStart, $cmEnd]);
-$cmAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$cmStart, $cmEnd]);
-$cmTotalIncome = $cmIncomeApproved + $cmAppFeeIncome;
-$cmCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$cmStart, $cmEnd]);
-$cmPendingExpenses = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
-$cmPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active' AND balance > 0");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -141,23 +133,27 @@ $cmPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM stu
             </div>
         </section>
 
-        <!-- KPI Cards -->
-        <?php $periodLabel = e(date('d M', strtotime($filterFrom))) . ' – ' . e(date('d M Y', strtotime($filterTo))); ?>
+        <!-- ═══ TOP SECTION: Jan 2026 – Today (always fixed) ═══ -->
+        <div style="margin-bottom:.75rem;">
+            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">📊 Overview — Jan 2026 to <?= e(date('d M Y')) ?></h2>
+            <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;">All-time totals since system start. These values never change.</p>
+        </div>
+        <?php $topLabel = 'Jan 2026 – ' . e(date('d M Y')); ?>
         <div class="kpi-grid">
             <div class="kpi-card warning">
                 <div class="kpi-label">Total Expenses</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyExpenses, 2) ?></div>
-                <div class="kpi-sub"><?= $periodLabel ?></div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($topExpenses, 2) ?></div>
+                <div class="kpi-sub"><?= $topLabel ?></div>
             </div>
             <div class="kpi-card highlight">
                 <div class="kpi-label">Total Income</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($totalMonthlyIncome, 2) ?></div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($topTotalIncome, 2) ?></div>
                 <div class="kpi-sub">Approved income + application fees</div>
             </div>
-            <div class="kpi-card <?= ($totalMonthlyIncome - $monthlyExpenses) >= 0 ? 'success' : 'danger' ?>">
+            <div class="kpi-card <?= ($topTotalIncome - $topExpenses) >= 0 ? 'success' : 'danger' ?>">
                 <div class="kpi-label">Net Surplus / Deficit</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($totalMonthlyIncome - $monthlyExpenses, 2) ?></div>
-                <div class="kpi-sub">Income minus expenses for period</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($topTotalIncome - $topExpenses, 2) ?></div>
+                <div class="kpi-sub">Income minus expenses</div>
             </div>
             <div class="kpi-card success">
                 <div class="kpi-label">Today's Collection</div>
@@ -165,9 +161,9 @@ $cmPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM stu
                 <div class="kpi-sub">Fee collected today</div>
             </div>
             <div class="kpi-card highlight">
-                <div class="kpi-label">Period Collection</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyCollection, 2) ?></div>
-                <div class="kpi-sub"><?= $periodLabel ?></div>
+                <div class="kpi-label">Total Collection</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($topCollection, 2) ?></div>
+                <div class="kpi-sub"><?= $topLabel ?></div>
             </div>
             <div class="kpi-card danger">
                 <div class="kpi-label">Outstanding Fees</div>
@@ -176,41 +172,41 @@ $cmPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM stu
             </div>
         </div>
 
-        <!-- Current Month Overview (Fixed — not affected by date filter) -->
-        <?php $cmLabel = e(date('F Y')); ?>
+        <!-- ═══ FILTERED PERIOD SECTION ═══ -->
+        <?php $periodLabel = e(date('d M', strtotime($filterFrom))) . ' – ' . e(date('d M Y', strtotime($filterTo))); ?>
         <div style="margin-bottom:.75rem;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">📅 Current Month – <?= $cmLabel ?></h2>
-            <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;">These values are fixed and do not change with the date filter above.</p>
+            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">🔍 Filtered Period — <?= $periodLabel ?></h2>
+            <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;">Use the date filter above to change this period. Defaults to current month.</p>
         </div>
         <div class="kpi-grid">
             <div class="kpi-card success">
                 <div class="kpi-label">Fee Collection</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmCollection, 2) ?></div>
-                <div class="kpi-sub"><?= $cmLabel ?> total fee collections</div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($filteredCollection, 2) ?></div>
+                <div class="kpi-sub"><?= $periodLabel ?></div>
             </div>
             <div class="kpi-card highlight">
                 <div class="kpi-label">Total Income</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmTotalIncome, 2) ?></div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($filteredTotalIncome, 2) ?></div>
                 <div class="kpi-sub">Approved income + application fees</div>
             </div>
             <div class="kpi-card warning">
                 <div class="kpi-label">Total Expenses</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmExpenses, 2) ?></div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($filteredExpenses, 2) ?></div>
                 <div class="kpi-sub">Approved + pending expenses</div>
             </div>
-            <div class="kpi-card <?= ($cmTotalIncome - $cmExpenses) >= 0 ? 'success' : 'danger' ?>">
+            <div class="kpi-card <?= ($filteredTotalIncome - $filteredExpenses) >= 0 ? 'success' : 'danger' ?>">
                 <div class="kpi-label">Net Surplus / Deficit</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmTotalIncome - $cmExpenses, 2) ?></div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($filteredTotalIncome - $filteredExpenses, 2) ?></div>
                 <div class="kpi-sub">Income minus expenses</div>
             </div>
             <div class="kpi-card danger">
                 <div class="kpi-label">Outstanding Dues</div>
-                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($cmPendingDues, 2) ?></div>
+                <div class="kpi-value kpi-value-currency">Rs. <?= number_format($filteredPendingDues, 2) ?></div>
                 <div class="kpi-sub">Total balance from active accounts</div>
             </div>
             <div class="kpi-card warning">
                 <div class="kpi-label">Pending Expenses</div>
-                <div class="kpi-value"><?= $cmPendingExpenses ?></div>
+                <div class="kpi-value"><?= $filteredPendingExpenses ?></div>
                 <div class="kpi-sub">Expenses awaiting approval</div>
             </div>
         </div>
@@ -227,8 +223,8 @@ $cmPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM stu
                 <div style="height:240px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:8px;color:#94a3b8;font-size:.9rem;border:1px dashed #e2e8f0;">
                     <div style="text-align:center;">
                         <div style="font-size:2rem;margin-bottom:.5rem;">📊</div>
-                        <div>Income: Rs. <?= number_format($monthlyCollection + $totalMonthlyIncome, 2) ?></div>
-                        <div>Expenses: Rs. <?= number_format($monthlyExpenses, 2) ?></div>
+                        <div>Income: Rs. <?= number_format($filteredCollection + $filteredTotalIncome, 2) ?></div>
+                        <div>Expenses: Rs. <?= number_format($filteredExpenses, 2) ?></div>
                     </div>
                 </div>
             </section>
