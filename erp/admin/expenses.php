@@ -155,11 +155,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
 $editRow = null;
 if (isset($_GET['edit'])) {
-    $stmt = $pdo->prepare("SELECT * FROM expenses WHERE id=?");
-    $stmt->execute([(int) $_GET['edit']]);
-    $editRow = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$editRow) {
-        $error = 'Expense not found.';
+    if (!$isOwner) {
+        $error = 'Only owner can edit expenses.';
+    } else {
+        $stmt = $pdo->prepare("SELECT * FROM expenses WHERE id=?");
+        $stmt->execute([(int) $_GET['edit']]);
+        $editRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$editRow) {
+            $error = 'Expense not found.';
+        }
     }
 }
 
