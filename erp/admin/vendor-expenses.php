@@ -75,12 +75,11 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Stats for this vendor
 $stats = ['total' => 0.0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'count' => 0];
 try {
-    $st = $pdo->prepare("SELECT COALESCE(SUM(net_amount),0), COUNT(*) FROM expenses e WHERE e.vendor_id = :vid AND status != 'Cancelled'");
-    $st->execute([':vid' => $vendorId]);
-    $r = $st->fetch(PDO::FETCH_ASSOC);
+    $st = $pdo->prepare("SELECT COALESCE(SUM(net_amount),0), COUNT(*) FROM expenses WHERE vendor_id = ? AND status != 'Cancelled'");
+    $st->execute([$vendorId]);
+    $r = $st->fetch(PDO::FETCH_NUM);
     $stats['total'] = (float) ($r[0] ?? 0);
     $stats['count'] = (int) ($r[1] ?? 0);
-    $stats['pending'] = (int) $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE vendor_id = ? AND status = 'Pending'")->execute([$vendorId]) ? $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE vendor_id = ? AND status = 'Pending'")->execute([$vendorId]) : 0;
     $st2 = $pdo->prepare("SELECT COUNT(*) FROM expenses WHERE vendor_id = ? AND status = 'Pending'");
     $st2->execute([$vendorId]);
     $stats['pending'] = (int) $st2->fetchColumn();
