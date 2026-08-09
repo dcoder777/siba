@@ -650,9 +650,10 @@ if (isset($_GET['edit'])) {
                             <th>Income No</th>
                             <th>Date</th>
                             <th>Name</th>
-                            <th>Amount</th>
+                            <th style="text-align:right;">Amount</th>
                             <th>Mode</th>
                             <th>Note</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -663,9 +664,15 @@ if (isset($_GET['edit'])) {
                             <td style="font-family:monospace;font-size:.82rem;"><?= e($row['income_no'] ?? '') ?: '—' ?></td>
                             <td style="white-space:nowrap;"><?= $row['income_date'] ? date('d-m-Y', strtotime($row['income_date'])) : '—' ?></td>
                             <td><strong><?= e($row['name']) ?></strong></td>
-                            <td>&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
+                            <td style="text-align:right;">&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
                             <td><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
                             <td style="max-width:150px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
+                            <td><?php
+                                $incStatus = $row['status'] ?? 'Pending';
+                                $incStatusColors = ['Pending' => '#fef3c7,#92400e', 'Approved' => '#d1fae5,#065f46', 'Rejected' => '#fee2e2,#991b1b', 'Received' => '#d1fae5,#065f46'];
+                                $isc = $incStatusColors[$incStatus] ?? '#fef3c7,#92400e';
+                                [$iscBg, $iscClr] = explode(',', $isc);
+                            ?><span class="badge" style="background:<?= $iscBg ?>;color:<?= $iscClr ?>;"><?= e($incStatus) ?></span></td>
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=income-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
