@@ -400,6 +400,10 @@ if (isset($_GET['edit'])) {
         .flash{background:#d1fae5;border:1px solid #a7f3d0;border-radius:8px;padding:.75rem 1rem;color:#065f46;margin-bottom:1rem;}
         .flash-error{background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1rem;color:#991b1b;margin-bottom:1rem;}
         @media(max-width:960px){.layout-split{grid-template-columns:1fr}.list-panel{position:static;max-height:none}}
+        .sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+        .sortable:hover{color:#2563eb;}
+        .sort-icon{font-size:.7rem;margin-left:3px;opacity:.4;}
+        .sortable.sort-asc .sort-icon,.sortable.sort-desc .sort-icon{opacity:1;color:#2563eb;}
     </style>
 </head>
 <body>
@@ -781,23 +785,27 @@ if (isset($_GET['edit'])) {
             <?php if (empty($vendors)): ?>
                 <p style="text-align:center;padding:2rem;color:#94a3b8;">No vendors defined yet.</p>
             <?php else: ?>
+            <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
+                <input type="text" id="vendorSearchInput" placeholder="Search vendors..." oninput="filterVendorTable()" style="flex:1;max-width:360px;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;outline:none;">
+                <span id="vendorCount" style="font-size:.82rem;color:#64748b;"><?= count($vendors) ?> vendors</span>
+            </div>
             <div style="overflow-x:auto;">
-                <table class="app-table">
+                <table class="app-table" id="vendorTable">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Code</th>
-                            <th>Name</th>
-                            <th>Mobile</th>
-                            <th>Email</th>
-                            <th>GST</th>
-                            <th>PAN</th>
-                            <th style="text-align:right;">Total Expense</th>
-                            <th>Status</th>
+                            <th class="sortable" onclick="sortVendorTable(0,'num')"># <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(1,'str')">Code <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(2,'str')">Name <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(3,'str')">Mobile <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(4,'str')">Email <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(5,'str')">GST <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(6,'str')">PAN <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(7,'num')" style="text-align:right;">Total Expense <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortVendorTable(8,'str')">Status <span class="sort-icon">⇅</span></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="vendorTableBody">
                         <?php $i = 1; foreach ($vendors as $row): ?>
                         <tr>
                             <td style="color:#94a3b8;"><?= $i++ ?></td>
@@ -807,17 +815,19 @@ if (isset($_GET['edit'])) {
                             <td><?= e($row['email'] ?? '') ?></td>
                             <td><?= e($row['gst_number'] ?? '') ?></td>
                             <td><?= e($row['pan'] ?? '') ?></td>
-                            <td style="text-align:right;"><strong><?= isset($vendorExpenseMap[(int) $row['id']]) ? 'Rs. ' . number_format((float) $vendorExpenseMap[(int) $row['id']]['total_expense'], 2) : '—' ?></strong></td>
-                            <td><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
+                            <td style="text-align:right;" data-sort="<?= isset($vendorExpenseMap[(int) $row['id']]) ? (float) $vendorExpenseMap[(int) $row['id']]['total_expense'] : 0 ?>"><?= isset($vendorExpenseMap[(int) $row['id']]) ? 'Rs. ' . number_format((float) $vendorExpenseMap[(int) $row['id']]['total_expense'], 2) : '—' ?></td>
+                            <td data-sort="<?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?>"><span class="badge <?= ($row['is_active'] ?? 0) ? 'badge-active' : 'badge-inactive' ?>"><?= ($row['is_active'] ?? 0) ? 'Active' : 'Inactive' ?></span></td>
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=vendors&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
+                                    <?php if ($isOwner): ?>
                                     <form method="post" class="inline-form" onsubmit="return confirm('Delete this vendor?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_vendor">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
                                         <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -1225,6 +1235,37 @@ function showVendorExpenses(vendorId, vendorName) {
     document.getElementById('vendorExpName').textContent = vendorName;
     document.getElementById('vendorExpBody').innerHTML = html;
     document.getElementById('vendorExpModal').classList.add('show');
+}
+
+var vendorSortCol = -1, vendorSortAsc = true;
+function sortVendorTable(col, type) {
+    var table = document.getElementById('vendorTable');
+    var tbody = document.getElementById('vendorTableBody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    if (vendorSortCol === col) { vendorSortAsc = !vendorSortAsc; } else { vendorSortCol = col; vendorSortAsc = true; }
+    table.querySelectorAll('th.sortable').forEach(function(th) { th.classList.remove('sort-asc','sort-desc'); th.querySelector('.sort-icon').textContent = '⇅'; });
+    var th = table.querySelectorAll('th.sortable')[col];
+    if (th) { th.classList.add(vendorSortAsc ? 'sort-asc' : 'sort-desc'); th.querySelector('.sort-icon').textContent = vendorSortAsc ? '↑' : '↓'; }
+    rows.sort(function(a, b) {
+        var ac = a.cells[col], bc = b.cells[col];
+        var av = ac.getAttribute('data-sort') !== null ? ac.getAttribute('data-sort') : ac.textContent.trim();
+        var bv = bc.getAttribute('data-sort') !== null ? bc.getAttribute('data-sort') : bc.textContent.trim();
+        if (type === 'num') { av = parseFloat(av.replace(/[^\d.\-]/g,'')) || 0; bv = parseFloat(bv.replace(/[^\d.\-]/g,'')) || 0; return vendorSortAsc ? av - bv : bv - av; }
+        return vendorSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(function(r) { tbody.appendChild(r); });
+}
+
+function filterVendorTable() {
+    var q = document.getElementById('vendorSearchInput').value.toLowerCase();
+    var rows = document.querySelectorAll('#vendorTableBody tr'), shown = 0;
+    rows.forEach(function(r) {
+        var text = r.textContent.toLowerCase();
+        var match = text.indexOf(q) !== -1;
+        r.style.display = match ? '' : 'none';
+        if (match) shown++;
+    });
+    document.getElementById('vendorCount').textContent = shown + ' vendor' + (shown !== 1 ? 's' : '');
 }
 </script>
 
