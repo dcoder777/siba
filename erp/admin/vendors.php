@@ -165,6 +165,9 @@ $vendorExpenses = $pdo->query("SELECT vendor_id, COALESCE(SUM(net_amount),0) AS 
 $vendorExpenseMap = [];
 foreach ($vendorExpenses as $ve) { $vendorExpenseMap[(int) $ve['vendor_id']] = $ve; }
 
+// All expenses for vendor modal
+$allExpensesForVendors = $pdo->query("SELECT id, expense_no, expense_date, vendor_id, vendor_name, category_name, amount, net_amount, status FROM expenses WHERE status != 'Cancelled' ORDER BY expense_date DESC")->fetchAll(PDO::FETCH_ASSOC);
+
 // ─── Stats ───
 $stats = ['total' => 0, 'active' => 0, 'inactive' => 0, 'total_spend' => 0.0];
 try {
@@ -485,6 +488,18 @@ var allVendors = <?= json_encode(array_map(fn(array $r) => [
     'expense_count' => (int) ($vendorExpenseMap[(int) $r['id']]['expense_count'] ?? 0),
 ], $rows)) ?>;
 
+var vendorExpenses = <?= json_encode(array_map(fn(array $e) => [
+    'id' => (int) $e['id'],
+    'expense_no' => $e['expense_no'] ?? '',
+    'expense_date' => $e['expense_date'] ?? '',
+    'vendor_id' => (int) ($e['vendor_id'] ?? 0),
+    'vendor_name' => $e['vendor_name'] ?? '',
+    'category_name' => $e['category_name'] ?? '',
+    'amount' => (float) $e['amount'],
+    'net_amount' => (float) $e['net_amount'],
+    'status' => $e['status'] ?? '',
+], $allExpensesForVendors)) ?>;
+
 function closeModals() {
     document.getElementById('modal-view').classList.remove('open');
     document.getElementById('modal-form').classList.remove('open');
@@ -493,25 +508,40 @@ function closeModals() {
 function viewVendor(id) {
     var v = allVendors.find(function(x) { return x.id === id; });
     if (!v) return;
-    var html = '';
-    var fields = [
-        ['Vendor Code', v.vendor_code || '—'],
-        ['Name', v.name],
-        ['Mobile', v.mobile || '—'],
-        ['Email', v.email || '—'],
-        ['GST Number', v.gst_number || '—'],
-        ['PAN', v.pan || '—'],
-        ['Address', v.address || '—'],
-        ['Bank Name', v.bank_name || '—'],
-        ['Account Number', v.account_number || '—'],
-        ['IFSC Code', v.ifsc_code || '—'],
-        ['Status', v.is_active ? '<span class="badge-active">Active</span>' : '<span class="badge-inactive">Inactive</span>'],
-        ['Total Expenses', v.expense_count + ' expense(s) worth Rs. ' + v.total_expense.toLocaleString('en-IN', {minimumFractionDigits:2})]
-    ];
-    fields.forEach(function(f) {
-        html += '<div class="view-detail"><div class="vd-label">' + f[0] + '</div><div class="vd-value">' + f[1] + '</div></div>';
-    });
+    var filtered = vendorExpenses.filter(function(e) { return e.vendor_id === id; });
+    var total = filtered.reduce(function(sum, e) { return sum + e.net_amount; }, 0);
+
+    var html = '<div style="margin-bottom:1rem;padding:.75rem;background:#f8fafc;border-radius:8px;">';
+    html += '<strong style="font-size:1rem;">' + v.name + '</strong>';
+    if (v.vendor_code) html += ' <span style="color:#64748b;font-size:.82rem;">(' + v.vendor_code + ')</span>';
+    if (v.mobile) html += ' &nbsp;|&nbsp; ' + v.mobile;
+    if (v.email) html += ' &nbsp;|&nbsp; ' + v.email;
+    html += '<div style="font-size:.82rem;color:#64748b;margin-top:.25rem;">Total: Rs. ' + total.toLocaleString('en-IN', {minimumFractionDigits:2}) + ' (' + filtered.length + ' expenses)</div>';
+    html += '</div>';
+
+    html += '<table class="app-table" style="width:100%;font-size:.85rem;">';
+    html += '<thead><tr><th>Date</th><th>Expense No</th><th>Category</th><th style="text-align:right;">Amount</th><th style="text-align:right;">Net Amount</th><th>Status</th></tr></thead><tbody>';
+    if (filtered.length === 0) {
+        html += '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:#94a3b8;">No expenses found for this vendor.</td></tr>';
+    } else {
+        filtered.forEach(function(e) {
+            var statusBg = '#fef3c7', statusClr = '#92400e';
+            if (e.status === 'Approved') { statusBg = '#d1fae5'; statusClr = '#065f46'; }
+            else if (e.status === 'Rejected') { statusBg = '#fee2e2'; statusClr = '#991b1b'; }
+            html += '<tr>';
+            html += '<td style="white-space:nowrap;">' + e.expense_date + '</td>';
+            html += '<td><code style="font-size:.8rem;">' + e.expense_no + '</code></td>';
+            html += '<td>' + (e.category_name || '—') + '</td>';
+            html += '<td style="text-align:right;">Rs. ' + e.amount.toLocaleString('en-IN', {minimumFractionDigits:2}) + '</td>';
+            html += '<td style="text-align:right;font-weight:600;">Rs. ' + e.net_amount.toLocaleString('en-IN', {minimumFractionDigits:2}) + '</td>';
+            html += '<td><span style="background:' + statusBg + ';color:' + statusClr + ';padding:.15rem .5rem;border-radius:4px;font-size:.78rem;font-weight:600;">' + e.status + '</span></td>';
+            html += '</tr>';
+        });
+    }
+    html += '</tbody></table>';
+
     document.getElementById('view-content').innerHTML = html;
+    document.querySelector('#modal-view .modal-header h2').textContent = 'Expenses – ' + v.name;
     document.getElementById('modal-view').classList.add('open');
 }
 
