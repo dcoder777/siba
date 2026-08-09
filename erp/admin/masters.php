@@ -24,6 +24,7 @@ function generate_income_no(PDO $pdo): string
 }
 
 $user = admin_user();
+$isOwner = ($user['role'] ?? '') === 'owner';
 $pageTitle = 'Masters';
 $error = '';
 $success = '';
@@ -596,7 +597,7 @@ if (isset($_GET['edit'])) {
                                 <small style="color:#64748b;">Current: <?= e($editRecord['bill_file']) ?></small>
                             <?php endif; ?>
                         </div>
-                        <?php if ($editRecord && $editType === 'expense-categories'): ?>
+                        <?php if ($isOwner && $editRecord && $editType === 'expense-categories'): ?>
                         <div>
                             <label>Status</label>
                             <select name="status">
