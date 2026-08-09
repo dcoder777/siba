@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['action'] ?? ''));
 
     if (in_array($action, ['add', 'edit'], true)) {
+        if (!$isOwner) { $error = 'Only owner can add or edit expenses.'; } else {
         $id = (int) ($_POST['id'] ?? 0);
         $categoryId = (int) ($_POST['category_id'] ?? 0);
         $vendorName = trim((string) ($_POST['vendor_name'] ?? ''));
@@ -97,9 +98,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 }
             }
         }
+        } // end isOwner check
     }
 
     if ($action === 'delete' && isset($_POST['id'])) {
+        if (!$isOwner) { $error = 'Only owner can delete expenses.'; } else {
         $id = (int) $_POST['id'];
         $delRow = $pdo->prepare("SELECT bill_file FROM expenses WHERE id=?");
         $delRow->execute([$id]);
@@ -108,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         if ($delFile && file_exists($uploadDir . $delFile)) unlink($uploadDir . $delFile);
         $pdo->prepare("DELETE FROM expenses WHERE id=?")->execute([$id]);
         $success = 'Expense deleted successfully.';
+        } // end isOwner check
     }
 
     if ($action === 'approve' && isset($_POST['id'])) {
@@ -249,7 +253,7 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
                     <p>Manage school expenses, bills, and payments.</p>
                 </div>
                 <div class="toolbar-right">
-                    <?php if (!$editRow && !$showForm): ?>
+                    <?php if ($isOwner && !$editRow && !$showForm): ?>
                         <a href="?action=add" class="btn btn-sm" style="background:#059669;color:#fff;border:none;padding:.5rem 1rem;font-size:.85rem;border-radius:10px;text-decoration:none;">+ Add Expense</a>
                     <?php endif; ?>
                 </div>
@@ -434,7 +438,9 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
                                         </td>
                                         <td>
                                             <div class="action-btns">
+                                                <?php if ($isOwner): ?>
                                                 <a href="?edit=<?= (int) $r['id'] ?>" class="btn btn-sm btn-outline" style="padding:.25rem .6rem;font-size:.75rem;border-radius:6px;text-decoration:none;">Edit</a>
+                                                <?php endif; ?>
                                                 <?php if ($isOwner && $r['status'] === 'Pending'): ?>
                                                     <form method="post" style="display:inline;" onsubmit="return confirm('Approve this expense?')">
                                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
