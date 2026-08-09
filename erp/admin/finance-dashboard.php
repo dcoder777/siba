@@ -79,7 +79,7 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
     <style>
-        .kpi-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:1.25rem; margin-bottom:2rem; }
+        .kpi-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:1.25rem; margin-bottom:2rem; }
         .kpi-card { background:#fff; border-radius:14px; padding:1.25rem; box-shadow:0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04); display:flex; flex-direction:column; gap:.35rem; }
         .kpi-card .kpi-label { font-size:.8rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.04em; }
         .kpi-card .kpi-value { font-size:1.75rem; font-weight:700; color:#0f172a; }
