@@ -481,6 +481,7 @@ if (isset($_GET['edit'])) {
                             <th>Category</th>
                             <th>Vendor</th>
                             <th>Amount</th>
+                            <th>Note</th>
                             <th>Mode</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -495,6 +496,7 @@ if (isset($_GET['edit'])) {
                             <td><span class="badge" style="background:#e0f2fe;color:#0369a1;"><?= e($row['category_label'] ?? $row['category_name'] ?? '—') ?></span></td>
                             <td><?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?: '—' ?></td>
                             <td>&#8377; <?= number_format((float) $row['net_amount'], 2) ?></td>
+                            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['description'] ?? '') ?>"><?= e($row['description'] ?? '—') ?></td>
                             <td><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
                             <td><?php
                                 $statusColors = ['Pending' => '#fef3c7,#92400e', 'Approved' => '#d1fae5,#065f46', 'Rejected' => '#fee2e2,#991b1b', 'Cancelled' => '#e2e8f0,#475569'];
