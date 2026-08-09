@@ -296,9 +296,9 @@ $editMode = $editRow !== null;
                         <option value="inactive" <?= $statusFilter === 'inactive' ? 'selected' : '' ?>>Inactive</option>
                     </select>
                 </div>
-                <div class="filter-group" style="align-self:flex-end;">
+                <div style="display:flex;align-items:flex-end;gap:.5rem;">
                     <button type="submit" class="btn" style="background:#64748b;padding:.45rem 1rem;min-height:36px;font-size:.85rem;border-radius:8px;">Filter</button>
-                    <a href="vendors.php" style="font-size:.85rem;color:#64748b;margin-left:.5rem;text-decoration:none;">Clear</a>
+                    <a href="vendors.php" style="font-size:.85rem;color:#64748b;text-decoration:none;line-height:36px;">Clear</a>
                 </div>
             </form>
         </div>
