@@ -7,6 +7,17 @@ $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
 $pageTitle = 'Finance Dashboard';
 
+// Date filter
+$filterFrom = trim((string) ($_GET['from'] ?? ''));
+$filterTo = trim((string) ($_GET['to'] ?? ''));
+$filterApplied = ($filterFrom !== '' || $filterTo !== '');
+
+// Default: current month
+if ($filterFrom === '' && $filterTo === '') {
+    $filterFrom = date('Y-m-01');
+    $filterTo = date('Y-m-t');
+}
+
 // Guard: if finance tables are missing, show empty dashboard instead of 500
 function finance_scalar(PDO $pdo, string $sql, array $params = []): float
 {
@@ -30,27 +41,27 @@ function finance_rows(PDO $pdo, string $sql, array $params = []): array
     }
 }
 
-// Today's Collection
+// Today's Collection (ignores date filter — always today)
 $todayCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
 
-// Monthly Collection
-$monthlyCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE MONTH(payment_date) = MONTH(CURDATE()) AND YEAR(payment_date) = YEAR(CURDATE()) AND status = 'Active'");
+// Monthly Collection (filtered)
+$monthlyCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$filterFrom, $filterTo]);
 
-// Outstanding Fees
+// Outstanding Fees (not date-filtered — always current)
 $outstandingFees = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active'");
 
-// Total Expenses (monthly)
-$monthlyExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND MONTH(expense_date) = MONTH(CURDATE()) AND YEAR(expense_date) = YEAR(CURDATE())");
+// Total Expenses (filtered)
+$monthlyExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$filterFrom, $filterTo]);
 
-// Total Income (monthly) — approved income_categories + paid application fees
-$monthlyIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND MONTH(income_date) = MONTH(CURDATE()) AND YEAR(income_date) = YEAR(CURDATE())");
-$monthlyAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND MONTH(applied_at) = MONTH(CURDATE()) AND YEAR(applied_at) = YEAR(CURDATE())");
+// Total Income (filtered) — approved income_categories + paid application fees
+$monthlyIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$filterFrom, $filterTo]);
+$monthlyAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$filterFrom, $filterTo]);
 $totalMonthlyIncome = $monthlyIncome + $monthlyAppFeeIncome;
 
-// Recent Transactions
-$recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' ORDER BY fc.created_at DESC LIMIT 10");
+// Recent Transactions (filtered)
+$recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' AND fc.payment_date >= ? AND fc.payment_date <= ? ORDER BY fc.created_at DESC LIMIT 10", [$filterFrom, $filterTo]);
 
-// Pending Dues (top 10)
+// Pending Dues (not date-filtered — always current)
 $pendingDues = finance_rows($pdo, "SELECT sfa.*, sfa.student_name AS student_display FROM student_fee_accounts sfa WHERE sfa.status = 'active' AND sfa.balance > 0 ORDER BY sfa.balance DESC LIMIT 10");
 
 // Fee collection count for sidebar badge
@@ -102,10 +113,25 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                     <h1>Finance Dashboard</h1>
                     <p>Real-time overview of collections, dues, expenses, and income.</p>
                 </div>
+                <form method="get" style="display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;">
+                    <div>
+                        <label style="display:block;font-size:.75rem;font-weight:600;color:#64748b;margin-bottom:.2rem;">From</label>
+                        <input type="date" name="from" value="<?= e($filterFrom) ?>" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.85rem;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:.75rem;font-weight:600;color:#64748b;margin-bottom:.2rem;">To</label>
+                        <input type="date" name="to" value="<?= e($filterTo) ?>" style="padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.85rem;">
+                    </div>
+                    <button type="submit" style="background:#2563eb;color:#fff;border:none;padding:.5rem 1rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;">Filter</button>
+                    <?php if ($filterApplied): ?>
+                        <a href="finance-dashboard.php" style="background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:.5rem 1rem;border-radius:8px;font-size:.85rem;font-weight:600;text-decoration:none;">Clear</a>
+                    <?php endif; ?>
+                </form>
             </div>
         </section>
 
         <!-- KPI Cards -->
+        <?php $periodLabel = e(date('d M', strtotime($filterFrom))) . ' – ' . e(date('d M Y', strtotime($filterTo))); ?>
         <div class="kpi-grid">
             <div class="kpi-card success">
                 <div class="kpi-label">Today's Collection</div>
@@ -113,9 +139,9 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                 <div class="kpi-sub">Fee collected today</div>
             </div>
             <div class="kpi-card highlight">
-                <div class="kpi-label">Monthly Collection</div>
+                <div class="kpi-label">Period Collection</div>
                 <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyCollection, 2) ?></div>
-                <div class="kpi-sub">This month's total fee collection</div>
+                <div class="kpi-sub"><?= $periodLabel ?></div>
             </div>
             <div class="kpi-card danger">
                 <div class="kpi-label">Outstanding Fees</div>
@@ -123,19 +149,19 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
                 <div class="kpi-sub">Total balance from active accounts</div>
             </div>
             <div class="kpi-card warning">
-                <div class="kpi-label">Monthly Expenses</div>
+                <div class="kpi-label">Period Expenses</div>
                 <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyExpenses, 2) ?></div>
-                <div class="kpi-sub">Approved expenses this month</div>
+                <div class="kpi-sub"><?= $periodLabel ?></div>
             </div>
             <div class="kpi-card highlight">
-                <div class="kpi-label">Monthly Income</div>
+                <div class="kpi-label">Period Income</div>
                 <div class="kpi-value kpi-value-currency">Rs. <?= number_format($totalMonthlyIncome, 2) ?></div>
                 <div class="kpi-sub">Approved income + application fees</div>
             </div>
             <div class="kpi-card <?= ($monthlyCollection + $totalMonthlyIncome - $monthlyExpenses) >= 0 ? 'success' : 'danger' ?>">
                 <div class="kpi-label">Net Surplus / Deficit</div>
                 <div class="kpi-value kpi-value-currency">Rs. <?= number_format($monthlyCollection + $totalMonthlyIncome - $monthlyExpenses, 2) ?></div>
-                <div class="kpi-sub">Income minus expenses this month</div>
+                <div class="kpi-sub">Income minus expenses for period</div>
             </div>
         </div>
 
