@@ -111,19 +111,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     }
 
     if ($action === 'approve' && isset($_POST['id'])) {
+        if (!$isOwner) { $error = 'Only owner can change expense status.'; } else {
         $id = (int) $_POST['id'];
         $stmt = $pdo->prepare("UPDATE expenses SET status='Approved', approved_by=?, approved_at=NOW() WHERE id=? AND status='Pending'");
         $stmt->execute([(int) ($user['id'] ?? 0), $id]);
         if ($stmt->rowCount() > 0) $success = 'Expense approved.';
         else $error = 'Expense could not be approved (already processed or not found).';
+        }
     }
 
     if ($action === 'reject' && isset($_POST['id'])) {
+        if (!$isOwner) { $error = 'Only owner can change expense status.'; } else {
         $id = (int) $_POST['id'];
         $stmt = $pdo->prepare("UPDATE expenses SET status='Rejected', approved_by=?, approved_at=NOW() WHERE id=? AND status='Pending'");
         $stmt->execute([(int) ($user['id'] ?? 0), $id]);
         if ($stmt->rowCount() > 0) $success = 'Expense rejected.';
         else $error = 'Expense could not be rejected (already processed or not found).';
+        }
     }
 
     if ($action === 'add_category') {
@@ -431,7 +435,7 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
                                         <td>
                                             <div class="action-btns">
                                                 <a href="?edit=<?= (int) $r['id'] ?>" class="btn btn-sm btn-outline" style="padding:.25rem .6rem;font-size:.75rem;border-radius:6px;text-decoration:none;">Edit</a>
-                                                <?php if ($r['status'] === 'Pending'): ?>
+                                                <?php if ($isOwner && $r['status'] === 'Pending'): ?>
                                                     <form method="post" style="display:inline;" onsubmit="return confirm('Approve this expense?')">
                                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                         <input type="hidden" name="action" value="approve">
@@ -445,12 +449,14 @@ $formTitle = $editRow ? 'Edit Expense' : ($showForm ? 'Add Expense' : '');
                                                         <button type="submit" style="background:#dc2626;color:#fff;border:none;padding:.25rem .6rem;font-size:.75rem;border-radius:6px;cursor:pointer;">Reject</button>
                                                     </form>
                                                 <?php endif; ?>
+                                                <?php if ($isOwner): ?>
                                                 <form method="post" style="display:inline;" onsubmit="return confirm('Delete this expense permanently?')">
                                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
                                                     <button type="submit" style="background:#dc2626;color:#fff;border:none;padding:.25rem .6rem;font-size:.75rem;border-radius:6px;cursor:pointer;">Delete</button>
                                                 </form>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>

@@ -8,6 +8,7 @@ require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
 $user = admin_user();
+$isOwner = ($user['role'] ?? '') === 'owner';
 $error = '';
 $success = '';
 
@@ -155,6 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
     // Approve
     if ($action === 'approve_expense' && isset($_POST['id'])) {
+        if (!$isOwner) { $error = 'Only owner can change expense status.'; }
+        else {
         $id = (int) $_POST['id'];
         $pdo->beginTransaction();
         try {
@@ -191,10 +194,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
             $error = 'Approval failed: ' . $e->getMessage();
         }
+        } // end isOwner check
     }
 
     // Reject
     if ($action === 'reject_expense' && isset($_POST['id'])) {
+        if (!$isOwner) { $error = 'Only owner can change expense status.'; } else {
         $id = (int) $_POST['id'];
         $reason = trim((string) ($_POST['reject_reason'] ?? ''));
         $stmt = $pdo->prepare("UPDATE expenses SET status='Rejected', reject_reason=?, approved_by=?, approved_at=NOW() WHERE id=? AND status='Pending'");
@@ -204,6 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         } else {
             $error = 'Expense could not be rejected.';
         }
+        } // end isOwner check
     }
 
     if ($action === 'add_category') {
@@ -508,7 +514,7 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                     <td>
                                         <div class="action-btns">
                                             <button type="button" class="btn btn-sm btn-outline" style="padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openModal('view', <?= (int) $r['id'] ?>)">View</button>
-                                            <?php if ($r['status'] === 'Pending'): ?>
+                                            <?php if ($isOwner && $r['status'] === 'Pending'): ?>
                                                 <form method="post" style="display:inline;" onsubmit="return confirm('Approve this expense?')">
                                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                     <input type="hidden" name="action" value="approve_expense">
@@ -517,7 +523,7 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                                 </form>
                                                 <button type="button" style="background:#dc2626;color:#fff;border:none;padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openModal('reject', <?= (int) $r['id'] ?>)">Reject</button>
                                             <?php endif; ?>
-                                            <?php if (in_array($r['status'], ['Pending', 'Approved', 'Rejected'], true)): ?>
+                                            <?php if ($isOwner && in_array($r['status'], ['Pending', 'Approved', 'Rejected'], true)): ?>
                                                 <form method="post" style="display:inline;" onsubmit="return confirm('Cancel this expense?')">
                                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                     <input type="hidden" name="action" value="delete_expense">
