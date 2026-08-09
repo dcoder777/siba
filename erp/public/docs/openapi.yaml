@@ -8,6 +8,23 @@ info:
     The site (public website & parent portal) and ERP now share a single database (`siba_erp`).
     Site tables (parents, admins, applications, fees, cms_pages, settings, notifications, staff)
     coexist in the same database as ERP tables, with FK links between them.
+
+    ## Authentication
+    All endpoints (except `/health`, `/auth/login`, and `/admissions/register-parent`) require a Bearer token.
+    
+    **Development Token (DEV ONLY):**
+    ```
+    Authorization: Bearer siba-dev-static-token-2026
+    ```
+    Run `php erp/public/dev-token.php` once to insert it into the database.
+    
+    **Production:** Use `POST /api/v1/auth/login` to obtain a token.
+    
+    ## Pagination
+    All list endpoints accept `page` (default 1) and `limit` (default 20, max 100) query parameters.
+    
+    ## Response Format
+    All responses follow: `{ success: bool, message: string, data: {...} }`
 servers:
   - url: http://localhost/siba/erp/public/api/v1
     description: Local Development
