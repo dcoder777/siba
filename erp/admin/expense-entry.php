@@ -503,7 +503,7 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                     <td><strong><?= e($r['vendor_name'] ?: '—') ?></strong></td>
                                     <td><?= e($r['bill_no'] ?? '—') ?></td>
                                     <td>Rs. <?= number_format((float) $r['amount'], 2) ?></td>
-                                    <td><?php if (!empty($r['description'])): ?><span title="<?= e($r['description']) ?>" style="cursor:pointer;color:#2563eb;font-size:.9rem;" title="View note">📝</span><?php endif; ?></td>
+                                    <td><?php if (!empty($r['description'])): ?><span class="note-toggle" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'" style="cursor:pointer;color:#2563eb;font-size:.9rem;" title="View note">📝</span><div style="display:none;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px;margin-top:4px;font-size:.82rem;max-width:260px;position:relative;z-index:1;"><?= e($r['description']) ?></div><?php else: ?><span style="color:#94a3b8;">—</span><?php endif; ?></td>
                                     <td>Rs. <?= number_format((float) $r['gst_amount'], 2) ?></td>
                                     <td><strong>Rs. <?= number_format((float) $r['net_amount'], 2) ?></strong></td>
                                     <td><?= e($r['payment_mode'] ?? '—') ?></td>
