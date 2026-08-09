@@ -101,33 +101,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
             $pdo->beginTransaction();
 
-            $check = $pdo->prepare("SELECT id FROM parents WHERE phone = :phone LIMIT 1");
+            // Find existing parent by phone — reuse if found (allows multiple applications per parent)
+            $check = $pdo->prepare("SELECT id, user_id, name, email, phone FROM parents WHERE phone = :phone LIMIT 1");
             $check->execute(['phone' => $parentPhone]);
-            if ($check->fetch()) {
-                throw new \RuntimeException('A parent with this phone number already exists.');
+            $existingParent = $check->fetch();
+
+            if ($existingParent) {
+                // Reuse existing parent
+                $parentId = (int) $existingParent['id'];
+                $userId = (int) $existingParent['user_id'];
+            } else {
+                // Create new parent + user
+                if ($parentEmail === '') {
+                    $parentEmail = $parentPhone . '@sibapublicschool.com';
+                }
+
+                $stmt = $pdo->prepare("INSERT INTO parents (name, email, phone, password, created_at) VALUES (:name, :email, :phone, :password, NOW())");
+                $stmt->execute(['name' => $parentName, 'email' => $parentEmail, 'phone' => $parentPhone, 'password' => $passwordHash]);
+                $parentId = (int) $pdo->lastInsertId();
+
+                $role = $pdo->query("SELECT id FROM roles WHERE name = 'parent' LIMIT 1")->fetch();
+                if (!$role) throw new \RuntimeException('Parent role not found in the system.');
+                $roleId = (int) $role['id'];
+
+                $stmt = $pdo->prepare("INSERT INTO users (role_id, name, email, password_hash, is_active, created_at, updated_at) VALUES (:role_id, :name, :email, :password_hash, 1, NOW(), NOW())");
+                $stmt->execute(['role_id' => $roleId, 'name' => $parentName, 'email' => $parentEmail, 'password_hash' => $passwordHash]);
+                $userId = (int) $pdo->lastInsertId();
+
+                $stmt = $pdo->prepare("INSERT IGNORE INTO user_role_assignments (user_id, role_id, is_active, created_at, updated_at) VALUES (:user_id, :role_id, 1, NOW(), NOW())");
+                $stmt->execute(['user_id' => $userId, 'role_id' => $roleId]);
+
+                $pdo->prepare("UPDATE parents SET user_id = :user_id WHERE id = :id")
+                    ->execute(['user_id' => $userId, 'id' => $parentId]);
             }
-
-            if ($parentEmail === '') {
-                $parentEmail = $parentPhone . '@sibapublicschool.com';
-            }
-
-            $stmt = $pdo->prepare("INSERT INTO parents (name, email, phone, password, created_at) VALUES (:name, :email, :phone, :password, NOW())");
-            $stmt->execute(['name' => $parentName, 'email' => $parentEmail, 'phone' => $parentPhone, 'password' => $passwordHash]);
-            $parentId = (int) $pdo->lastInsertId();
-
-            $role = $pdo->query("SELECT id FROM roles WHERE name = 'parent' LIMIT 1")->fetch();
-            if (!$role) throw new \RuntimeException('Parent role not found in the system.');
-            $roleId = (int) $role['id'];
-
-            $stmt = $pdo->prepare("INSERT INTO users (role_id, name, email, password_hash, is_active, created_at, updated_at) VALUES (:role_id, :name, :email, :password_hash, 1, NOW(), NOW())");
-            $stmt->execute(['role_id' => $roleId, 'name' => $parentName, 'email' => $parentEmail, 'password_hash' => $passwordHash]);
-            $userId = (int) $pdo->lastInsertId();
-
-            $stmt = $pdo->prepare("INSERT IGNORE INTO user_role_assignments (user_id, role_id, is_active, created_at, updated_at) VALUES (:user_id, :role_id, 1, NOW(), NOW())");
-            $stmt->execute(['user_id' => $userId, 'role_id' => $roleId]);
-
-            $pdo->prepare("UPDATE parents SET user_id = :user_id WHERE id = :id")
-                ->execute(['user_id' => $userId, 'id' => $parentId]);
 
             $nameParts = explode(' ', trim($studentName), 2);
             $firstName = $nameParts[0] ?: $studentName;

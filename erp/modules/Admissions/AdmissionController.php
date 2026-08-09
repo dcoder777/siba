@@ -14,7 +14,6 @@ class AdmissionController extends Controller
         $name = trim((string) ($payload['name'] ?? ''));
         $phone = preg_replace('/\D/', '', (string) ($payload['phone'] ?? ''));
         $email = trim((string) ($payload['email'] ?? ''));
-        $password = (string) ($payload['password'] ?? '');
 
         if ($name === '') {
             $this->fail('Parent name is required', 422);
@@ -28,6 +27,29 @@ class AdmissionController extends Controller
             $this->fail('Email is required', 422);
             return [];
         }
+
+        // Find existing parent by phone or email — reuse if found
+        $existing = $this->pdo->prepare(
+            'SELECT p.id AS parent_id, p.user_id, p.name, p.email, p.phone
+             FROM parents p
+             WHERE p.phone = :phone OR p.email = :email
+             LIMIT 1'
+        );
+        $existing->execute(['phone' => $phone, 'email' => $email]);
+        $found = $existing->fetch();
+
+        if ($found) {
+            return [
+                'parent_id' => (int) $found['parent_id'],
+                'user_id'   => (int) $found['user_id'],
+                'name'      => $found['name'],
+                'email'     => $found['email'],
+                'phone'     => $found['phone'],
+            ];
+        }
+
+        // Parent not found — create new parent + user
+        $password = (string) ($payload['password'] ?? '');
         if ($password === '') {
             $this->fail('Password is required', 422);
             return [];
