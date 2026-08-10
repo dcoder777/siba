@@ -228,7 +228,7 @@ $categories = $pdo->query("SELECT id, name FROM expense_categories WHERE is_acti
                                 <th>Category</th>
                                 <th>Bill No</th>
                                 <th>Amount</th>
-                                <th></th>
+                                <th>Note</th>
                                 <th>GST</th>
                                 <th>Net Amount</th>
                                 <th>Payment Mode</th>
