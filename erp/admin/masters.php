@@ -357,6 +357,7 @@ $mVndOffset = ($mVndPage - 1) * $mPerPage;
 $mVndTotal = (int) $pdo->query("SELECT COUNT(*) FROM vendors")->fetchColumn();
 $mVndTotalPages = max(1, (int) ceil($mVndTotal / $mPerPage));
 $vendors = $pdo->query("SELECT * FROM vendors ORDER BY id DESC LIMIT $mPerPage OFFSET $mVndOffset")->fetchAll(PDO::FETCH_ASSOC);
+$allVendors = $pdo->query("SELECT id, name FROM vendors ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Vendor expenses summary
 $vendorExpenses = $pdo->query("SELECT vendor_id, vendor_name, COALESCE(SUM(net_amount),0) AS total_expense, COUNT(*) AS expense_count FROM expenses WHERE vendor_id IS NOT NULL AND status != 'Cancelled' GROUP BY vendor_id, vendor_name ORDER BY total_expense DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -608,7 +609,7 @@ if (isset($_GET['edit'])) {
                                 <input type="text" id="vendor-search-input" placeholder="Type to search vendor..." autocomplete="off" style="width:100%;padding:.5rem .7rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.875rem;box-sizing:border-box;">
                                 <input type="hidden" name="vendor_id" id="ee-vendor-id" value="<?= (int) ($editRecord['vendor_id'] ?? 0) ?>">
                                 <div id="vendor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.1);">
-                                    <?php foreach ($vendors as $v): ?>
+                                    <?php foreach ($allVendors as $v): ?>
                                         <div class="vendor-option" data-id="<?= (int) $v['id'] ?>" data-name="<?= e($v['name']) ?>" style="padding:.5rem .7rem;cursor:pointer;font-size:.875rem;border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'"><?= e($v['name']) ?></div>
                                     <?php endforeach; ?>
                                     <div id="vendor-no-match" style="padding:.5rem .7rem;color:#94a3b8;font-size:.85rem;display:none;">No vendor found</div>
