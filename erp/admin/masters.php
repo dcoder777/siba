@@ -342,6 +342,7 @@ $mExpOffset = ($mExpPage - 1) * $mPerPage;
 $mExpTotal = (int) $pdo->query("SELECT COUNT(*) FROM expenses")->fetchColumn();
 $mExpTotalPages = max(1, (int) ceil($mExpTotal / $mPerPage));
 $expenses = $pdo->query("SELECT e.*, ec.name AS category_label, v.name AS vendor_label FROM expenses e LEFT JOIN expense_categories ec ON ec.id = e.category_id LEFT JOIN vendors v ON v.id = e.vendor_id ORDER BY e.id DESC LIMIT $mPerPage OFFSET $mExpOffset")->fetchAll(PDO::FETCH_ASSOC);
+$allExpenses = $pdo->query("SELECT id, vendor_id, expense_no, expense_date, category_name, description, net_amount, status FROM expenses WHERE vendor_id IS NOT NULL ORDER BY expense_date DESC, id DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Income pagination
 $mIncPage = max(1, (int) ($_GET['ip'] ?? 1));
@@ -1359,7 +1360,7 @@ var vendorExpenses = <?= json_encode(array_map(fn(array $e) => [
     'description' => $e['description'] ?? '',
     'net_amount' => (float) $e['net_amount'],
     'status' => $e['status'] ?? '',
-], $expenses)) ?>;
+], $allExpenses)) ?>;
 
 function showVendorExpenses(vendorId, vendorName) {
     var filtered = vendorExpenses.filter(function(e) { return e.vendor_id === vendorId; });
