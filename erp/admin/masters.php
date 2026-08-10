@@ -604,12 +604,16 @@ if (isset($_GET['edit'])) {
                         </div>
                         <div>
                             <label>Vendor</label>
-                            <select name="vendor_id" id="ee-vendor-id" onchange="document.getElementById('ee-vendor-name').value = this.options[this.selectedIndex].text;">
-                                <option value="0">-- Select Vendor --</option>
-                                <?php foreach ($vendors as $v): ?>
-                                    <option value="<?= (int) $v['id'] ?>" <?= (isset($editRecord['vendor_id']) && (int) $editRecord['vendor_id'] === (int) $v['id']) ? 'selected' : '' ?>><?= e($v['name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="searchable-select" id="vendor-search-wrap">
+                                <input type="text" id="vendor-search-input" placeholder="Type to search vendor..." autocomplete="off" style="width:100%;padding:.5rem .7rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.875rem;box-sizing:border-box;">
+                                <input type="hidden" name="vendor_id" id="ee-vendor-id" value="<?= (int) ($editRecord['vendor_id'] ?? 0) ?>">
+                                <div id="vendor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+                                    <?php foreach ($vendors as $v): ?>
+                                        <div class="vendor-option" data-id="<?= (int) $v['id'] ?>" data-name="<?= e($v['name']) ?>" style="padding:.5rem .7rem;cursor:pointer;font-size:.875rem;border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'"><?= e($v['name']) ?></div>
+                                    <?php endforeach; ?>
+                                    <div id="vendor-no-match" style="padding:.5rem .7rem;color:#94a3b8;font-size:.85rem;display:none;">No vendor found</div>
+                                </div>
+                            </div>
                             <input type="hidden" name="vendor_name" id="ee-vendor-name" value="<?= e($editRecord['vendor_name'] ?? '') ?>">
                         </div>
                         <div>
@@ -1271,7 +1275,57 @@ function eeToggleTxn() {
     txnFields.forEach(function(el) { el.style.display = show ? '' : 'none'; });
 }
 
-document.addEventListener('DOMContentLoaded', function() { eeToggleTxn(); eeCalcNet(); });
+document.addEventListener('DOMContentLoaded', function() {
+    eeToggleTxn();
+    eeCalcNet();
+
+    var wrap = document.getElementById('vendor-search-wrap');
+    if (!wrap) return;
+    var input = document.getElementById('vendor-search-input');
+    var dropdown = document.getElementById('vendor-dropdown');
+    var hidden = document.getElementById('ee-vendor-id');
+    var nameField = document.getElementById('ee-vendor-name');
+    var options = dropdown.querySelectorAll('.vendor-option');
+    var noMatch = document.getElementById('vendor-no-match');
+    wrap.style.position = 'relative';
+
+    function preselectVendor() {
+        var val = hidden.value;
+        if (val && val !== '0') {
+            options.forEach(function(opt) {
+                if (opt.dataset.id === val) { input.value = opt.dataset.name; nameField.value = opt.dataset.name; }
+            });
+        }
+    }
+    preselectVendor();
+
+    input.addEventListener('focus', function() { dropdown.style.display = 'block'; filterVendors(); });
+    input.addEventListener('input', function() { filterVendors(); });
+
+    function filterVendors() {
+        var q = input.value.toLowerCase();
+        var found = 0;
+        options.forEach(function(opt) {
+            var match = opt.dataset.name.toLowerCase().indexOf(q) !== -1;
+            opt.style.display = match ? '' : 'none';
+            if (match) found++;
+        });
+        noMatch.style.display = found === 0 ? 'block' : 'none';
+    }
+
+    options.forEach(function(opt) {
+        opt.addEventListener('click', function() {
+            hidden.value = this.dataset.id;
+            nameField.value = this.dataset.name;
+            input.value = this.dataset.name;
+            dropdown.style.display = 'none';
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!wrap.contains(e.target)) dropdown.style.display = 'none';
+    });
+});
 
 document.querySelectorAll('.modal-backdrop').forEach(function(backdrop) {
     backdrop.addEventListener('click', function(e) {
