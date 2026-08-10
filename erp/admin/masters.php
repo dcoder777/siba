@@ -608,11 +608,11 @@ if (isset($_GET['edit'])) {
                             <div class="searchable-select" id="vendor-search-wrap">
                                 <input type="text" id="vendor-search-input" placeholder="Type to search vendor..." autocomplete="off" style="width:100%;padding:.5rem .7rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.875rem;box-sizing:border-box;">
                                 <input type="hidden" name="vendor_id" id="ee-vendor-id" value="<?= (int) ($editRecord['vendor_id'] ?? 0) ?>">
-                                <div id="vendor-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+                                <div id="vendor-dropdown" style="display:none;position:fixed;background:#fff;border:1px solid #cbd5e1;border-radius:8px;max-height:280px;overflow-y:auto;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);">
                                     <?php foreach ($allVendors as $v): ?>
-                                        <div class="vendor-option" data-id="<?= (int) $v['id'] ?>" data-name="<?= e($v['name']) ?>" style="padding:.5rem .7rem;cursor:pointer;font-size:.875rem;border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'"><?= e($v['name']) ?></div>
+                                        <div class="vendor-option" data-id="<?= (int) $v['id'] ?>" data-name="<?= e($v['name']) ?>" style="padding:.55rem .7rem;cursor:pointer;font-size:.875rem;border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'"><?= e($v['name']) ?></div>
                                     <?php endforeach; ?>
-                                    <div id="vendor-no-match" style="padding:.5rem .7rem;color:#94a3b8;font-size:.85rem;display:none;">No vendor found</div>
+                                    <div id="vendor-no-match" style="padding:.55rem .7rem;color:#94a3b8;font-size:.85rem;display:none;">No vendor found</div>
                                 </div>
                             </div>
                             <input type="hidden" name="vendor_name" id="ee-vendor-name" value="<?= e($editRecord['vendor_name'] ?? '') ?>">
@@ -1300,7 +1300,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     preselectVendor();
 
-    input.addEventListener('focus', function() { dropdown.style.display = 'block'; filterVendors(); });
+    input.addEventListener('focus', function() {
+        var r = input.getBoundingClientRect();
+        dropdown.style.left = r.left + 'px';
+        dropdown.style.top = r.bottom + 'px';
+        dropdown.style.width = r.width + 'px';
+        dropdown.style.display = 'block';
+        filterVendors();
+    });
     input.addEventListener('input', function() { filterVendors(); });
 
     function filterVendors() {
