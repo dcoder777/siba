@@ -1018,6 +1018,7 @@ if (isset($_GET['edit'])) {
             <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
                 <input type="text" id="vendorSearchInput" placeholder="Search vendors..." oninput="filterVendorTable()" style="flex:1;max-width:360px;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;outline:none;">
                 <span id="vendorCount" style="font-size:.82rem;color:#64748b;"><?= count($vendors) ?> vendors</span>
+                <button type="button" onclick="exportTableToCSV('vendorTable','vendors.csv')" style="background:#fff;color:#475569;border:1px solid #cbd5e1;padding:.45rem .85rem;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;">⬇ Export CSV</button>
             </div>
             <div class="vendor-table-wrap">
                 <table class="app-table" id="vendorTable">
