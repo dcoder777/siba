@@ -9,6 +9,7 @@ require_admin_login();
 
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
+$canDelete = can_user_delete($pdo, (int)$user['id'], 'finance');
 $error = '';
 $success = '';
 
@@ -112,10 +113,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     }
 
     // Delete vendor
-    if ($action === 'delete_vendor' && isset($_POST['id']) && $isOwner) {
-        $id = (int) $_POST['id'];
-        $pdo->prepare("DELETE FROM vendors WHERE id=?")->execute([$id]);
-        $success = 'Vendor deleted.';
+    if ($action === 'delete_vendor' && isset($_POST['id'])) {
+        if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+            $error = 'You do not have delete permission for this module.';
+        } elseif ($isOwner) {
+            $id = (int) $_POST['id'];
+            $pdo->prepare("DELETE FROM vendors WHERE id=?")->execute([$id]);
+            $success = 'Vendor deleted.';
+        } else {
+            $error = 'Only owner can delete vendors.';
+        }
     }
 
     header('Location: vendors.php' . ($error !== '' ? '?error=1' : ''));
@@ -344,7 +351,7 @@ $editMode = $editRow !== null;
                                 <td>
                                     <div class="action-btns">
                                         <button type="button" class="btn btn-sm btn-outline" style="padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openEditModal(<?= (int) $row['id'] ?>)">Edit</button>
-                                        <?php if ($isOwner): ?>
+                                        <?php if ($isOwner && $canDelete): ?>
                                         <form method="post" style="display:inline;" onsubmit="return confirm('Delete this vendor? This cannot be undone.')">
                                             <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                             <input type="hidden" name="action" value="delete_vendor">

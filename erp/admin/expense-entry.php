@@ -9,6 +9,7 @@ require_admin_login();
 
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
+$canDelete = can_user_delete($pdo, (int)$user['id'], 'finance');
 $error = '';
 $success = '';
 
@@ -144,6 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 
     // Delete (soft)
     if ($action === 'delete_expense' && isset($_POST['id'])) {
+        if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+            $error = 'You do not have delete permission for this module.';
+        } else {
         $id = (int) $_POST['id'];
         $stmt = $pdo->prepare("UPDATE expenses SET status='Cancelled' WHERE id=? AND status IN ('Pending','Approved','Rejected')");
         $stmt->execute([$id]);
@@ -151,6 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $success = 'Expense cancelled.';
         } else {
             $error = 'Expense could not be cancelled.';
+        }
         }
     }
 
@@ -525,7 +530,7 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                                 </form>
                                                 <button type="button" style="background:#dc2626;color:#fff;border:none;padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openModal('reject', <?= (int) $r['id'] ?>)">Reject</button>
                                             <?php endif; ?>
-                                            <?php if ($isOwner && in_array($r['status'], ['Pending', 'Approved', 'Rejected'], true)): ?>
+                                            <?php if ($isOwner && $canDelete && in_array($r['status'], ['Pending', 'Approved', 'Rejected'], true)): ?>
                                                 <form method="post" style="display:inline;" onsubmit="return confirm('Cancel this expense?')">
                                                     <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                     <input type="hidden" name="action" value="delete_expense">

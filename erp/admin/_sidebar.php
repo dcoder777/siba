@@ -92,6 +92,10 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
                 <span class="nav-tag" style="background:#f59e0b;color:#fff;"><?= $pendingAdminCount ?></span>
             <?php endif; ?>
         </a>
+        <a class="nav-link<?= $activePage === 'user-management.php' ? ' active' : '' ?>" href="user-management.php">
+            <span class="sidebar-icon">🛡</span>
+            <span>User Management</span>
+        </a>
     </div>
     <?php endif; ?>
 

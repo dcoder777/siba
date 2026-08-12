@@ -51,6 +51,7 @@ function render_pagination(int $currentPage, int $totalPages, int $totalRecords,
 
 $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
+$canDelete = can_user_delete($pdo, (int)$user['id'], 'finance');
 $pageTitle = 'Masters';
 $error = '';
 $success = '';
@@ -126,12 +127,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
         if ($action === 'delete_expense') {
+            if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+                $error = 'You do not have delete permission for this module.';
+            } else {
             $id = (int) ($_POST['id'] ?? 0);
             if ($id > 0) {
                 $pdo->prepare("DELETE FROM expenses WHERE id=?")->execute([$id]);
                 $success = 'Expense deleted.';
                 header("Location: masters.php?tab=expense-categories");
                 exit;
+            }
             }
         }
 
@@ -166,12 +171,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
         if ($action === 'delete_income_category') {
+            if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+                $error = 'You do not have delete permission for this module.';
+            } else {
             $id = (int) ($_POST['id'] ?? 0);
             if ($id > 0) {
                 $pdo->prepare("DELETE FROM income_categories WHERE id=?")->execute([$id]);
                 $success = 'Income category deleted.';
                 header("Location: masters.php?tab=income-categories");
                 exit;
+            }
             }
         }
 
@@ -206,12 +215,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
         if ($action === 'delete_vendor') {
+            if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+                $error = 'You do not have delete permission for this module.';
+            } else {
             $id = (int) ($_POST['id'] ?? 0);
             if ($id > 0) {
                 $pdo->prepare("DELETE FROM vendors WHERE id=?")->execute([$id]);
                 $success = 'Vendor deleted.';
                 header("Location: masters.php?tab=vendors");
                 exit;
+            }
             }
         }
 
@@ -243,12 +256,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
         if ($action === 'delete_bank_account') {
+            if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+                $error = 'You do not have delete permission for this module.';
+            } else {
             $id = (int) ($_POST['id'] ?? 0);
             if ($id > 0) {
                 $pdo->prepare("DELETE FROM bank_accounts WHERE id=?")->execute([$id]);
                 $success = 'Bank account deleted.';
                 header("Location: masters.php?tab=bank-accounts");
                 exit;
+            }
             }
         }
 
@@ -293,12 +310,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
         if ($action === 'delete_fee_head') {
+            if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+                $error = 'You do not have delete permission for this module.';
+            } else {
             $id = (int) ($_POST['id'] ?? 0);
             if ($id > 0) {
                 $pdo->prepare("DELETE FROM fee_heads WHERE id=?")->execute([$id]);
                 $success = 'Fee head deleted.';
                 header("Location: masters.php?tab=fees-management");
                 exit;
+            }
             }
         }
 
@@ -572,12 +593,14 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=expense-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
+                                    <?php if ($canDelete): ?>
                                     <form method="post" class="inline-form" onsubmit="return confirm('Delete expense <?= e($row['expense_no']) ?>?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_expense">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
                                         <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -743,12 +766,14 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=income-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
+                                    <?php if ($canDelete): ?>
                                     <form method="post" class="inline-form" onsubmit="return confirm('Delete this income?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_income_category">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
                                         <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -905,7 +930,7 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=vendors&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
-                                    <?php if ($isOwner): ?>
+                                    <?php if ($isOwner && $canDelete): ?>
                                     <form method="post" class="inline-form" onsubmit="return confirm('Delete this vendor?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_vendor">
@@ -1040,12 +1065,14 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=bank-accounts&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
+                                    <?php if ($canDelete): ?>
                                     <form method="post" class="inline-form" onsubmit="return confirm('Delete this bank account?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_bank_account">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
                                         <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -1158,12 +1185,14 @@ if (isset($_GET['edit'])) {
                             <td>
                                 <div class="action-btns">
                                     <a class="btn-icon" href="?tab=fees-management&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
+                                    <?php if ($canDelete): ?>
                                     <form method="post" class="inline-form" onsubmit="return confirm('Delete this fee head?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="master_action" value="delete_fee_head">
                                         <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
                                         <button type="submit" class="btn-icon btn-del" title="Delete">&#128465;</button>
                                     </form>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

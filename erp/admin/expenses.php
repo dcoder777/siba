@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     }
 
     if ($action === 'delete' && isset($_POST['id'])) {
-        if (!$isOwner) { $error = 'Only owner can delete expenses.'; } else {
+        if (!can_user_delete($pdo, (int)$user['id'], 'finance')) { $error = 'You do not have delete permission for this module.'; } elseif (!$isOwner) { $error = 'Only owner can delete expenses.'; } else {
         $id = (int) $_POST['id'];
         $delRow = $pdo->prepare("SELECT bill_file FROM expenses WHERE id=?");
         $delRow->execute([$id]);

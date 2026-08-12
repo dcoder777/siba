@@ -71,9 +71,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     }
 
     if ($action === 'delete' && isset($_POST['id'])) {
-        $id = (int) $_POST['id'];
-        $pdo->prepare("DELETE FROM income_records WHERE id=?")->execute([$id]);
-        $success = 'Income record deleted successfully.';
+        if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+            $error = 'You do not have delete permission for this module.';
+        } else {
+            $id = (int) $_POST['id'];
+            $pdo->prepare("DELETE FROM income_records WHERE id=?")->execute([$id]);
+            $success = 'Income record deleted successfully.';
+        }
     }
 
     if ($action === 'add_category') {

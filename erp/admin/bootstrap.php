@@ -255,6 +255,69 @@ function get_flash(): ?array
     return $flash;
 }
 
+// ─── User Permissions (owner controls delete per module per user) ───
+function ensure_user_permissions_table(PDO $pdo): void
+{
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `user_permissions` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT NOT NULL,
+            `module_key` VARCHAR(50) NOT NULL,
+            `can_delete` TINYINT(1) NOT NULL DEFAULT 0,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY `uniq_user_perm` (`user_id`, `module_key`),
+            KEY `idx_up_user` (`user_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Throwable $e) {}
+}
+
+function fetch_user_permissions(PDO $pdo, int $userId): array
+{
+    try {
+        $stmt = $pdo->prepare('SELECT module_key, can_delete FROM user_permissions WHERE user_id = :uid');
+        $stmt->execute(['uid' => $userId]);
+        $perms = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $perms[$row['module_key']] = ['can_delete' => (int) $row['can_delete'] === 1];
+        }
+        return $perms;
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+function set_user_permissions(PDO $pdo, int $userId, array $deleteModules): void
+{
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('DELETE FROM user_permissions WHERE user_id = :uid')->execute(['uid' => $userId]);
+        $ins = $pdo->prepare(
+            'INSERT INTO user_permissions (user_id, module_key, can_delete, created_at, updated_at)
+             VALUES (:uid, :mod, 1, NOW(), NOW())'
+        );
+        foreach ($deleteModules as $moduleKey) {
+            $ins->execute(['uid' => $userId, 'mod' => $moduleKey]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $e;
+    }
+}
+
+function can_user_delete(PDO $pdo, int $userId, string $moduleKey): bool
+{
+    try {
+        $stmt = $pdo->prepare('SELECT can_delete FROM user_permissions WHERE user_id = :uid AND module_key = :mod');
+        $stmt->execute(['uid' => $userId, 'mod' => $moduleKey]);
+        $row = $stmt->fetch();
+        return $row ? (int) $row['can_delete'] === 1 : false;
+    } catch (Throwable) {
+        return false;
+    }
+}
+
 function entity_config(): array
 {
     return [

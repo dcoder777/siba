@@ -8,6 +8,7 @@ require __DIR__ . '/bootstrap.php';
 require_admin_login();
 
 $user = admin_user();
+$canDelete = can_user_delete($pdo, (int)$user['id'], 'finance');
 $error = '';
 $success = '';
 
@@ -77,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     try {
         // Delete (soft)
         if ($action === 'delete_income' && isset($_POST['id'])) {
+            if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+                $error = 'You do not have delete permission for this module.';
+            } else {
             $id = (int) $_POST['id'];
             $stmt = $pdo->prepare("UPDATE income_categories SET status='Cancelled' WHERE id=? AND status IN ('Pending','Approved','Rejected')");
             $stmt->execute([$id]);
@@ -84,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 set_flash('success', 'Income cancelled.');
             } else {
                 $error = 'Income could not be cancelled.';
+            }
             }
             header('Location: income-entry.php' . ($error !== '' ? '?error=1' : ''));
             exit;
@@ -417,7 +422,7 @@ $rejectId = (int) ($_GET['reject'] ?? 0);
                                                     </form>
                                                     <button type="button" style="background:#dc2626;color:#fff;border:none;padding:.25rem .5rem;font-size:.75rem;border-radius:6px;cursor:pointer;" onclick="openRejectModal(<?= (int) $r['id'] ?>)">Reject</button>
                                                 <?php endif; ?>
-                                                <?php if ($r['status'] !== 'Cancelled'): ?>
+                                                <?php if ($canDelete && $r['status'] !== 'Cancelled'): ?>
                                                     <form method="post" style="display:inline;" onsubmit="return confirm('Cancel this income entry?')">
                                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
                                                         <input type="hidden" name="action" value="delete_income">

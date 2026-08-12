@@ -190,9 +190,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
         }
 
         if ($action === 'delete_bank_account') {
-            $baId = (int) ($_POST['id'] ?? 0);
-            $pdo->prepare("UPDATE bank_accounts SET is_active = 0, updated_at = NOW() WHERE id = ?")->execute([$baId]);
-            $success = 'Bank account deactivated.';
+            if (!can_user_delete($pdo, (int)$user['id'], 'finance')) {
+                $error = 'You do not have delete permission for this module.';
+            } else {
+                $baId = (int) ($_POST['id'] ?? 0);
+                $pdo->prepare("UPDATE bank_accounts SET is_active = 0, updated_at = NOW() WHERE id = ?")->execute([$baId]);
+                $success = 'Bank account deactivated.';
+            }
         }
 
     } catch (\Throwable $e) {
