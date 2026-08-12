@@ -477,7 +477,7 @@ if (isset($_GET['edit'])) {
     <style>
         .layout-split{display:grid;grid-template-columns:220px 1fr;gap:1.25rem;align-items:start}
         .list-panel{position:sticky;top:1.5rem;max-height:calc(100vh - 3rem);overflow-y:auto}
-        .detail-panel{min-height:400px}
+        .detail-panel{min-height:400px;min-width:0;overflow:hidden;}
         .master-nav{display:flex;flex-direction:column;gap:2px}
         .master-nav a{display:flex;align-items:center;gap:.5rem;padding:.55rem .85rem;font-size:.85rem;font-weight:500;color:#64748b;text-decoration:none;border-radius:6px;transition:all .12s ease;border:1px solid transparent}
         .master-nav a:hover{background:#f1f5f9;color:#1e293b}
