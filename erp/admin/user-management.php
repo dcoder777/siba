@@ -122,6 +122,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             }
         }
     }
+
+    // Create user
+    if ($action === 'create_user') {
+        $name = trim((string) ($_POST['name'] ?? ''));
+        $email = trim((string) ($_POST['email'] ?? ''));
+        $roleId = (int) ($_POST['role_id'] ?? 0);
+
+        if ($name === '' || $email === '') {
+            $error = 'Name and email are required.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Invalid email address.';
+        } elseif ($roleId <= 0) {
+            $error = 'Please select a valid role.';
+        } else {
+            // Check email uniqueness
+            $emailCheck = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = ?');
+            $emailCheck->execute([$email]);
+            if ((int) $emailCheck->fetchColumn() > 0) {
+                $error = 'Email address is already registered.';
+            } else {
+                // Generate password
+                $rawPassword = bin2hex(random_bytes(4)) . strtoupper(bin2hex(random_bytes(2)));
+                $passwordHash = password_hash($rawPassword, PASSWORD_DEFAULT);
+
+                $pdo->prepare('INSERT INTO users (role_id, name, email, password_hash, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 1, NOW(), NOW())')
+                    ->execute([$roleId, $name, $email, $passwordHash]);
+
+                $newUserId = (int) $pdo->lastInsertId();
+
+                // Send welcome email
+                $loginUrl = 'https://sibapublicschool.com/erp/admin/login.php';
+                $subject = 'Welcome to SIBA ERP — Your Login Credentials';
+                $message = <<<HTML
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:system-ui,-apple-system,sans-serif;color:#1e293b;max-width:560px;margin:0 auto;padding:2rem;">
+    <div style="background:#2563eb;color:#fff;padding:1.5rem;border-radius:12px 12px 0 0;text-align:center;">
+        <h1 style="margin:0;font-size:1.3rem;">SIBA Public School</h1>
+        <p style="margin:.25rem 0 0;font-size:.85rem;opacity:.85;">ERP Management System</p>
+    </div>
+    <div style="background:#f8fafc;padding:1.5rem;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;">
+        <h2 style="margin:0 0 1rem;font-size:1.1rem;">Welcome, {$name}!</h2>
+        <p>Your account has been created. Here are your login credentials:</p>
+        <table style="width:100%;margin:1rem 0;border-collapse:collapse;">
+            <tr>
+                <td style="padding:.6rem;border:1px solid #e2e8f0;background:#fff;font-weight:600;width:100px;">Email</td>
+                <td style="padding:.6rem;border:1px solid #e2e8f0;background:#fff;">{$email}</td>
+            </tr>
+            <tr>
+                <td style="padding:.6rem;border:1px solid #e2e8f0;background:#fff;font-weight:600;">Password</td>
+                <td style="padding:.6rem;border:1px solid #e2e8f0;background:#fff;font-family:monospace;font-size:1rem;color:#2563eb;">{$rawPassword}</td>
+            </tr>
+        </table>
+        <p style="font-size:.85rem;color:#64748b;">You can change your password after logging in.</p>
+        <a href="{$loginUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:.65rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;margin-top:.5rem;">Login to ERP</a>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0;">
+        <p style="font-size:.8rem;color:#94a3b8;">This is an automated message from SIBA ERP. Do not share these credentials with anyone.</p>
+    </div>
+</body>
+</html>
+HTML;
+                $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: SIBA ERP <noreply@sibapublicschool.com>\r\n";
+                @mail($email, $subject, $message, $headers);
+
+                $success = 'User "' . e($name) . '" created successfully. Welcome email sent to ' . e($email) . '. Password: <code>' . e($rawPassword) . '</code>';
+            }
+        }
+    }
 }
 
 // ─── Fetch all users ───
@@ -202,6 +271,7 @@ if (isset($_GET['edit'])) {
                     <h1>User Management</h1>
                     <p>Edit, delete users and control their delete permissions per module.</p>
                 </div>
+                <button type="button" onclick="document.getElementById('createModal').classList.add('show')" style="background:#2563eb;color:#fff;border:none;padding:.55rem 1.25rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;">+ Add User</button>
             </div>
         </section>
 
@@ -326,6 +396,49 @@ if (isset($_GET['edit'])) {
             </div>
         </form>
         <?php endif; ?>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div id="createModal" class="modal-backdrop">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h2>Create New User</h2>
+            <button type="button" onclick="this.closest('.modal-backdrop').classList.remove('show')" style="background:none;border:none;font-size:1.3rem;color:#94a3b8;cursor:pointer;line-height:1;">&times;</button>
+        </div>
+        <form method="post">
+            <div class="modal-body">
+                <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="action" value="create_user">
+
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.65rem .85rem;margin-bottom:1rem;font-size:.82rem;color:#1e40af;">
+                    A system-generated password will be created and emailed to the user automatically.
+                </div>
+
+                <div class="form-row">
+                    <label for="create_name">Full Name *</label>
+                    <input type="text" id="create_name" name="name" required placeholder="e.g. Rajesh Kumar">
+                </div>
+                <div class="form-row">
+                    <label for="create_email">Email *</label>
+                    <input type="email" id="create_email" name="email" required placeholder="user@example.com">
+                </div>
+                <div class="form-row">
+                    <label for="create_role">Role *</label>
+                    <select id="create_role" name="role_id" required>
+                        <option value="">Select role...</option>
+                        <?php foreach ($allRoles as $role): ?>
+                            <option value="<?= (int) $role['id'] ?>"><?= e(ucfirst($role['name'])) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.5rem;">
+                    <button type="button" onclick="this.closest('.modal-backdrop').classList.remove('show')" style="padding:.5rem 1rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.85rem;color:#475569;background:#fff;cursor:pointer;">Cancel</button>
+                    <button type="submit" style="background:#2563eb;color:#fff;border:none;padding:.5rem 1.25rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;">Create User & Send Welcome Email</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
