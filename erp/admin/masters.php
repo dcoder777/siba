@@ -56,6 +56,34 @@ $pageTitle = 'Masters';
 $error = '';
 $success = '';
 
+// ─── Global keyword search ───
+$masterSearch = trim((string) ($_GET['q'] ?? ''));
+$masterResults = [];
+if ($masterSearch !== '') {
+    $kw = '%' . $masterSearch . '%';
+    try {
+        $sExp = $pdo->prepare("SELECT id, expense_no, vendor_name, description, net_amount, expense_date, status FROM expenses WHERE expense_no LIKE ? OR vendor_name LIKE ? OR description LIKE ? OR category_name LIKE ? ORDER BY id DESC LIMIT 10");
+        $sExp->execute([$kw, $kw, $kw, $kw]);
+        foreach ($sExp->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $masterResults[] = ['type' => 'expense', 'tab' => 'expense-categories', 'id' => $r['id'], 'label' => $r['expense_no'], 'sub' => ($r['vendor_name'] ?: '—') . ' | ' . ($r['description'] ?: '—'), 'amount' => (float) $r['net_amount'], 'date' => $r['expense_date'], 'status' => $r['status']];
+        }
+    } catch (Throwable) {}
+    try {
+        $sInc = $pdo->prepare("SELECT id, income_no, name, description, amount, income_date, status FROM income_categories WHERE income_no LIKE ? OR name LIKE ? OR description LIKE ? ORDER BY id DESC LIMIT 10");
+        $sInc->execute([$kw, $kw, $kw]);
+        foreach ($sInc->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $masterResults[] = ['type' => 'income', 'tab' => 'income-categories', 'id' => $r['id'], 'label' => $r['income_no'] . ' — ' . $r['name'], 'sub' => $r['description'] ?: '—', 'amount' => (float) $r['amount'], 'date' => $r['income_date'], 'status' => $r['status']];
+        }
+    } catch (Throwable) {}
+    try {
+        $sVnd = $pdo->prepare("SELECT id, vendor_code, name, mobile, email, gst_number FROM vendors WHERE vendor_code LIKE ? OR name LIKE ? OR mobile LIKE ? OR email LIKE ? OR gst_number LIKE ? ORDER BY id DESC LIMIT 10");
+        $sVnd->execute([$kw, $kw, $kw, $kw, $kw]);
+        foreach ($sVnd->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $masterResults[] = ['type' => 'vendor', 'tab' => 'vendors', 'id' => $r['id'], 'label' => $r['vendor_code'] . ' — ' . $r['name'], 'sub' => $r['mobile'] . ($r['email'] ? ' | ' . $r['email'] : ''), 'amount' => null, 'date' => null, 'status' => null];
+        }
+    } catch (Throwable) {}
+}
+
 $validTabs = [
     'expense-categories', 'income-categories', 'vendors', 'bank-accounts',
     'fees-management'
@@ -501,6 +529,17 @@ if (isset($_GET['edit'])) {
                     <h1>Masters</h1>
                     <p>Manage foundational master data for the ERP system.</p>
                 </div>
+                <form method="get" style="display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;">
+                    <input type="hidden" name="tab" value="<?= e($tab) ?>">
+                    <div>
+                        <label style="display:block;font-size:.75rem;font-weight:600;color:#64748b;margin-bottom:.2rem;">Search All Masters</label>
+                        <input type="text" name="q" value="<?= e($masterSearch) ?>" placeholder="Expense, income, vendor name, ID..." style="padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.875rem;width:300px;">
+                    </div>
+                    <button type="submit" style="background:#2563eb;color:#fff;border:none;padding:.5rem 1rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;">Search</button>
+                    <?php if ($masterSearch !== ''): ?>
+                        <a href="masters.php?tab=<?= e($tab) ?>" style="background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:.5rem 1rem;border-radius:8px;font-size:.85rem;font-weight:600;text-decoration:none;">Clear</a>
+                    <?php endif; ?>
+                </form>
             </div>
         </section>
 
@@ -511,6 +550,77 @@ if (isset($_GET['edit'])) {
             <div class="flash"><?= e($success) ?></div>
         <?php endif; ?>
 
+        <?php if ($masterSearch !== ''): ?>
+        <!-- SEARCH RESULTS -->
+        <div style="margin-bottom:.75rem;">
+            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Search Results for "<?= e($masterSearch) ?>"</h2>
+            <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;"><?= count($masterResults) ?> result(s) found across Expenses, Income, and Vendors.</p>
+        </div>
+
+        <?php if (empty($masterResults)): ?>
+            <div style="text-align:center;padding:3rem;color:#94a3b8;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
+                <div style="font-size:2rem;margin-bottom:.5rem;">🔍</div>
+                <div>No results found for "<strong><?= e($masterSearch) ?></strong>".</div>
+                <div style="margin-top:.5rem;font-size:.82rem;">Try searching by name, ID, vendor, or description.</div>
+            </div>
+        <?php else: ?>
+            <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+                <table class="app-table" style="font-size:.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>ID / Name</th>
+                            <th>Details</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($masterResults as $mr): ?>
+                            <tr>
+                                <td>
+                                    <?php if ($mr['type'] === 'expense'): ?>
+                                        <span style="background:#fef3c7;color:#92400e;padding:.15rem .5rem;border-radius:4px;font-size:.72rem;font-weight:600;">EXPENSE</span>
+                                    <?php elseif ($mr['type'] === 'income'): ?>
+                                        <span style="background:#d1fae5;color:#065f46;padding:.15rem .5rem;border-radius:4px;font-size:.72rem;font-weight:600;">INCOME</span>
+                                    <?php else: ?>
+                                        <span style="background:#e0e7ff;color:#3730a3;padding:.15rem .5rem;border-radius:4px;font-size:.72rem;font-weight:600;">VENDOR</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="font-weight:600;"><?= e($mr['label']) ?></td>
+                                <td style="color:#64748b;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= e($mr['sub']) ?></td>
+                                <td><?= $mr['amount'] !== null ? 'Rs. ' . number_format($mr['amount'], 2) : '—' ?></td>
+                                <td style="white-space:nowrap;"><?= $mr['date'] ? e($mr['date']) : '—' ?></td>
+                                <td>
+                                    <?php if ($mr['status']): ?>
+                                        <?php
+                                        $sc = match($mr['status']) {
+                                            'Approved' => '#d1fae5,#065f46',
+                                            'Pending' => '#fef3c7,#92400e',
+                                            'Rejected' => '#fee2e2,#991b1b',
+                                            'Cancelled' => '#e2e8f0,#475569',
+                                            default => '#f1f5f9,#475569',
+                                        };
+                                        [$bg, $clr] = explode(',', $sc);
+                                        ?>
+                                        <span class="badge" style="background:<?= $bg ?>;color:<?= $clr ?>;"><?= e($mr['status']) ?></span>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="?tab=<?= e($mr['tab']) ?>&edit=<?= $mr['id'] ?>" style="background:#2563eb;color:#fff;padding:.3rem .65rem;border-radius:6px;font-size:.75rem;font-weight:600;text-decoration:none;">View</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+
+        <?php else: ?>
         <div class="layout-split">
             <!-- LEFT: Master Categories Nav -->
             <div class="list-panel">
@@ -1278,6 +1388,8 @@ if (isset($_GET['edit'])) {
 
             </div><!-- /.detail-panel -->
         </div><!-- /.layout-split -->
+
+        <?php endif; /* end search vs normal view */ ?>
 
     </main>
 </div>
