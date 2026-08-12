@@ -236,9 +236,9 @@ if (isset($_GET['edit'])) {
         .perm-card .inactive { opacity:.5; }
         .perm-row { display:flex; align-items:center; gap:.5rem; padding:.35rem 0; border-bottom:1px solid #f1f5f9; font-size:.85rem; }
         .perm-row:last-child { border-bottom:none; }
-        .perm-row label { flex:1; cursor:pointer; }
-        .toggle { position:relative; width:36px; height:20px; }
-        .toggle input { opacity:0; width:0; height:0; }
+        .perm-row .perm-label { flex:1; cursor:pointer; }
+        .toggle { position:relative; width:36px; height:20px; display:inline-block; flex-shrink:0; margin:0 !important; padding:0 !important; }
+        .toggle input { opacity:0; width:0; height:0; position:absolute; margin:0 !important; padding:0 !important; display:block !important; min-height:0 !important; }
         .toggle .slider { position:absolute; inset:0; background:#cbd5e1; border-radius:20px; cursor:pointer; transition:.2s; }
         .toggle .slider:before { content:''; position:absolute; width:16px; height:16px; left:2px; bottom:2px; background:#fff; border-radius:50%; transition:.2s; }
         .toggle input:checked + .slider { background:#2563eb; }
@@ -326,11 +326,11 @@ if (isset($_GET['edit'])) {
                                 <?php foreach ($modules as $key => $mod): ?>
                                     <?php $hasPerm = $perms[$key]['can_delete'] ?? false; ?>
                                     <div class="perm-row">
-                                        <label for="del_<?= $uid ?>_<?= $key ?>"><?= e($mod['label']) ?></label>
-                                        <div class="toggle">
-                                            <input type="checkbox" id="del_<?= $uid ?>_<?= $key ?>" name="can_delete[]" value="<?= $key ?>" <?= $hasPerm ? 'checked' : '' ?> onchange="this.form.submit()">
-                                            <span class="slider"></span>
-                                        </div>
+                                        <label class="perm-label" for="del_<?= $uid ?>_<?= $key ?>"><?= e($mod['label']) ?></label>
+                                        <span class="toggle">
+                                             <input type="checkbox" id="del_<?= $uid ?>_<?= $key ?>" name="can_delete[]" value="<?= $key ?>" <?= $hasPerm ? 'checked' : '' ?>>
+                                             <span class="slider" onclick="var cb=this.previousElementSibling;cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));"></span>
+                                         </span>
                                     </div>
                                 <?php endforeach; ?>
                             </form>
@@ -383,10 +383,10 @@ if (isset($_GET['edit'])) {
                 </div>
                 <div class="form-row" style="display:flex;align-items:center;gap:.75rem;">
                     <label for="edit_active" style="margin:0;">Active</label>
-                    <div class="toggle">
-                        <input type="checkbox" id="edit_active" name="is_active" value="1" <?= $editUser['is_active'] ? 'checked' : '' ?>>
-                        <span class="slider"></span>
-                    </div>
+                    <label class="toggle">
+                         <input type="checkbox" id="edit_active" name="is_active" value="1" <?= $editUser['is_active'] ? 'checked' : '' ?>>
+                         <span class="slider"></span>
+                     </label>
                 </div>
 
                 <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.5rem;">
@@ -444,5 +444,12 @@ if (isset($_GET['edit'])) {
 
 <script src="../assets/erp.js?v=<?= filemtime(dirname(__DIR__) . '/assets/erp.js') ?>"></script>
 <?php include __DIR__ . '/_theme-js.php'; ?>
+<script>
+document.querySelectorAll('.toggle input[type="checkbox"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+        if (this.form) this.form.submit();
+    });
+});
+</script>
 </body>
 </html>
