@@ -678,7 +678,7 @@ if (isset($_GET['edit'])) {
                         <tr>
                             <th class="sortable" onclick="sortExpenseTable(0,'num')"># <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortExpenseTable(1,'str')">Exp No <span class="sort-icon">⇅</span></th>
-                            <th class="sortable" onclick="sortExpenseTable(2,'date')">Date <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(2,'date')">Expense Date <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortExpenseTable(3,'str')">Category <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortExpenseTable(4,'str')">Vendor <span class="sort-icon">⇅</span></th>
                             <th class="sortable" onclick="sortExpenseTable(5,'num')" style="text-align:right;">Amount <span class="sort-icon">⇅</span></th>
