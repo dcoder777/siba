@@ -668,34 +668,38 @@ if (isset($_GET['edit'])) {
             <?php if (empty($expenses)): ?>
                 <p style="text-align:center;padding:2rem;color:#94a3b8;">No expenses recorded yet.</p>
             <?php else: ?>
+            <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
+                <input type="text" id="expenseSearchInput" placeholder="Search expenses..." oninput="filterExpenseTable()" style="flex:1;max-width:360px;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;outline:none;">
+                <span id="expenseCount" style="font-size:.82rem;color:#64748b;"><?= count($expenses) ?> expenses</span>
+            </div>
             <div style="overflow-x:auto;">
-                <table class="app-table" style="font-size:.8rem;">
+                <table class="app-table" id="expenseTable" style="font-size:.8rem;">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Exp No</th>
-                            <th>Date</th>
-                            <th>Category</th>
-                            <th>Vendor</th>
-                            <th style="text-align:right;">Amount</th>
-                            <th>Note</th>
-                            <th>Mode</th>
-                            <th>Status</th>
+                            <th class="sortable" onclick="sortExpenseTable(0,'num')"># <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(1,'str')">Exp No <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(2,'date')">Date <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(3,'str')">Category <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(4,'str')">Vendor <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(5,'num')" style="text-align:right;">Amount <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(6,'str')">Note <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(7,'str')">Mode <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortExpenseTable(8,'str')">Status <span class="sort-icon">⇅</span></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="expenseTableBody">
                         <?php $i = 1; foreach ($expenses as $row): ?>
                         <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;"><?= e($row['expense_no']) ?></td>
-                            <td style="white-space:nowrap;font-size:.8rem;"><?= date('d-m-Y', strtotime($row['expense_date'])) ?></td>
-                            <td><span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:.72rem;padding:.1rem .4rem;"><?= e($row['category_label'] ?? $row['category_name'] ?? '—') ?></span></td>
-                            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?>"><?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?: '—' ?></td>
-                            <td style="text-align:right;white-space:nowrap;">&#8377; <?= number_format((float) $row['net_amount'], 2) ?></td>
-                            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['description'] ?? '') ?>"><?= e($row['description'] ?? '—') ?></td>
-                            <td style="white-space:nowrap;"><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
-                            <td><?php
+                            <td style="color:#94a3b8;" data-sort="<?= $i ?>"><?= $i++ ?></td>
+                            <td style="font-family:monospace;font-size:.78rem;white-space:nowrap;" data-sort="<?= e($row['expense_no']) ?>"><?= e($row['expense_no']) ?></td>
+                            <td style="white-space:nowrap;font-size:.8rem;" data-sort="<?= $row['expense_date'] ?>"><?= date('d-m-Y', strtotime($row['expense_date'])) ?></td>
+                            <td data-sort="<?= e($row['category_label'] ?? $row['category_name'] ?? '') ?>"><span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:.72rem;padding:.1rem .4rem;"><?= e($row['category_label'] ?? $row['category_name'] ?? '—') ?></span></td>
+                            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?>" data-sort="<?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?>"><?= e($row['vendor_label'] ?? $row['vendor_name'] ?? '') ?: '—' ?></td>
+                            <td style="text-align:right;white-space:nowrap;" data-sort="<?= (float) $row['net_amount'] ?>">&#8377; <?= number_format((float) $row['net_amount'], 2) ?></td>
+                            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($row['description'] ?? '') ?>" data-sort="<?= e($row['description'] ?? '') ?>"><?= e($row['description'] ?? '—') ?></td>
+                            <td style="white-space:nowrap;" data-sort="<?= e($row['payment_mode'] ?? '') ?>"><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
+                            <td data-sort="<?= e($row['status'] ?? '') ?>"><?php
                                 $statusColors = ['Pending' => '#fef3c7,#92400e', 'Approved' => '#d1fae5,#065f46', 'Rejected' => '#fee2e2,#991b1b', 'Cancelled' => '#e2e8f0,#475569'];
                                 $sc = $statusColors[$row['status']] ?? '#fef3c7,#92400e';
                                 [$stBg, $stClr] = explode(',', $sc);
@@ -842,32 +846,36 @@ if (isset($_GET['edit'])) {
             <?php if (empty($incomeCategories)): ?>
                 <p style="text-align:center;padding:2rem;color:#94a3b8;">No manual income entries yet.</p>
             <?php else: ?>
+            <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
+                <input type="text" id="incomeSearchInput" placeholder="Search income entries..." oninput="filterIncomeTable()" style="flex:1;max-width:360px;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;outline:none;">
+                <span id="incomeCount" style="font-size:.82rem;color:#64748b;"><?= count($incomeCategories) ?> entries</span>
+            </div>
             <div style="overflow-x:auto;">
-                <table class="app-table">
+                <table class="app-table" id="incomeTable">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Income No</th>
-                            <th>Date</th>
-                            <th>Name</th>
-                            <th style="text-align:right;">Amount</th>
-                            <th>Mode</th>
-                            <th>Note</th>
-                            <th>Status</th>
+                            <th class="sortable" onclick="sortIncomeTable(0,'num')"># <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortIncomeTable(1,'str')">Income No <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortIncomeTable(2,'date')">Date <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortIncomeTable(3,'str')">Name <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortIncomeTable(4,'num')" style="text-align:right;">Amount <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortIncomeTable(5,'str')">Mode <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortIncomeTable(6,'str')">Note <span class="sort-icon">⇅</span></th>
+                            <th class="sortable" onclick="sortIncomeTable(7,'str')">Status <span class="sort-icon">⇅</span></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="incomeTableBody">
                         <?php $i = 1; foreach ($incomeCategories as $row): ?>
                         <tr>
-                            <td style="color:#94a3b8;"><?= $i++ ?></td>
-                            <td style="font-family:monospace;font-size:.82rem;"><?= e($row['income_no'] ?? '') ?: '—' ?></td>
-                            <td style="white-space:nowrap;"><?= $row['income_date'] ? date('d-m-Y', strtotime($row['income_date'])) : '—' ?></td>
-                            <td><strong><?= e($row['name']) ?></strong></td>
-                            <td style="text-align:right;">&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
-                            <td><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
-                            <td style="max-width:150px;color:#64748b;"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
-                            <td><?php
+                            <td style="color:#94a3b8;" data-sort="<?= $i ?>"><?= $i++ ?></td>
+                            <td style="font-family:monospace;font-size:.82rem;" data-sort="<?= e($row['income_no'] ?? '') ?>"><?= e($row['income_no'] ?? '') ?: '—' ?></td>
+                            <td style="white-space:nowrap;" data-sort="<?= $row['income_date'] ?? '' ?>"><?= $row['income_date'] ? date('d-m-Y', strtotime($row['income_date'])) : '—' ?></td>
+                            <td data-sort="<?= e($row['name']) ?>"><strong><?= e($row['name']) ?></strong></td>
+                            <td style="text-align:right;" data-sort="<?= (float) ($row['amount'] ?? 0) ?>">&#8377; <?= number_format((float) ($row['amount'] ?? 0), 2) ?></td>
+                            <td data-sort="<?= e($row['payment_mode'] ?? '') ?>"><?= e($row['payment_mode'] ?? '') ?: '—' ?></td>
+                            <td style="max-width:150px;color:#64748b;" data-sort="<?= e((string) ($row['description'] ?? '')) ?>"><?= e((string) ($row['description'] ?? '')) ?: '—' ?></td>
+                            <td data-sort="<?= e($row['status'] ?? 'Pending') ?>"><?php
                                 $incStatus = $row['status'] ?? 'Pending';
                                 $incStatusColors = ['Pending' => '#fef3c7,#92400e', 'Approved' => '#d1fae5,#065f46', 'Rejected' => '#fee2e2,#991b1b', 'Received' => '#d1fae5,#065f46'];
                                 $isc = $incStatusColors[$incStatus] ?? '#fef3c7,#92400e';
@@ -1551,6 +1559,70 @@ function filterVendorTable() {
         if (match) shown++;
     });
     document.getElementById('vendorCount').textContent = shown + ' vendor' + (shown !== 1 ? 's' : '');
+}
+
+var expSortCol = -1, expSortAsc = true;
+function sortExpenseTable(col, type) {
+    var table = document.getElementById('expenseTable');
+    var tbody = document.getElementById('expenseTableBody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    if (expSortCol === col) { expSortAsc = !expSortAsc; } else { expSortCol = col; expSortAsc = true; }
+    table.querySelectorAll('th.sortable').forEach(function(th) { th.classList.remove('sort-asc','sort-desc'); th.querySelector('.sort-icon').textContent = '⇅'; });
+    var th = table.querySelectorAll('th.sortable')[col];
+    if (th) { th.classList.add(expSortAsc ? 'sort-asc' : 'sort-desc'); th.querySelector('.sort-icon').textContent = expSortAsc ? '↑' : '↓'; }
+    rows.sort(function(a, b) {
+        var ac = a.cells[col], bc = b.cells[col];
+        var av = ac.getAttribute('data-sort') !== null ? ac.getAttribute('data-sort') : ac.textContent.trim();
+        var bv = bc.getAttribute('data-sort') !== null ? bc.getAttribute('data-sort') : bc.textContent.trim();
+        if (type === 'num') { av = parseFloat(av.replace(/[^\d.\-]/g,'')) || 0; bv = parseFloat(bv.replace(/[^\d.\-]/g,'')) || 0; return expSortAsc ? av - bv : bv - av; }
+        if (type === 'date') { av = av || '9999-99-99'; bv = bv || '9999-99-99'; return expSortAsc ? av.localeCompare(bv) : bv.localeCompare(av); }
+        return expSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(function(r) { tbody.appendChild(r); });
+}
+
+function filterExpenseTable() {
+    var q = document.getElementById('expenseSearchInput').value.toLowerCase();
+    var rows = document.querySelectorAll('#expenseTableBody tr'), shown = 0;
+    rows.forEach(function(r) {
+        var text = r.textContent.toLowerCase();
+        var match = text.indexOf(q) !== -1;
+        r.style.display = match ? '' : 'none';
+        if (match) shown++;
+    });
+    document.getElementById('expenseCount').textContent = shown + ' expense' + (shown !== 1 ? 's' : '');
+}
+
+var incSortCol = -1, incSortAsc = true;
+function sortIncomeTable(col, type) {
+    var table = document.getElementById('incomeTable');
+    var tbody = document.getElementById('incomeTableBody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    if (incSortCol === col) { incSortAsc = !incSortAsc; } else { incSortCol = col; incSortAsc = true; }
+    table.querySelectorAll('th.sortable').forEach(function(th) { th.classList.remove('sort-asc','sort-desc'); th.querySelector('.sort-icon').textContent = '⇅'; });
+    var th = table.querySelectorAll('th.sortable')[col];
+    if (th) { th.classList.add(incSortAsc ? 'sort-asc' : 'sort-desc'); th.querySelector('.sort-icon').textContent = incSortAsc ? '↑' : '↓'; }
+    rows.sort(function(a, b) {
+        var ac = a.cells[col], bc = b.cells[col];
+        var av = ac.getAttribute('data-sort') !== null ? ac.getAttribute('data-sort') : ac.textContent.trim();
+        var bv = bc.getAttribute('data-sort') !== null ? bc.getAttribute('data-sort') : bc.textContent.trim();
+        if (type === 'num') { av = parseFloat(av.replace(/[^\d.\-]/g,'')) || 0; bv = parseFloat(bv.replace(/[^\d.\-]/g,'')) || 0; return incSortAsc ? av - bv : bv - av; }
+        if (type === 'date') { av = av || '9999-99-99'; bv = bv || '9999-99-99'; return incSortAsc ? av.localeCompare(bv) : bv.localeCompare(av); }
+        return incSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(function(r) { tbody.appendChild(r); });
+}
+
+function filterIncomeTable() {
+    var q = document.getElementById('incomeSearchInput').value.toLowerCase();
+    var rows = document.querySelectorAll('#incomeTableBody tr'), shown = 0;
+    rows.forEach(function(r) {
+        var text = r.textContent.toLowerCase();
+        var match = text.indexOf(q) !== -1;
+        r.style.display = match ? '' : 'none';
+        if (match) shown++;
+    });
+    document.getElementById('incomeCount').textContent = shown + ' entr' + (shown !== 1 ? 'ies' : 'y');
 }
 </script>
 
