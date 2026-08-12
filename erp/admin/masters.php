@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                     $stmt->execute([$expenseNo, $expenseDate, $categoryId > 0 ? $categoryId : null, $catName ?: null, $vendorId > 0 ? $vendorId : null, $vendorName ?: null, $billNo ?: null, $billDate ?: null, $amount, $gstAmount, $netAmount, $description ?: null, $paymentMode ?: null, $paymentDate ?: null, $paymentId ?: null, $transactionId ?: null, $payeeName ?: null, $status, $createdBy]);
                     $success = 'Expense created.';
                 }
-                header("Location: masters.php?tab=expense-categories");
+                header("Location: masters.php?tab=expense-categories&ep=" . $mExpPage);
                 exit;
             }
         }
@@ -162,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             if ($id > 0) {
                 $pdo->prepare("DELETE FROM expenses WHERE id=?")->execute([$id]);
                 $success = 'Expense deleted.';
-                header("Location: masters.php?tab=expense-categories");
+                header("Location: masters.php?tab=expense-categories&ep=" . $mExpPage);
                 exit;
             }
             }
@@ -706,7 +706,7 @@ if (isset($_GET['edit'])) {
                             ?><span class="badge" style="background:<?= $stBg ?>;color:<?= $stClr ?>;"><?= e($row['status']) ?></span></td>
                             <td>
                                 <div class="action-btns">
-                                    <a class="btn-icon" href="?tab=expense-categories&edit=<?= (int) $row['id'] ?>" title="Edit">&#9998;</a>
+                                    <a class="btn-icon" href="?tab=expense-categories&edit=<?= (int) $row['id'] ?>&ep=<?= $mExpPage ?>" title="Edit">&#9998;</a>
                                     <?php if ($canDelete): ?>
                                     <form method="post" class="inline-form" onsubmit="return confirm('Delete expense <?= e($row['expense_no']) ?>?')">
                                         <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
@@ -824,7 +824,7 @@ if (isset($_GET['edit'])) {
                     </div>
                     <div class="action-row" style="margin-top:1.5rem;">
                         <button type="submit" class="btn"><?= ($editRecord && $editType === 'expense-categories') ? 'Update' : 'Create Expense' ?></button>
-                        <a href="?tab=expense-categories" class="btn btn-soft">Cancel</a>
+                        <a href="?tab=expense-categories&ep=<?= $mExpPage ?>" class="btn btn-soft">Cancel</a>
                     </div>
                 </form>
             </div>
