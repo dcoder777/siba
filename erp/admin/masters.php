@@ -671,6 +671,7 @@ if (isset($_GET['edit'])) {
             <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
                 <input type="text" id="expenseSearchInput" placeholder="Search expenses..." oninput="filterExpenseTable()" style="flex:1;max-width:360px;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;outline:none;">
                 <span id="expenseCount" style="font-size:.82rem;color:#64748b;"><?= count($expenses) ?> expenses</span>
+                <button type="button" onclick="exportTableToCSV('expenseTable','expenses.csv')" style="background:#fff;color:#475569;border:1px solid #cbd5e1;padding:.45rem .85rem;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;">⬇ Export CSV</button>
             </div>
             <div style="overflow-x:auto;">
                 <table class="app-table" id="expenseTable" style="font-size:.8rem;">
@@ -849,6 +850,7 @@ if (isset($_GET['edit'])) {
             <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;">
                 <input type="text" id="incomeSearchInput" placeholder="Search income entries..." oninput="filterIncomeTable()" style="flex:1;max-width:360px;padding:.5rem .75rem;border:1px solid #cbd5e1;border-radius:8px;font-size:.88rem;outline:none;">
                 <span id="incomeCount" style="font-size:.82rem;color:#64748b;"><?= count($incomeCategories) ?> entries</span>
+                <button type="button" onclick="exportTableToCSV('incomeTable','income.csv')" style="background:#fff;color:#475569;border:1px solid #cbd5e1;padding:.45rem .85rem;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;">⬇ Export CSV</button>
             </div>
             <div style="overflow-x:auto;">
                 <table class="app-table" id="incomeTable">
@@ -1403,6 +1405,33 @@ if (isset($_GET['edit'])) {
 </div>
 
 <script>
+function exportTableToCSV(tableId, filename) {
+    var table = document.getElementById(tableId);
+    var rows = table.querySelectorAll('tr');
+    var csv = [];
+    rows.forEach(function(row) {
+        if (row.style.display === 'none') return;
+        var cols = row.querySelectorAll('th, td');
+        var line = [];
+        cols.forEach(function(col) {
+            if (col.querySelector('.action-btns') || col.querySelector('.inline-form')) return;
+            var text = (col.getAttribute('data-sort') !== null && col.tagName === 'TD') ? col.getAttribute('data-sort') : col.textContent.trim();
+            text = text.replace(/"/g, '""');
+            if (text.indexOf(',') !== -1 || text.indexOf('"') !== -1 || text.indexOf('\n') !== -1) {
+                text = '"' + text + '"';
+            }
+            line.push(text);
+        });
+        csv.push(line.join(','));
+    });
+    var blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
 function closeModal(backdrop) {
     if (backdrop) {
         backdrop.classList.remove('show');
