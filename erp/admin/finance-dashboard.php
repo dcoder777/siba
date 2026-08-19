@@ -7,14 +7,10 @@ $user = admin_user();
 $isOwner = ($user['role'] ?? '') === 'owner';
 $pageTitle = 'Finance Dashboard';
 
-// Date filter — applies ONLY to the "Filtered Period" section, defaults to current month
+// Date filter — applies ONLY to the "Filtered Period" section
 $filterFrom = trim((string) ($_GET['from'] ?? ''));
 $filterTo = trim((string) ($_GET['to'] ?? ''));
-$filterApplied = ($filterFrom !== '' || $filterTo !== '');
-if ($filterFrom === '' && $filterTo === '') {
-    $filterFrom = date('Y-m-01');
-    $filterTo = date('Y-m-t');
-}
+$filterApplied = ($filterFrom !== '' && $filterTo !== '');
 
 // Fixed period: Jan 2026 to today (for top overview — never changes)
 $fixedFrom = '2026-01-01';
@@ -52,17 +48,23 @@ $topCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM 
 $todayCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date = CURDATE() AND status = 'Active'");
 $outstandingFees = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active'");
 
-// ─── Filtered Period Section (defaults to current month, changes with filter) ───
-$filteredExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$filterFrom, $filterTo]);
-$filteredIncomeApproved = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$filterFrom, $filterTo]);
-$filteredAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$filterFrom, $filterTo]);
+// ─── Filtered Period Section (shows all records when no filter, or filtered by dates) ───
+if ($filterApplied) {
+    $filteredExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending') AND expense_date >= ? AND expense_date <= ?", [$filterFrom, $filterTo]);
+    $filteredIncomeApproved = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved' AND income_date >= ? AND income_date <= ?", [$filterFrom, $filterTo]);
+    $filteredAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL AND DATE(applied_at) >= ? AND DATE(applied_at) <= ?", [$filterFrom, $filterTo]);
+    $filteredCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$filterFrom, $filterTo]);
+    $recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' AND fc.payment_date >= ? AND fc.payment_date <= ? ORDER BY fc.created_at DESC LIMIT 10", [$filterFrom, $filterTo]);
+} else {
+    $filteredExpenses = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM expenses WHERE status IN ('Approved','Pending')");
+    $filteredIncomeApproved = finance_scalar($pdo, "SELECT COALESCE(SUM(amount), 0) FROM income_categories WHERE status = 'Approved'");
+    $filteredAppFeeIncome = finance_scalar($pdo, "SELECT COALESCE(SUM(CAST(payment_amount AS DECIMAL(12,2))), 0) FROM applications WHERE payment_status = 'Paid' AND deleted_at IS NULL");
+    $filteredCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE status = 'Active'");
+    $recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' ORDER BY fc.created_at DESC LIMIT 10");
+}
 $filteredTotalIncome = $filteredIncomeApproved + $filteredAppFeeIncome;
-$filteredCollection = finance_scalar($pdo, "SELECT COALESCE(SUM(net_amount), 0) FROM fee_collections WHERE payment_date >= ? AND payment_date <= ? AND status = 'Active'", [$filterFrom, $filterTo]);
 $filteredPendingExpenses = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses WHERE status = 'Pending'");
 $filteredPendingDues = finance_scalar($pdo, "SELECT COALESCE(SUM(balance), 0) FROM student_fee_accounts WHERE status = 'active' AND balance > 0");
-
-// Recent Transactions (filtered)
-$recentTransactions = finance_rows($pdo, "SELECT fc.*, fc.student_name AS student_display FROM fee_collections fc WHERE fc.status = 'Active' AND fc.payment_date >= ? AND fc.payment_date <= ? ORDER BY fc.created_at DESC LIMIT 10", [$filterFrom, $filterTo]);
 
 // Pending Dues (not date-filtered — always current)
 $pendingDues = finance_rows($pdo, "SELECT sfa.*, sfa.student_name AS student_display FROM student_fee_accounts sfa WHERE sfa.status = 'active' AND sfa.balance > 0 ORDER BY sfa.balance DESC LIMIT 10");
@@ -173,11 +175,11 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
         </div>
 
         <!-- ═══ FILTERED PERIOD SECTION ═══ -->
-        <?php $periodLabel = e(date('d M', strtotime($filterFrom))) . ' – ' . e(date('d M Y', strtotime($filterTo))); ?>
+        <?php $periodLabel = $filterApplied ? (e(date('d M', strtotime($filterFrom))) . ' – ' . e(date('d M Y', strtotime($filterTo)))) : 'All Records'; ?>
         <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
             <div>
                 <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">🔍 Filtered Period — <?= $periodLabel ?></h2>
-                <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;">Use the date filter above to change this period. Defaults to current month.</p>
+                <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;"><?= $filterApplied ? 'Use the date filter above to change this period.' : 'Showing all records. Use the date filter above to narrow down.' ?></p>
             </div>
             <?php if ($filterApplied): ?>
                 <a href="finance-dashboard.php" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:.4rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;white-space:nowrap;">✕ Clear Filter</a>
