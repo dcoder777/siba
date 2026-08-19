@@ -174,9 +174,14 @@ $pendingExpenseCount = (int) finance_scalar($pdo, "SELECT COUNT(*) FROM expenses
 
         <!-- ═══ FILTERED PERIOD SECTION ═══ -->
         <?php $periodLabel = e(date('d M', strtotime($filterFrom))) . ' – ' . e(date('d M Y', strtotime($filterTo))); ?>
-        <div style="margin-bottom:.75rem;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">🔍 Filtered Period — <?= $periodLabel ?></h2>
-            <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;">Use the date filter above to change this period. Defaults to current month.</p>
+        <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+            <div>
+                <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">🔍 Filtered Period — <?= $periodLabel ?></h2>
+                <p style="font-size:.82rem;color:#64748b;margin:.2rem 0 0;">Use the date filter above to change this period. Defaults to current month.</p>
+            </div>
+            <?php if ($filterApplied): ?>
+                <a href="finance-dashboard.php" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:.4rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;white-space:nowrap;">✕ Clear Filter</a>
+            <?php endif; ?>
         </div>
         <div class="kpi-grid">
             <div class="kpi-card success">
