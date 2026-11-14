@@ -4,3 +4,31 @@ includes/config.php
 Thumbs.db
 storage/logs/*.log
 erp/storage/logs/*.log
+
+# Server and error logs
+error_log
+*/error_log
+*/**/error_log
+*.log
+
+# Hosting and archive artifacts
+.ftpquota
+*.zip
+
+# Nested sites
+site/
+
+# Scratch and test files
+erp/scratch.php
+erp/admin/_test.php
+
+# User uploads
+uploads/docs/*
+!uploads/docs/.gitkeep
+!uploads/docs/*.pdf
+uploads/events/*
+!uploads/events/.gitkeep
+uploads/photos/*
+!uploads/photos/.gitkeep
+erp/uploads/*
+!erp/uploads/.gitkeep

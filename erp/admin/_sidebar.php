@@ -65,11 +65,28 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         </a>
     </div>
 
-    <?php if ($isOwner): ?>
+    <?php 
+    $userId = (int)($user['id'] ?? 0);
+    $userRoles = function_exists('fetch_user_roles') ? fetch_user_roles($pdo, $userId, $user['role'] ?? '') : [];
+    $userModules = function_exists('fetch_user_module_access') ? array_unique(array_merge(default_modules_for_roles($userRoles), fetch_user_module_access($pdo, $userId))) : [];
+    if ($isOwner || in_array('hr', $userModules)): 
+?>
     <div class="nav-group">
-        <div class="nav-title">HR</div>
+        <div class="nav-title">HR & STAFF MANAGEMENT</div>
+        <a class="nav-link<?= $activePage === 'staff-directory.php' ? ' active' : '' ?>" href="staff-directory.php">
+            <span class="sidebar-icon">👥</span><span>Staff Master Directory</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'staff-attendance.php' ? ' active' : '' ?>" href="staff-attendance.php">
+            <span class="sidebar-icon">📅</span><span>Staff Attendance</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'leave-management.php' ? ' active' : '' ?>" href="leave-management.php">
+            <span class="sidebar-icon">🌴</span><span>Leave Management</span>
+        </a>
         <a class="nav-link<?= $activePage === 'salary-setup.php' ? ' active' : '' ?>" href="salary-setup.php">
-            <span class="sidebar-icon">👥</span><span>Payroll</span>
+            <span class="sidebar-icon">💼</span><span>Salary Structure</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'payroll-execution.php' ? ' active' : '' ?>" href="payroll-execution.php">
+            <span class="sidebar-icon">💵</span><span>Payroll Execution</span>
         </a>
     </div>
 

@@ -121,7 +121,7 @@ return function (Router $router, array $context): void {
 
     $router->add('POST', '/api/v1/admissions/register-parent', fn() => $admissions->registerParent(), false);
     $router->add('GET', '/api/v1/admissions/applications', fn() => $admissions->list(), true, ['admin'], 'admissions');
-    $router->add('POST', '/api/v1/admissions/apply', fn() => $admissions->apply(), true, ['admin'], 'admissions');
+    $router->add('POST', '/api/v1/admissions/apply', fn() => $admissions->apply(), true, ['admin', 'parent'], 'admissions');
 
     // Parents
     $router->add('GET', '/api/v1/parents', fn() => $parents->list(), true, ['admin'], 'parents');

@@ -14,6 +14,15 @@ require_once(__DIR__ . '/config.php');
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo SITE_URL; ?>/assets/css/styles.css?v=<?php echo time(); ?>">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CGF8NFVV9T"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-CGF8NFVV9T');
+    </script>
 </head>
 <body>
 

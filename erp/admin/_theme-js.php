@@ -31,5 +31,16 @@
         localStorage.setItem(themeKey, nextTheme);
         setTheme(nextTheme);
     });
+    const sidebar = document.querySelector('.sidebar');
+    const scrollKey = 'siba_erp_sidebar_scroll';
+    if (sidebar) {
+        const savedScroll = sessionStorage.getItem(scrollKey);
+        if (savedScroll !== null) {
+            sidebar.scrollTop = parseInt(savedScroll, 10);
+        }
+        sidebar.addEventListener('scroll', () => {
+            sessionStorage.setItem(scrollKey, sidebar.scrollTop);
+        });
+    }
 })();
 </script>

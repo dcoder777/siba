@@ -32,13 +32,13 @@ servers:
     description: Production
 tags:
   - name: Auth
+  - name: Admissions
   - name: Students
   - name: Parents
   - name: Academics
   - name: Finance
   - name: Operations
   - name: HR
-  - name: Admissions
   - name: Reports
 components:
   securitySchemes:
@@ -55,6 +55,7 @@ components:
           example: true
         message:
           type: string
+          example: Operation completed successfully
         data:
           type: object
           additionalProperties: true
@@ -66,69 +67,74 @@ components:
           example: false
         message:
           type: string
+          example: Error description
     Pagination:
       type: object
       properties:
         page:
           type: integer
+          example: 1
         limit:
           type: integer
+          example: 20
         total:
           type: integer
+          example: 100
         total_pages:
           type: integer
+          example: 5
 security:
   - bearerAuth: []
 paths:
-  /admissions/applications:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and get API token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@siba.local
+                password:
+                  type: string
+                  example: Password@123
+              example:
+                email: admin@siba.local
+                password: Password@123
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /auth/me:
     get:
-      tags: [Admissions]
-      summary: List admission applications
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: query
-          name: page
-          schema: { type: integer, default: 1 }
-        - in: query
-          name: limit
-          schema: { type: integer, default: 20 }
-        - in: query
-          name: q
-          schema: { type: string }
-          description: Search by student name, father name, mother name, parent name, or phone
-        - in: query
-          name: status
-          schema: { type: string }
-          description: Filter by status (Application started, Under review, Admitted, Rejected)
+      tags: [Auth]
+      summary: Current user profile
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      applications:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id: { type: integer }
-                            student_name: { type: string }
-                            first_name: { type: string }
-                            class_sought: { type: string }
-                            status: { type: string }
-                            admission_no: { type: string }
-                            applied_at: { type: string }
-                            parent_name: { type: string }
-                            parent_phone: { type: string }
-                      pagination:
-                        $ref: '#/components/schemas/Pagination'
+                $ref: '#/components/schemas/ApiSuccess'
+
   /admissions/register-parent:
     post:
       tags: [Admissions]
@@ -146,91 +152,293 @@ paths:
                 - email
                 - password
               properties:
-                name: { type: string, description: Parent's full name }
-                phone: { type: string, description: 10-digit mobile number }
-                email: { type: string, format: email, description: Parent email address }
-                password: { type: string, description: Account password }
+                name:
+                  type: string
+                  example: Rajesh Sharma
+                  description: Parent's full name
+                phone:
+                  type: string
+                  example: "9876543210"
+                  description: 10-digit mobile number
+                email:
+                  type: string
+                  format: email
+                  example: rajesh.sharma@example.com
+                  description: Parent email address
+                password:
+                  type: string
+                  example: Password@123
+                  description: Account password
+              example:
+                name: Rajesh Sharma
+                phone: "9876543210"
+                email: rajesh.sharma@example.com
+                password: Password@123
       responses:
         '200':
           description: Parent registered successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success: { type: boolean, example: true }
-                  message: { type: string, example: Parent registered successfully }
-                  data:
-                    type: object
-                    properties:
-                      parent_id: { type: integer }
-                      user_id: { type: integer }
+                $ref: '#/components/schemas/ApiSuccess'
         '422':
           description: Validation error
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /admissions/applications:
+    get:
+      tags: [Admissions]
+      summary: List admission applications
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          schema: { type: string, example: Sharma }
+          description: Search by student name, father name, mother name, parent name, or phone
+        - in: query
+          name: status
+          schema: { type: string, example: "Application started" }
+          description: Filter by status (Application started, Under review, Admitted, Rejected)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
                 type: object
                 properties:
-                  success: { type: boolean, example: false }
-                  message: { type: string }
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      applications:
+                        type: array
+                        items:
+                          type: object
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
   /admissions/apply:
     post:
       tags: [Admissions]
-      summary: Submit a new admission application (creates parent account + application)
-      security:
-        - bearerAuth: []
+      summary: Submit a new admission application with document file uploads
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               required:
-                - name
-                - phone
-                - email
-                - password
                 - student_name
                 - dob
                 - class_sought
                 - father_name
                 - mother_name
               properties:
-                name: { type: string, description: Parent's full name }
-                phone: { type: string, description: 10-digit mobile number }
-                email: { type: string, format: email, description: Parent email address }
-                password: { type: string, description: Account password }
-                student_name: { type: string, description: Full name of the student }
-                first_name: { type: string }
-                middle_name: { type: string }
-                last_name: { type: string }
-                dob: { type: string, format: date, description: Date of birth (YYYY-MM-DD) }
-                gender: { type: string, enum: [Male, Female, Other] }
-                religion: { type: string }
-                blood_group: { type: string }
-                aadhaar_no: { type: string }
-                previous_school: { type: string }
-                previous_class: { type: string }
-                class_sought: { type: string, description: Class applying for (e.g. Nursery, UKG, Class 1) }
-                address_line1: { type: string }
-                address_line2: { type: string }
-                post_office: { type: string }
-                police_station: { type: string }
-                district: { type: string }
-                village_city: { type: string }
-                pin: { type: string }
-                state: { type: string }
-                country: { type: string, default: India }
-                father_name: { type: string }
-                father_occupation: { type: string }
-                mother_name: { type: string }
-                mother_occupation: { type: string }
-                guardian_name: { type: string }
-                guardian_occupation: { type: string }
-                family_annual_income: { type: string }
-                contact_no: { type: string }
-                address: { type: string }
+                name:
+                  type: string
+                  example: Rajesh Sharma
+                  description: Parent full name (required if creating new parent)
+                phone:
+                  type: string
+                  example: "9876543210"
+                  description: 10-digit mobile number
+                email:
+                  type: string
+                  format: email
+                  example: rajesh.sharma@example.com
+                  description: Parent email address
+                password:
+                  type: string
+                  example: Password@123
+                  description: Account password (required if creating new parent)
+                parent_id:
+                  type: integer
+                  example: 1
+                  description: Existing parent ID (if already registered)
+                student_name:
+                  type: string
+                  example: Aarav Sharma
+                  description: Full name of the student
+                first_name:
+                  type: string
+                  example: Aarav
+                middle_name:
+                  type: string
+                  example: Kumar
+                last_name:
+                  type: string
+                  example: Sharma
+                dob:
+                  type: string
+                  format: date
+                  example: "2018-05-15"
+                  description: Date of birth (YYYY-MM-DD)
+                gender:
+                  type: string
+                  enum: [Male, Female, Other]
+                  example: Male
+                religion:
+                  type: string
+                  example: Hindu
+                blood_group:
+                  type: string
+                  example: B+
+                aadhaar_no:
+                  type: string
+                  example: "123456789012"
+                caste:
+                  type: string
+                  enum: [General, OBC, SC, ST, Other]
+                  example: General
+                disability:
+                  type: string
+                  enum: [Yes, No]
+                  example: "No"
+                disability_details:
+                  type: string
+                  example: None
+                previous_school:
+                  type: string
+                  example: Sunrise Public School
+                previous_class:
+                  type: string
+                  example: UKG
+                class_sought:
+                  type: string
+                  example: Class 1
+                  description: Class applying for (e.g. Nursery, UKG, Class 1)
+                address_line1:
+                  type: string
+                  example: Flat 402, Green Valley Apartments
+                address_line2:
+                  type: string
+                  example: Near City Park
+                post_office:
+                  type: string
+                  example: Central Post Office
+                police_station:
+                  type: string
+                  example: Town PS
+                district:
+                  type: string
+                  example: Kolkata
+                village_city:
+                  type: string
+                  example: Kolkata
+                pin:
+                  type: string
+                  example: "700001"
+                state:
+                  type: string
+                  example: West Bengal
+                country:
+                  type: string
+                  default: India
+                  example: India
+                father_name:
+                  type: string
+                  example: Rajesh Sharma
+                father_occupation:
+                  type: string
+                  example: Software Engineer
+                father_aadhaar_no:
+                  type: string
+                  example: "987654321098"
+                father_voter_no:
+                  type: string
+                  example: WB/01/123456
+                mother_name:
+                  type: string
+                  example: Pooja Sharma
+                mother_occupation:
+                  type: string
+                  example: Teacher
+                mother_aadhaar_no:
+                  type: string
+                  example: "456789123456"
+                mother_voter_no:
+                  type: string
+                  example: WB/01/654321
+                guardian_name:
+                  type: string
+                  example: Rajesh Sharma
+                guardian_occupation:
+                  type: string
+                  example: Software Engineer
+                family_annual_income:
+                  type: string
+                  example: Above 8 Lakhs
+                contact_no:
+                  type: string
+                  example: "9876543210"
+                address:
+                  type: string
+                  example: Flat 402, Green Valley Apartments, Kolkata, 700001
+                birth_cert:
+                  type: string
+                  format: binary
+                  description: Student Birth Certificate (JPG, PNG, WEBP, PDF)
+                aadhaar:
+                  type: string
+                  format: binary
+                  description: Student Aadhaar Card Copy (JPG, PNG, WEBP, PDF)
+                leaving_cert:
+                  type: string
+                  format: binary
+                  description: Transfer / School Leaving Certificate (TC/LC)
+                prev_marksheet:
+                  type: string
+                  format: binary
+                  description: Previous Class Marksheet
+                photo:
+                  type: string
+                  format: binary
+                  description: Student Passport Photo (JPG, PNG, WEBP)
+                caste_cert:
+                  type: string
+                  format: binary
+                  description: Caste Certificate (if applicable)
+                father_photo:
+                  type: string
+                  format: binary
+                  description: Father Passport Photo (JPG, PNG, WEBP)
+                mother_photo:
+                  type: string
+                  format: binary
+                  description: Mother Passport Photo (JPG, PNG, WEBP)
+                father_aadhaar:
+                  type: string
+                  format: binary
+                  description: Father Aadhaar Card Copy
+                mother_aadhaar:
+                  type: string
+                  format: binary
+                  description: Mother Aadhaar Card Copy
+                father_voter:
+                  type: string
+                  format: binary
+                  description: Father Voter ID Card Copy
+                mother_voter:
+                  type: string
+                  format: binary
+                  description: Mother Voter ID Card Copy
+                disability_cert:
+                  type: string
+                  format: binary
+                  description: Disability Certificate (if applicable)
+                guardian_signature:
+                  type: string
+                  format: binary
+                  description: Parent / Guardian Signature (JPG, PNG, WEBP)
       responses:
         '200':
           description: Application submitted successfully
@@ -244,55 +452,22 @@ paths:
                   data:
                     type: object
                     properties:
-                      parent_id: { type: integer }
-                      application_id: { type: integer }
-                      user_id: { type: integer }
+                      application_no: { type: string, example: "SBA-2026-0001" }
+                      parent_id: { type: integer, example: 1 }
+                      application_id: { type: integer, example: 1 }
+                      user_id: { type: integer, example: 2 }
+                      uploaded_files:
+                        type: object
+                        example:
+                          birth_cert: "1728740000_bc_birth.pdf"
+                          photo: "1728740000_ph_photo.jpg"
         '422':
           description: Validation error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success: { type: boolean, example: false }
-                  message: { type: string }
-  /health:
-    get:
-      tags: [Reports]
-      summary: Health check
-      security: []
-      responses:
-        '200':
-          description: OK
-  /auth/login:
-    post:
-      tags: [Auth]
-      summary: Login and get API token
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email: { type: string, format: email }
-                password: { type: string }
-      responses:
-        '200':
-          description: Login success
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ApiSuccess' }
-        '401':
-          description: Invalid credentials
-  /auth/me:
-    get:
-      tags: [Auth]
-      summary: Current user profile
-      responses:
-        '200': { description: OK }
+                $ref: '#/components/schemas/ApiError'
+
   /students:
     get:
       tags: [Students]
@@ -300,19 +475,19 @@ paths:
       parameters:
         - in: query
           name: page
-          schema: { type: integer, default: 1 }
+          schema: { type: integer, default: 1, example: 1 }
         - in: query
           name: limit
-          schema: { type: integer, default: 20 }
+          schema: { type: integer, default: 20, example: 20 }
         - in: query
           name: q
-          schema: { type: string }
+          schema: { type: string, example: Aarav }
         - in: query
           name: class_name
-          schema: { type: string }
+          schema: { type: string, example: "Class 1" }
         - in: query
           name: status
-          schema: { type: string }
+          schema: { type: string, example: active }
       responses:
         '200': { description: OK }
     post:
@@ -326,24 +501,33 @@ paths:
               type: object
               required: [admission_no, first_name, last_name]
               properties:
-                admission_no: { type: string }
-                first_name: { type: string }
-                last_name: { type: string }
-                gender: { type: string }
-                dob: { type: string, format: date }
-                phone: { type: string }
-                email: { type: string }
+                admission_no: { type: string, example: "ADM-2026-001" }
+                first_name: { type: string, example: Aarav }
+                last_name: { type: string, example: Sharma }
+                gender: { type: string, example: Male }
+                dob: { type: string, format: date, example: "2018-05-15" }
+                phone: { type: string, example: "9876543210" }
+                email: { type: string, example: aarav.student@siba.local }
+              example:
+                admission_no: "ADM-2026-001"
+                first_name: Aarav
+                last_name: Sharma
+                gender: Male
+                dob: "2018-05-15"
+                phone: "9876543210"
+                email: aarav.student@siba.local
       responses:
         '200': { description: Created }
+
   /students/{id}:
     get:
       tags: [Students]
-      summary: Get student
+      summary: Get student by ID
       parameters:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       responses:
         '200': { description: OK }
     put:
@@ -353,12 +537,27 @@ paths:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object }
+            schema:
+              type: object
+              properties:
+                first_name: { type: string, example: Aarav }
+                last_name: { type: string, example: Sharma }
+                gender: { type: string, example: Male }
+                dob: { type: string, format: date, example: "2018-05-15" }
+                phone: { type: string, example: "9876543210" }
+                email: { type: string, example: aarav.student@siba.local }
+              example:
+                first_name: Aarav
+                last_name: Sharma
+                gender: Male
+                dob: "2018-05-15"
+                phone: "9876543210"
+                email: aarav.student@siba.local
       responses:
         '200': { description: Updated }
     delete:
@@ -368,9 +567,10 @@ paths:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       responses:
         '200': { description: Deleted }
+
   /students/attendance:
     get:
       tags: [Students]
@@ -378,16 +578,16 @@ paths:
       parameters:
         - in: query
           name: page
-          schema: { type: integer }
+          schema: { type: integer, default: 1, example: 1 }
         - in: query
           name: limit
-          schema: { type: integer }
+          schema: { type: integer, default: 20, example: 20 }
         - in: query
           name: student_id
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
         - in: query
           name: date
-          schema: { type: string, format: date }
+          schema: { type: string, format: date, example: "2026-10-12" }
       responses:
         '200': { description: OK }
     post:
@@ -401,12 +601,18 @@ paths:
               type: object
               required: [student_id, date, status]
               properties:
-                student_id: { type: integer }
-                date: { type: string, format: date }
-                status: { type: string }
-                remark: { type: string }
+                student_id: { type: integer, example: 1 }
+                date: { type: string, format: date, example: "2026-10-12" }
+                status: { type: string, example: present }
+                remark: { type: string, example: "Present on time" }
+              example:
+                student_id: 1
+                date: "2026-10-12"
+                status: present
+                remark: "Present on time"
       responses:
         '200': { description: Saved }
+
   /students/attendance/{id}:
     put:
       tags: [Students]
@@ -415,12 +621,19 @@ paths:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object }
+            schema:
+              type: object
+              properties:
+                status: { type: string, example: present }
+                remark: { type: string, example: "Updated remark" }
+              example:
+                status: present
+                remark: "Updated remark"
       responses:
         '200': { description: Updated }
     delete:
@@ -430,9 +643,10 @@ paths:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       responses:
         '200': { description: Deleted }
+
   /students/lifecycle:
     get:
       tags: [Students]
@@ -440,13 +654,13 @@ paths:
       parameters:
         - in: query
           name: page
-          schema: { type: integer }
+          schema: { type: integer, default: 1, example: 1 }
         - in: query
           name: limit
-          schema: { type: integer }
+          schema: { type: integer, default: 20, example: 20 }
         - in: query
           name: student_id
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       responses:
         '200': { description: OK }
     post:
@@ -460,13 +674,20 @@ paths:
               type: object
               required: [student_id, class_name, session_label, status]
               properties:
-                student_id: { type: integer }
-                class_name: { type: string }
-                section_name: { type: string }
-                session_label: { type: string }
-                status: { type: string }
+                student_id: { type: integer, example: 1 }
+                class_name: { type: string, example: "Class 1" }
+                section_name: { type: string, example: "A" }
+                session_label: { type: string, example: "2026-2027" }
+                status: { type: string, example: enrolled }
+              example:
+                student_id: 1
+                class_name: "Class 1"
+                section_name: "A"
+                session_label: "2026-2027"
+                status: enrolled
       responses:
         '200': { description: Created }
+
   /students/lifecycle/{id}:
     put:
       tags: [Students]
@@ -475,12 +696,23 @@ paths:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object }
+            schema:
+              type: object
+              properties:
+                class_name: { type: string, example: "Class 1" }
+                section_name: { type: string, example: "B" }
+                session_label: { type: string, example: "2026-2027" }
+                status: { type: string, example: promoted }
+              example:
+                class_name: "Class 1"
+                section_name: "B"
+                session_label: "2026-2027"
+                status: promoted
       responses:
         '200': { description: Updated }
     delete:
@@ -490,95 +722,47 @@ paths:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       responses:
         '200': { description: Deleted }
+
   /parents:
     get:
       tags: [Parents]
       summary: List all parents
-      security:
-        - bearerAuth: []
       parameters:
         - in: query
           name: page
-          schema: { type: integer, default: 1 }
+          schema: { type: integer, default: 1, example: 1 }
         - in: query
           name: limit
-          schema: { type: integer, default: 20 }
+          schema: { type: integer, default: 20, example: 20 }
         - in: query
           name: q
-          schema: { type: string }
+          schema: { type: string, example: Sharma }
           description: Search by name, email, or phone
       responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      parents:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id: { type: integer }
-                            name: { type: string }
-                            email: { type: string }
-                            phone: { type: string }
-                            user_id: { type: integer }
-                            application_count: { type: integer }
-                            created_at: { type: string }
-                      pagination:
-                        $ref: '#/components/schemas/Pagination'
+        '200': { description: OK }
+
   /parents/{id}:
     get:
       tags: [Parents]
       summary: Get parent by ID
-      security:
-        - bearerAuth: []
       parameters:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      parent:
-                        type: object
-                        properties:
-                          id: { type: integer }
-                          name: { type: string }
-                          email: { type: string }
-                          phone: { type: string }
-                          user_id: { type: integer }
-                          application_count: { type: integer }
-                          created_at: { type: string }
+        '200': { description: OK }
     put:
       tags: [Parents]
       summary: Update parent details
-      security:
-        - bearerAuth: []
       parameters:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
       requestBody:
         required: true
         content:
@@ -587,171 +771,1535 @@ paths:
               type: object
               required: [name]
               properties:
-                name: { type: string }
-                email: { type: string }
-                phone: { type: string }
+                name: { type: string, example: Rajesh Sharma }
+                email: { type: string, example: rajesh.sharma@example.com }
+                phone: { type: string, example: "9876543210" }
+              example:
+                name: Rajesh Sharma
+                email: rajesh.sharma@example.com
+                phone: "9876543210"
       responses:
         '200': { description: Updated }
+
   /parents/{id}/applications:
     get:
       tags: [Parents]
       summary: List applications for a parent
-      security:
-        - bearerAuth: []
       parameters:
         - in: path
           name: id
           required: true
-          schema: { type: integer }
+          schema: { type: integer, example: 1 }
         - in: query
           name: page
-          schema: { type: integer, default: 1 }
+          schema: { type: integer, default: 1, example: 1 }
         - in: query
           name: limit
-          schema: { type: integer, default: 20 }
+          schema: { type: integer, default: 20, example: 20 }
       responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success: { type: boolean }
-                  data:
-                    type: object
-                    properties:
-                      applications:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id: { type: integer }
-                            application_no: { type: string }
-                            student_name: { type: string }
-                            class_sought: { type: string }
-                            status: { type: string }
-                            payment_status: { type: string }
-                            applied_at: { type: string }
-                      pagination:
-                        $ref: '#/components/schemas/Pagination'
+        '200': { description: OK }
+
   /academics/subjects:
-    get: { tags: [Academics], summary: List subjects, responses: { '200': { description: OK } } }
-    post: { tags: [Academics], summary: Create subject, responses: { '200': { description: Created } } }
+    get:
+      tags: [Academics]
+      summary: List subjects
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          schema: { type: string, example: Mathematics }
+        - in: query
+          name: class_name
+          schema: { type: string, example: "Class 1" }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Academics]
+      summary: Create subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject_code, subject_name, class_name]
+              properties:
+                subject_code: { type: string, example: "MATH-101" }
+                subject_name: { type: string, example: Mathematics }
+                class_name: { type: string, example: "Class 1" }
+              example:
+                subject_code: "MATH-101"
+                subject_name: Mathematics
+                class_name: "Class 1"
+      responses:
+        '200': { description: Created }
+
   /academics/subjects/{id}:
-    put: { tags: [Academics], summary: Update subject, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Academics], summary: Delete subject, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Academics]
+      summary: Update subject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_code: { type: string, example: "MATH-101" }
+                subject_name: { type: string, example: "Advanced Mathematics" }
+                class_name: { type: string, example: "Class 1" }
+              example:
+                subject_code: "MATH-101"
+                subject_name: "Advanced Mathematics"
+                class_name: "Class 1"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Academics]
+      summary: Delete subject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /academics/exam-results:
-    get: { tags: [Academics], summary: List exam results, responses: { '200': { description: OK } } }
-    post: { tags: [Academics], summary: Create exam result, responses: { '200': { description: Created } } }
+    get:
+      tags: [Academics]
+      summary: List exam results
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: subject_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: exam_name
+          schema: { type: string, example: "Mid-Term" }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Academics]
+      summary: Create exam result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, subject_id, exam_name, marks_obtained, max_marks]
+              properties:
+                student_id: { type: integer, example: 1 }
+                subject_id: { type: integer, example: 1 }
+                exam_name: { type: string, example: "Mid-Term Exam" }
+                marks_obtained: { type: number, example: 88.5 }
+                max_marks: { type: number, example: 100 }
+                remarks: { type: string, example: "Excellent performance" }
+              example:
+                student_id: 1
+                subject_id: 1
+                exam_name: "Mid-Term Exam"
+                marks_obtained: 88.5
+                max_marks: 100
+                remarks: "Excellent performance"
+      responses:
+        '200': { description: Created }
+
   /academics/exam-results/{id}:
-    put: { tags: [Academics], summary: Update exam result, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Academics], summary: Delete exam result, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Academics]
+      summary: Update exam result
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marks_obtained: { type: number, example: 92.0 }
+                max_marks: { type: number, example: 100 }
+                remarks: { type: string, example: "Updated score after re-check" }
+              example:
+                marks_obtained: 92.0
+                max_marks: 100
+                remarks: "Updated score after re-check"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Academics]
+      summary: Delete exam result
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /academics/assignments:
-    get: { tags: [Academics], summary: List assignments, responses: { '200': { description: OK } } }
-    post: { tags: [Academics], summary: Create assignment, responses: { '200': { description: Created } } }
+    get:
+      tags: [Academics]
+      summary: List assignments
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: class_name
+          schema: { type: string, example: "Class 1" }
+        - in: query
+          name: subject_id
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Academics]
+      summary: Create assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, class_name, subject_id, due_date]
+              properties:
+                title: { type: string, example: "Chapter 3 Problem Set" }
+                description: { type: string, example: "Complete problems on page 45-47" }
+                class_name: { type: string, example: "Class 1" }
+                subject_id: { type: integer, example: 1 }
+                due_date: { type: string, format: date, example: "2026-10-25" }
+              example:
+                title: "Chapter 3 Problem Set"
+                description: "Complete problems on page 45-47"
+                class_name: "Class 1"
+                subject_id: 1
+                due_date: "2026-10-25"
+      responses:
+        '200': { description: Created }
+
   /academics/assignments/{id}:
-    put: { tags: [Academics], summary: Update assignment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Academics], summary: Delete assignment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Academics]
+      summary: Update assignment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, example: "Chapter 3 Problem Set (Revised)" }
+                description: { type: string, example: "Complete problems 1 to 10 on page 45" }
+                class_name: { type: string, example: "Class 1" }
+                subject_id: { type: integer, example: 1 }
+                due_date: { type: string, format: date, example: "2026-10-28" }
+              example:
+                title: "Chapter 3 Problem Set (Revised)"
+                description: "Complete problems 1 to 10 on page 45"
+                class_name: "Class 1"
+                subject_id: 1
+                due_date: "2026-10-28"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Academics]
+      summary: Delete assignment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /academics/assignments/submissions:
-    get: { tags: [Academics], summary: List assignment submissions, responses: { '200': { description: OK } } }
-    post: { tags: [Academics], summary: Create submission, responses: { '200': { description: Created } } }
+    get:
+      tags: [Academics]
+      summary: List assignment submissions
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: assignment_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Academics]
+      summary: Create submission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignment_id, student_id]
+              properties:
+                assignment_id: { type: integer, example: 1 }
+                student_id: { type: integer, example: 1 }
+                submission_text: { type: string, example: "Completed homework submitted." }
+              example:
+                assignment_id: 1
+                student_id: 1
+                submission_text: "Completed homework submitted."
+      responses:
+        '200': { description: Created }
+
   /academics/assignments/submissions/{id}:
-    put: { tags: [Academics], summary: Update submission, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Academics], summary: Delete submission, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Academics]
+      summary: Update submission
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marks: { type: number, example: 9.5 }
+                feedback: { type: string, example: "Great work!" }
+              example:
+                marks: 9.5
+                feedback: "Great work!"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Academics]
+      summary: Delete submission
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /academics/messages:
-    get: { tags: [Academics], summary: List messages, responses: { '200': { description: OK } } }
-    post: { tags: [Academics], summary: Send message, responses: { '200': { description: Sent } } }
+    get:
+      tags: [Academics]
+      summary: List messages
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Academics]
+      summary: Send parent-teacher message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, receiver_user_id, message]
+              properties:
+                student_id: { type: integer, example: 1 }
+                receiver_user_id: { type: integer, example: 2 }
+                message: { type: string, example: "Hello teacher, could you please share reading materials for Chapter 3?" }
+              example:
+                student_id: 1
+                receiver_user_id: 2
+                message: "Hello teacher, could you please share reading materials for Chapter 3?"
+      responses:
+        '200': { description: Sent }
+
   /academics/messages/{id}:
-    put: { tags: [Academics], summary: Update message, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Academics], summary: Delete message, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Academics]
+      summary: Update message
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: { type: string, example: "Updated message note." }
+              example:
+                message: "Updated message note."
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Academics]
+      summary: Delete message
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /finance/fee-structures:
-    get: { tags: [Finance], summary: List fee structures, responses: { '200': { description: OK } } }
-    post: { tags: [Finance], summary: Create fee structure, responses: { '200': { description: Created } } }
+    get:
+      tags: [Finance]
+      summary: List fee structures
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          schema: { type: string, example: Tuition }
+        - in: query
+          name: academic_session
+          schema: { type: string, example: "2026-2027" }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Finance]
+      summary: Create fee structure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [class_name, academic_session, amount]
+              properties:
+                class_name: { type: string, example: "Class 1" }
+                academic_session: { type: string, example: "2026-2027" }
+                fee_head: { type: string, example: "Tuition Fee" }
+                amount: { type: number, example: 2500.00 }
+                frequency: { type: string, example: "monthly" }
+              example:
+                class_name: "Class 1"
+                academic_session: "2026-2027"
+                fee_head: "Tuition Fee"
+                amount: 2500.00
+                frequency: "monthly"
+      responses:
+        '200': { description: Created }
+
   /finance/fee-structures/{id}:
-    put: { tags: [Finance], summary: Update fee structure, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Finance], summary: Delete fee structure, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Finance]
+      summary: Update fee structure
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                class_name: { type: string, example: "Class 1" }
+                academic_session: { type: string, example: "2026-2027" }
+                fee_head: { type: string, example: "Tuition Fee" }
+                amount: { type: number, example: 2700.00 }
+                frequency: { type: string, example: "monthly" }
+              example:
+                class_name: "Class 1"
+                academic_session: "2026-2027"
+                fee_head: "Tuition Fee"
+                amount: 2700.00
+                frequency: "monthly"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Finance]
+      summary: Delete fee structure
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /finance/fees/dues:
-    get: { tags: [Finance], summary: List fee dues, responses: { '200': { description: OK } } }
-    post: { tags: [Finance], summary: Create fee due, responses: { '200': { description: Created } } }
+    get:
+      tags: [Finance]
+      summary: List fee dues
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: status
+          schema: { type: string, example: pending }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Finance]
+      summary: Create fee due
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, fee_structure_id, due_date, amount]
+              properties:
+                student_id: { type: integer, example: 1 }
+                fee_structure_id: { type: integer, example: 1 }
+                due_date: { type: string, format: date, example: "2026-11-10" }
+                amount: { type: number, example: 2500.00 }
+                paid_amount: { type: number, example: 0.00 }
+                status: { type: string, example: pending }
+              example:
+                student_id: 1
+                fee_structure_id: 1
+                due_date: "2026-11-10"
+                amount: 2500.00
+                paid_amount: 0.00
+                status: pending
+      responses:
+        '200': { description: Created }
+
   /finance/fees/dues/{id}:
-    put: { tags: [Finance], summary: Update fee due, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Finance], summary: Delete fee due, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Finance]
+      summary: Update fee due
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number, example: 2500.00 }
+                paid_amount: { type: number, example: 1000.00 }
+                status: { type: string, example: partially_paid }
+                due_date: { type: string, format: date, example: "2026-11-15" }
+              example:
+                amount: 2500.00
+                paid_amount: 1000.00
+                status: partially_paid
+                due_date: "2026-11-15"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Finance]
+      summary: Delete fee due
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /finance/payments:
-    get: { tags: [Finance], summary: List payments, responses: { '200': { description: OK } } }
+    get:
+      tags: [Finance]
+      summary: List payments
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: source
+          schema: { type: string, example: offline }
+      responses:
+        '200': { description: OK }
+
   /finance/payments/offline:
-    post: { tags: [Finance], summary: Create offline payment + receipt, responses: { '200': { description: Created } } }
+    post:
+      tags: [Finance]
+      summary: Create offline payment and generate receipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, amount, payment_date, payment_mode]
+              properties:
+                student_id: { type: integer, example: 1 }
+                fee_due_id: { type: integer, example: 1 }
+                amount: { type: number, example: 2500.00 }
+                payment_date: { type: string, format: date, example: "2026-10-12" }
+                payment_mode: { type: string, example: "cash" }
+                reference_no: { type: string, example: "CASH-REC-1024" }
+              example:
+                student_id: 1
+                fee_due_id: 1
+                amount: 2500.00
+                payment_date: "2026-10-12"
+                payment_mode: "cash"
+                reference_no: "CASH-REC-1024"
+      responses:
+        '200': { description: Created }
+
   /finance/payments/{id}:
-    put: { tags: [Finance], summary: Update payment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Finance], summary: Delete payment, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Finance]
+      summary: Update payment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number, example: 2500.00 }
+                payment_date: { type: string, format: date, example: "2026-10-12" }
+                payment_mode: { type: string, example: "upi" }
+                reference_no: { type: string, example: "UPI-REF-998877" }
+              example:
+                amount: 2500.00
+                payment_date: "2026-10-12"
+                payment_mode: "upi"
+                reference_no: "UPI-REF-998877"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Finance]
+      summary: Delete payment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /finance/fees/summary:
-    get: { tags: [Finance], summary: Fees summary, responses: { '200': { description: OK } } }
+    get:
+      tags: [Finance]
+      summary: Fees overall summary
+      responses:
+        '200': { description: OK }
+
   /finance/reconciliation:
-    get: { tags: [Finance], summary: List reconciliation entries, responses: { '200': { description: OK } } }
-    post: { tags: [Finance], summary: Create reconciliation entry, responses: { '200': { description: Created } } }
+    get:
+      tags: [Finance]
+      summary: List reconciliation entries
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: status
+          schema: { type: string, example: pending }
+        - in: query
+          name: q
+          schema: { type: string, example: "TXN" }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Finance]
+      summary: Create reconciliation entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [gateway_reference, status]
+              properties:
+                gateway_reference: { type: string, example: "TXN_RAZORPAY_8829102" }
+                website_order_id: { type: string, example: "ORD-2026-9021" }
+                amount: { type: number, example: 2500.00 }
+                status: { type: string, example: "settled" }
+                notes: { type: string, example: "Verified against bank statement" }
+              example:
+                gateway_reference: "TXN_RAZORPAY_8829102"
+                website_order_id: "ORD-2026-9021"
+                amount: 2500.00
+                status: "settled"
+                notes: "Verified against bank statement"
+      responses:
+        '200': { description: Created }
+
   /finance/reconciliation/{id}:
-    put: { tags: [Finance], summary: Update reconciliation entry, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Finance], summary: Delete reconciliation entry, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Finance]
+      summary: Update reconciliation entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gateway_reference: { type: string, example: "TXN_RAZORPAY_8829102" }
+                website_order_id: { type: string, example: "ORD-2026-9021" }
+                amount: { type: number, example: 2500.00 }
+                status: { type: string, example: "matched" }
+                notes: { type: string, example: "Successfully reconciled" }
+              example:
+                gateway_reference: "TXN_RAZORPAY_8829102"
+                website_order_id: "ORD-2026-9021"
+                amount: 2500.00
+                status: "matched"
+                notes: "Successfully reconciled"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Finance]
+      summary: Delete reconciliation entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /operations/timetable:
-    get: { tags: [Operations], summary: List timetable periods, responses: { '200': { description: OK } } }
-    post: { tags: [Operations], summary: Upload timetable periods, responses: { '200': { description: Created } } }
+    get:
+      tags: [Operations]
+      summary: List timetable periods
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: class_name
+          schema: { type: string, example: "Class 1" }
+        - in: query
+          name: day_name
+          schema: { type: string, example: "Monday" }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Operations]
+      summary: Upload timetable periods
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [class_name, day_name, periods]
+              properties:
+                class_name: { type: string, example: "Class 1" }
+                day_name: { type: string, example: "Monday" }
+                periods:
+                  type: array
+                  items:
+                    type: object
+              example:
+                class_name: "Class 1"
+                day_name: "Monday"
+                periods:
+                  - period_no: 1
+                    subject_name: "English"
+                    teacher_name: "Mrs. Sen"
+                    start_time: "09:00:00"
+                    end_time: "09:45:00"
+                    room_no: "Room 101"
+                  - period_no: 2
+                    subject_name: "Mathematics"
+                    teacher_name: "Mr. Roy"
+                    start_time: "09:45:00"
+                    end_time: "10:30:00"
+                    room_no: "Room 101"
+      responses:
+        '200': { description: Created }
+
   /operations/timetable/{id}:
-    put: { tags: [Operations], summary: Update timetable row, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Operations], summary: Delete timetable row, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Operations]
+      summary: Update timetable row
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                class_name: { type: string, example: "Class 1" }
+                day_name: { type: string, example: "Monday" }
+                period_no: { type: integer, example: 1 }
+                subject_name: { type: string, example: "English Grammar" }
+                teacher_name: { type: string, example: "Mrs. Sen" }
+                start_time: { type: string, example: "09:00:00" }
+                end_time: { type: string, example: "09:45:00" }
+                room_no: { type: string, example: "Room 101" }
+              example:
+                class_name: "Class 1"
+                day_name: "Monday"
+                period_no: 1
+                subject_name: "English Grammar"
+                teacher_name: "Mrs. Sen"
+                start_time: "09:00:00"
+                end_time: "09:45:00"
+                room_no: "Room 101"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Operations]
+      summary: Delete timetable row
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /operations/transport/routes:
-    get: { tags: [Operations], summary: List transport routes, responses: { '200': { description: OK } } }
-    post: { tags: [Operations], summary: Create transport route, responses: { '200': { description: Created } } }
+    get:
+      tags: [Operations]
+      summary: List transport routes
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          schema: { type: string, example: "Route 1" }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Operations]
+      summary: Create transport route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [route_name, vehicle_no]
+              properties:
+                route_name: { type: string, example: "Route 1 - Salt Lake to School" }
+                vehicle_no: { type: string, example: "WB-02-AB-1234" }
+                driver_name: { type: string, example: "Suresh Das" }
+                driver_phone: { type: string, example: "9830123456" }
+                fare: { type: number, example: 1200.00 }
+              example:
+                route_name: "Route 1 - Salt Lake to School"
+                vehicle_no: "WB-02-AB-1234"
+                driver_name: "Suresh Das"
+                driver_phone: "9830123456"
+                fare: 1200.00
+      responses:
+        '200': { description: Created }
+
   /operations/transport/routes/{id}:
-    put: { tags: [Operations], summary: Update route, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Operations], summary: Delete route, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Operations]
+      summary: Update transport route
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                route_name: { type: string, example: "Route 1 - Salt Lake to School (Updated)" }
+                vehicle_no: { type: string, example: "WB-02-AB-1234" }
+                driver_name: { type: string, example: "Suresh Das" }
+                driver_phone: { type: string, example: "9830123456" }
+                fare: { type: number, example: 1300.00 }
+              example:
+                route_name: "Route 1 - Salt Lake to School (Updated)"
+                vehicle_no: "WB-02-AB-1234"
+                driver_name: "Suresh Das"
+                driver_phone: "9830123456"
+                fare: 1300.00
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Operations]
+      summary: Delete transport route
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /operations/transport/allocations:
-    get: { tags: [Operations], summary: List transport allocations, responses: { '200': { description: OK } } }
-    post: { tags: [Operations], summary: Create transport allocation, responses: { '200': { description: Created } } }
+    get:
+      tags: [Operations]
+      summary: List transport allocations
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: route_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: status
+          schema: { type: string, example: active }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Operations]
+      summary: Allocate transport to student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, route_id, pickup_point]
+              properties:
+                student_id: { type: integer, example: 1 }
+                route_id: { type: integer, example: 1 }
+                pickup_point: { type: string, example: "City Center 1, Salt Lake" }
+                drop_point: { type: string, example: "School Main Gate" }
+                status: { type: string, example: active }
+              example:
+                student_id: 1
+                route_id: 1
+                pickup_point: "City Center 1, Salt Lake"
+                drop_point: "School Main Gate"
+                status: active
+      responses:
+        '200': { description: Created }
+
   /operations/transport/allocations/{id}:
-    put: { tags: [Operations], summary: Update transport allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Operations], summary: Delete transport allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Operations]
+      summary: Update transport allocation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pickup_point: { type: string, example: "Karunamoyee Bus Stand" }
+                drop_point: { type: string, example: "School Main Gate" }
+                status: { type: string, example: active }
+              example:
+                pickup_point: "Karunamoyee Bus Stand"
+                drop_point: "School Main Gate"
+                status: active
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Operations]
+      summary: Delete transport allocation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /operations/hostels:
-    get: { tags: [Operations], summary: List hostels, responses: { '200': { description: OK } } }
-    post: { tags: [Operations], summary: Create hostel, responses: { '200': { description: Created } } }
+    get:
+      tags: [Operations]
+      summary: List hostels
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          schema: { type: string, example: Boys }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Operations]
+      summary: Create hostel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type]
+              properties:
+                name: { type: string, example: "Tagore Boys Hostel" }
+                type: { type: string, example: "boys" }
+              example:
+                name: "Tagore Boys Hostel"
+                type: "boys"
+      responses:
+        '200': { description: Created }
+
   /operations/hostels/{id}:
-    put: { tags: [Operations], summary: Update hostel, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Operations], summary: Delete hostel, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Operations]
+      summary: Update hostel
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, example: "Rabindra Boys Hostel" }
+                type: { type: string, example: "boys" }
+              example:
+                name: "Rabindra Boys Hostel"
+                type: "boys"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Operations]
+      summary: Delete hostel
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /operations/hostels/rooms:
-    get: { tags: [Operations], summary: List hostel rooms, responses: { '200': { description: OK } } }
-    post: { tags: [Operations], summary: Create hostel room, responses: { '200': { description: Created } } }
+    get:
+      tags: [Operations]
+      summary: List hostel rooms
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: hostel_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: status
+          schema: { type: string, example: available }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Operations]
+      summary: Create hostel room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hostel_id, room_no, total_beds]
+              properties:
+                hostel_id: { type: integer, example: 1 }
+                room_no: { type: string, example: "101" }
+                total_beds: { type: integer, example: 4 }
+                occupied_beds: { type: integer, example: 0 }
+                status: { type: string, example: available }
+              example:
+                hostel_id: 1
+                room_no: "101"
+                total_beds: 4
+                occupied_beds: 0
+                status: available
+      responses:
+        '200': { description: Created }
+
   /operations/hostels/rooms/{id}:
-    put: { tags: [Operations], summary: Update hostel room, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Operations], summary: Delete hostel room, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Operations]
+      summary: Update hostel room
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                room_no: { type: string, example: "101-A" }
+                total_beds: { type: integer, example: 4 }
+                occupied_beds: { type: integer, example: 1 }
+                status: { type: string, example: available }
+              example:
+                room_no: "101-A"
+                total_beds: 4
+                occupied_beds: 1
+                status: available
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Operations]
+      summary: Delete hostel room
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /operations/hostel/allocations:
-    get: { tags: [Operations], summary: List hostel allocations, responses: { '200': { description: OK } } }
-    post: { tags: [Operations], summary: Create hostel allocation, responses: { '200': { description: Created } } }
+    get:
+      tags: [Operations]
+      summary: List hostel allocations
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: status
+          schema: { type: string, example: active }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Operations]
+      summary: Allocate hostel room to student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, room_id, from_date]
+              properties:
+                student_id: { type: integer, example: 1 }
+                room_id: { type: integer, example: 1 }
+                from_date: { type: string, format: date, example: "2026-10-15" }
+                status: { type: string, example: active }
+              example:
+                student_id: 1
+                room_id: 1
+                from_date: "2026-10-15"
+                status: active
+      responses:
+        '200': { description: Created }
+
   /operations/hostel/allocations/{id}:
-    put: { tags: [Operations], summary: Update hostel allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [Operations], summary: Delete hostel allocation, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [Operations]
+      summary: Update hostel allocation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                room_id: { type: integer, example: 1 }
+                from_date: { type: string, format: date, example: "2026-10-15" }
+                to_date: { type: string, format: date, example: "2027-04-30" }
+                status: { type: string, example: active }
+              example:
+                room_id: 1
+                from_date: "2026-10-15"
+                to_date: "2027-04-30"
+                status: active
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [Operations]
+      summary: Delete hostel allocation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /hr/employees:
-    get: { tags: [HR], summary: List employees, responses: { '200': { description: OK } } }
-    post: { tags: [HR], summary: Create employee, responses: { '200': { description: Created } } }
+    get:
+      tags: [HR]
+      summary: List employees
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          schema: { type: string, example: Ananya }
+        - in: query
+          name: department
+          schema: { type: string, example: Teaching }
+        - in: query
+          name: status
+          schema: { type: string, example: active }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [HR]
+      summary: Create employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [employee_code, name, department, designation]
+              properties:
+                employee_code: { type: string, example: "EMP-2026-005" }
+                name: { type: string, example: "Ananya Mukherjee" }
+                department: { type: string, example: "Teaching" }
+                designation: { type: string, example: "Senior Math Teacher" }
+                joining_date: { type: string, format: date, example: "2026-06-01" }
+                ctc: { type: number, example: 450000.00 }
+                payout_account: { type: string, example: "SBI-98765432101" }
+              example:
+                employee_code: "EMP-2026-005"
+                name: "Ananya Mukherjee"
+                department: "Teaching"
+                designation: "Senior Math Teacher"
+                joining_date: "2026-06-01"
+                ctc: 450000.00
+                payout_account: "SBI-98765432101"
+      responses:
+        '200': { description: Created }
+
   /hr/employees/{id}:
-    put: { tags: [HR], summary: Update employee, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [HR], summary: Delete employee, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [HR]
+      summary: Update employee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employee_code: { type: string, example: "EMP-2026-005" }
+                name: { type: string, example: "Ananya Mukherjee" }
+                department: { type: string, example: "Teaching" }
+                designation: { type: string, example: "Head of Mathematics Department" }
+                joining_date: { type: string, format: date, example: "2026-06-01" }
+                ctc: { type: number, example: 500000.00 }
+                payout_account: { type: string, example: "SBI-98765432101" }
+                status: { type: string, example: "active" }
+              example:
+                employee_code: "EMP-2026-005"
+                name: "Ananya Mukherjee"
+                department: "Teaching"
+                designation: "Head of Mathematics Department"
+                joining_date: "2026-06-01"
+                ctc: 500000.00
+                payout_account: "SBI-98765432101"
+                status: "active"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [HR]
+      summary: Delete employee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /hr/leave-requests:
-    get: { tags: [HR], summary: List leave requests, responses: { '200': { description: OK } } }
-    post: { tags: [HR], summary: Create leave request, responses: { '200': { description: Created } } }
+    get:
+      tags: [HR]
+      summary: List leave requests
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: employee_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: status
+          schema: { type: string, example: pending }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [HR]
+      summary: Create leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [employee_id, leave_type, from_date, to_date]
+              properties:
+                employee_id: { type: integer, example: 1 }
+                leave_type: { type: string, example: "Casual Leave" }
+                from_date: { type: string, format: date, example: "2026-10-20" }
+                to_date: { type: string, format: date, example: "2026-10-22" }
+                reason: { type: string, example: "Family occasion" }
+              example:
+                employee_id: 1
+                leave_type: "Casual Leave"
+                from_date: "2026-10-20"
+                to_date: "2026-10-22"
+                reason: "Family occasion"
+      responses:
+        '200': { description: Created }
+
   /hr/leave-requests/{id}:
-    put: { tags: [HR], summary: Update leave request, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Updated } } }
-    delete: { tags: [HR], summary: Delete leave request, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    put:
+      tags: [HR]
+      summary: Update leave request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                leave_type: { type: string, example: "Medical Leave" }
+                from_date: { type: string, format: date, example: "2026-10-20" }
+                to_date: { type: string, format: date, example: "2026-10-23" }
+                reason: { type: string, example: "Doctor visit and medical rest" }
+                status: { type: string, example: "pending" }
+              example:
+                leave_type: "Medical Leave"
+                from_date: "2026-10-20"
+                to_date: "2026-10-23"
+                reason: "Doctor visit and medical rest"
+                status: "pending"
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [HR]
+      summary: Delete leave request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /hr/leave-requests/approve:
-    post: { tags: [HR], summary: Approve or reject leave request, responses: { '200': { description: Updated } } }
+    post:
+      tags: [HR]
+      summary: Approve or reject leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leave_request_id, status]
+              properties:
+                leave_request_id: { type: integer, example: 1 }
+                status: { type: string, enum: [approved, rejected], example: approved }
+              example:
+                leave_request_id: 1
+                status: approved
+      responses:
+        '200': { description: Updated }
+
   /hr/payroll/runs:
-    get: { tags: [HR], summary: List payroll runs, responses: { '200': { description: OK } } }
+    get:
+      tags: [HR]
+      summary: List payroll runs
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: month_label
+          schema: { type: string, example: "2026-10" }
+      responses:
+        '200': { description: OK }
+
   /hr/payroll/runs/{id}:
-    delete: { tags: [HR], summary: Delete payroll run, parameters: [{ in: path, name: id, required: true, schema: { type: integer } }], responses: { '200': { description: Deleted } } }
+    delete:
+      tags: [HR]
+      summary: Delete payroll run
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: Deleted }
+
   /hr/payroll/items:
-    get: { tags: [HR], summary: List payroll items, responses: { '200': { description: OK } } }
+    get:
+      tags: [HR]
+      summary: List payroll items
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: payroll_run_id
+          schema: { type: integer, example: 1 }
+      responses:
+        '200': { description: OK }
+
   /hr/payroll/generate:
-    post: { tags: [HR], summary: Generate payroll run, responses: { '200': { description: Generated } } }
+    post:
+      tags: [HR]
+      summary: Generate payroll run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [month_label]
+              properties:
+                month_label: { type: string, example: "2026-10" }
+              example:
+                month_label: "2026-10"
+      responses:
+        '200': { description: Generated }
+
   /reports/dashboard:
-    get: { tags: [Reports], summary: Dashboard metrics, responses: { '200': { description: OK } } }
+    get:
+      tags: [Reports]
+      summary: Dashboard metrics
+      responses:
+        '200': { description: OK }
+
   /reports/payroll-export:
     get:
       tags: [Reports]
@@ -759,7 +2307,16 @@ paths:
       parameters:
         - in: query
           name: month
-          schema: { type: string, example: 2026-04 }
+          schema: { type: string, example: "2026-10" }
       responses:
         '200':
           description: CSV response
+
+  /health:
+    get:
+      tags: [Reports]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK

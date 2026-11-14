@@ -123,9 +123,21 @@ The site (public website & parent portal) and ERP now share a single database **
 - `GET /hr/payroll/items`
 - `POST /hr/payroll/generate`
 
+## Admissions
+- `POST /admissions/register-parent` — Register parent account (public)
+- `GET /admissions/applications` — List applications (supports pagination, `q`, `status`)
+- `POST /admissions/apply` — Submit application with multipart/form-data document uploads (`birth_cert`, `aadhaar`, `leaving_cert`, `prev_marksheet`, `photo`, `caste_cert`, `father_photo`, `mother_photo`, `father_aadhaar`, `mother_aadhaar`, `father_voter`, `mother_voter`, `disability_cert`, `guardian_signature`)
+
+## Parents
+- `GET /parents`
+- `GET /parents/{id}`
+- `PUT /parents/{id}`
+- `GET /parents/{id}/applications`
+
 ## Reports
 - `GET /reports/dashboard`
 - `GET /reports/payroll-export?month=YYYY-MM`
 
 ## Health
 - `GET /health`
+
