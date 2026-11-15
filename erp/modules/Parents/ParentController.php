@@ -9,6 +9,16 @@ use core\Request;
 
 class ParentController extends Controller
 {
+    protected function paginationMeta(int $page, int $limit, int $total): array
+    {
+        return [
+            'page' => $page,
+            'limit' => $limit,
+            'total' => $total,
+            'total_pages' => (int) ceil(max($total, 1) / $limit),
+        ];
+    }
+
     public function list(): void
     {
         [$page, $limit, $offset] = $this->pagination();
@@ -109,12 +119,43 @@ class ParentController extends Controller
         $this->ok([], 'Parent updated successfully');
     }
 
-    public function applications(array $params): void
+    public function meApplications(array $context): void
+    {
+        $user = $context['user'] ?? null;
+        if (!$user) {
+            $this->fail('Unauthorized', 401);
+            return;
+        }
+
+        $stmt = $this->pdo->prepare('SELECT id FROM parents WHERE user_id = :uid LIMIT 1');
+        $stmt->execute(['uid' => $user['id']]);
+        $parent = $stmt->fetch();
+
+        if (!$parent) {
+            $this->fail('Parent profile not found for this account', 404);
+            return;
+        }
+
+        $this->applications(['id' => (int) $parent['id']], $context);
+    }
+
+    public function applications(array $params, array $context = []): void
     {
         $id = (int) ($params['id'] ?? 0);
         if ($id <= 0) {
             $this->fail('Invalid parent ID', 422);
             return;
+        }
+
+        $user = $context['user'] ?? null;
+        if ($user && ($user['role_name'] ?? '') === 'parent') {
+            $checkStmt = $this->pdo->prepare('SELECT id FROM parents WHERE user_id = :uid LIMIT 1');
+            $checkStmt->execute(['uid' => $user['id']]);
+            $parentRec = $checkStmt->fetch();
+            if (!$parentRec || (int) $parentRec['id'] !== $id) {
+                $this->fail('Forbidden', 403);
+                return;
+            }
         }
 
         [$page, $limit, $offset] = $this->pagination();
@@ -124,7 +165,7 @@ class ParentController extends Controller
         $total = (int) $countStmt->fetchColumn();
 
         $stmt = $this->pdo->prepare(
-            'SELECT id, application_no, student_name, class_sought, status, payment_status, applied_at
+            'SELECT id, application_no, application_no AS application_number, student_name, class_sought, status, payment_status, payment_amount, applied_at
              FROM applications WHERE parent_id = ?
              ORDER BY applied_at DESC
              LIMIT ' . $limit . ' OFFSET ' . $offset

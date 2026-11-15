@@ -30,11 +30,28 @@ define('DB_NAME', $dbName);
 
 define('SITE_NAME', 'SIBA Public School');
 
-// Auto-detect site URL (protocol + host + directory)
+// Auto-detect site URL (handles root domain as well as subdirectories like /siba/)
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/');
-define('SITE_URL', $protocol . '://' . $host . $scriptDir);
+
+$subDir = '';
+$scriptFilename = isset($_SERVER['SCRIPT_FILENAME']) ? str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']) ?: $_SERVER['SCRIPT_FILENAME']) : '';
+$projRoot = str_replace('\\', '/', realpath(dirname(__DIR__)) ?: dirname(__DIR__));
+$scriptName = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\', '/', $_SERVER['SCRIPT_NAME']) : '';
+
+if ($scriptFilename && $scriptName && stripos($scriptFilename, $projRoot) === 0) {
+    $rel = substr($scriptFilename, strlen($projRoot));
+    if ($rel !== '' && substr($scriptName, -strlen($rel)) === $rel) {
+        $subDir = rtrim(substr($scriptName, 0, -strlen($rel)), '/');
+    }
+} elseif (!empty($_SERVER['DOCUMENT_ROOT'])) {
+    $docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']) ?: $_SERVER['DOCUMENT_ROOT']);
+    if (stripos($projRoot, $docRoot) === 0) {
+        $subDir = rtrim(substr($projRoot, strlen($docRoot)), '/');
+    }
+}
+
+define('SITE_URL', $protocol . '://' . $host . $subDir);
 
 define('SITE_LOGO_JPG', 'assets/images/logo.jpg');
 define('SITE_LOGO_PDF', 'SIBA LOGO PRIMARY 01-1.pdf');

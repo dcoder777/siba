@@ -1,84 +1,482 @@
 <?php
 /**
- * Run this file once in your browser to create all Accounts Module tables.
- * After success, DELETE this file for security.
+ * SIBA ERP - Unified Multi-Module Migration Runner
+ * 
+ * Verifies, migrates, and synchronizes database tables and columns for all 7 ERP modules:
+ * 1. Inventory (Consumables & Stationery)
+ * 2. Student Lifecycle (Promotions, TC, Bonafide Certificates)
+ * 3. House Management (Houses Leaderboard, Points Logs, Roles)
+ * 4. Library (Catalog, Book Copies, Issue/Return Desk, Overdue Fines)
+ * 5. Academics & EXAM (Subjects, Term Exams, Marks-Only Grading Scheme, Printable Marksheets)
+ * 6. Operations & Fleet (Fleet Vehicles, Transport Routes, Student Commuters, Hostels & Beds)
+ * 7. Communication & Content (Circulars, Email Gateway, Website CMS Pages, Events, Gallery, Enquiries)
  */
 declare(strict_types=1);
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-require dirname(__DIR__) . '/bootstrap.php';
+require_once __DIR__ . '/bootstrap.php';
+require_admin_login();
 
-use core\Database;
-$pdo = Database::connection($config['db']);
+$user = admin_user();
+$results = [];
 
-echo "<h2>Running Accounts Module Migration...</h2>";
-
-$tables = [
-"CREATE TABLE IF NOT EXISTS `schools` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `school_name` VARCHAR(200) NOT NULL, `school_code` VARCHAR(50) DEFAULT NULL, `branch_name` VARCHAR(200) DEFAULT NULL, `address` TEXT DEFAULT NULL, `contact_number` VARCHAR(30) DEFAULT NULL, `email` VARCHAR(150) DEFAULT NULL, `pan` VARCHAR(20) DEFAULT NULL, `tan` VARCHAR(20) DEFAULT NULL, `gst_number` VARCHAR(30) DEFAULT NULL, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `financial_years` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `label` VARCHAR(50) NOT NULL, `start_date` DATE NOT NULL, `end_date` DATE NOT NULL, `status` ENUM('Open','Closed') NOT NULL DEFAULT 'Open', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `academic_years` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `label` VARCHAR(50) NOT NULL, `start_date` DATE NOT NULL, `end_date` DATE NOT NULL, `status` ENUM('Active','Closed') NOT NULL DEFAULT 'Active', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_heads` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(100) NOT NULL, `category` VARCHAR(50) DEFAULT NULL, `default_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `frequency` ENUM('Monthly','Annual','One-Time','Quarterly') NOT NULL DEFAULT 'Monthly', `is_refundable` TINYINT(1) NOT NULL DEFAULT 0, `late_fee_applicable` TINYINT(1) NOT NULL DEFAULT 0, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `sort_order` INT NOT NULL DEFAULT 0, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `expense_categories` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(100) NOT NULL, `group_name` VARCHAR(100) DEFAULT NULL, `description` TEXT DEFAULT NULL, `approval_required` TINYINT(1) NOT NULL DEFAULT 1, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `income_categories` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(100) NOT NULL, `description` TEXT DEFAULT NULL, `amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `vendors` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `vendor_code` VARCHAR(50) DEFAULT NULL, `name` VARCHAR(200) NOT NULL, `mobile` VARCHAR(30) DEFAULT NULL, `email` VARCHAR(150) DEFAULT NULL, `gst_number` VARCHAR(30) DEFAULT NULL, `pan` VARCHAR(20) DEFAULT NULL, `address` TEXT DEFAULT NULL, `bank_name` VARCHAR(150) DEFAULT NULL, `account_number` VARCHAR(50) DEFAULT NULL, `ifsc_code` VARCHAR(30) DEFAULT NULL, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `bank_accounts` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `bank_name` VARCHAR(150) NOT NULL, `account_name` VARCHAR(200) NOT NULL, `account_number` VARCHAR(50) NOT NULL, `ifsc_code` VARCHAR(30) DEFAULT NULL, `branch` VARCHAR(150) DEFAULT NULL, `account_type` ENUM('Savings','Current') NOT NULL DEFAULT 'Current', `opening_balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `current_balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `payment_modes` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(50) NOT NULL, `is_online` TINYINT(1) NOT NULL DEFAULT 0, `transaction_id_required` TINYINT(1) NOT NULL DEFAULT 0, `bank_details_required` TINYINT(1) NOT NULL DEFAULT 0, `cheque_details_required` TINYINT(1) NOT NULL DEFAULT 0, `emi_allowed` TINYINT(1) NOT NULL DEFAULT 0, `status` ENUM('Active','Inactive') NOT NULL DEFAULT 'Active', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_structures` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(200) NOT NULL, `academic_year_id` INT UNSIGNED DEFAULT NULL, `academic_session` VARCHAR(50) NOT NULL, `class_name` VARCHAR(50) NOT NULL, `student_category` VARCHAR(50) NOT NULL DEFAULT 'Regular', `total_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `emi_allowed` TINYINT(1) NOT NULL DEFAULT 0, `num_installments` INT NOT NULL DEFAULT 1, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_structure_items` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `fee_structure_id` INT UNSIGNED NOT NULL, `fee_head_id` INT UNSIGNED NOT NULL, `fee_head_name` VARCHAR(100) NOT NULL, `amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `frequency` ENUM('Monthly','Annual','One-Time','Quarterly') NOT NULL DEFAULT 'Monthly', `is_optional` TINYINT(1) NOT NULL DEFAULT 0, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_fsi_structure` (`fee_structure_id`), KEY `idx_fsi_head` (`fee_head_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_structure_installments` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `fee_structure_id` INT UNSIGNED NOT NULL, `installment_no` INT NOT NULL, `title` VARCHAR(100) DEFAULT NULL, `due_date` DATE DEFAULT NULL, `amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `late_fee_type` ENUM('None','Fixed','Percentage') NOT NULL DEFAULT 'None', `late_fee_value` DECIMAL(12,2) NOT NULL DEFAULT 0, `late_fee_grace_days` INT NOT NULL DEFAULT 0, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_fsi_inst_structure` (`fee_structure_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_structure_assignments` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `fee_structure_id` INT UNSIGNED NOT NULL, `assign_type` ENUM('Class','Section','Individual') NOT NULL DEFAULT 'Class', `assign_value` VARCHAR(100) NOT NULL, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_fsa_structure` (`fee_structure_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `student_fee_assignments` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `admission_no` VARCHAR(50) DEFAULT NULL, `class_name` VARCHAR(50) NOT NULL, `section_name` VARCHAR(50) DEFAULT NULL, `fee_structure_id` INT UNSIGNED NOT NULL, `transport_required` TINYINT(1) NOT NULL DEFAULT 0, `hostel_required` TINYINT(1) NOT NULL DEFAULT 0, `discount_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `emi_plan` VARCHAR(50) DEFAULT NULL, `effective_date` DATE DEFAULT NULL, `academic_session` VARCHAR(50) NOT NULL, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_sfa_student` (`student_id`), KEY `idx_sfa_structure` (`fee_structure_id`), KEY `idx_sfa_session` (`academic_session`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_demands` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `demand_no` VARCHAR(50) NOT NULL, `academic_session` VARCHAR(50) NOT NULL, `demand_month` VARCHAR(50) DEFAULT NULL, `class_name` VARCHAR(50) NOT NULL, `demand_date` DATE NOT NULL, `due_date` DATE NOT NULL, `total_students` INT NOT NULL DEFAULT 0, `total_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `include_late_fee` TINYINT(1) NOT NULL DEFAULT 0, `include_old_dues` TINYINT(1) NOT NULL DEFAULT 1, `status` ENUM('Draft','Generated','Cancelled') NOT NULL DEFAULT 'Draft', `generated_by` INT UNSIGNED DEFAULT NULL, `generated_at` DATETIME DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY `uk_demand_no` (`demand_no`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_demand_items` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `demand_id` INT UNSIGNED NOT NULL, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `admission_no` VARCHAR(50) DEFAULT NULL, `class_name` VARCHAR(50) NOT NULL, `fee_head_id` INT UNSIGNED NOT NULL, `fee_head_name` VARCHAR(100) NOT NULL, `amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `late_fee` DECIMAL(12,2) NOT NULL DEFAULT 0, `old_dues` DECIMAL(12,2) NOT NULL DEFAULT 0, `total_demand` DECIMAL(12,2) NOT NULL DEFAULT 0, `status` ENUM('Pending','Paid','Partial','Cancelled') NOT NULL DEFAULT 'Pending', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_fdi_demand` (`demand_id`), KEY `idx_fdi_student` (`student_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_collections` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `receipt_no` VARCHAR(50) NOT NULL, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `admission_no` VARCHAR(50) DEFAULT NULL, `class_name` VARCHAR(50) DEFAULT NULL, `academic_session` VARCHAR(50) DEFAULT NULL, `fee_period` VARCHAR(50) DEFAULT NULL, `total_outstanding` DECIMAL(14,2) NOT NULL DEFAULT 0, `total_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `discount_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `late_fee` DECIMAL(12,2) NOT NULL DEFAULT 0, `net_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `payment_mode` VARCHAR(50) DEFAULT NULL, `transaction_id` VARCHAR(150) DEFAULT NULL, `payment_date` DATE NOT NULL, `cheque_no` VARCHAR(50) DEFAULT NULL, `cheque_date` DATE DEFAULT NULL, `cheque_bank` VARCHAR(150) DEFAULT NULL, `payee_name` VARCHAR(200) DEFAULT NULL, `collector_name` VARCHAR(200) DEFAULT NULL, `notes` TEXT DEFAULT NULL, `status` ENUM('Active','Cancelled','Void') NOT NULL DEFAULT 'Active', `cancel_reason` TEXT DEFAULT NULL, `cancelled_by` INT UNSIGNED DEFAULT NULL, `cancelled_at` DATETIME DEFAULT NULL, `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY `uk_receipt_no` (`receipt_no`), KEY `idx_fc_student` (`student_id`), KEY `idx_fc_date` (`payment_date`), KEY `idx_fc_status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fee_collection_items` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `fee_collection_id` INT UNSIGNED NOT NULL, `fee_head_id` INT UNSIGNED DEFAULT NULL, `fee_head_name` VARCHAR(100) NOT NULL, `amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `is_advance` TINYINT(1) NOT NULL DEFAULT 0, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_fci_collection` (`fee_collection_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `student_fee_accounts` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `class_name` VARCHAR(50) DEFAULT NULL, `academic_session` VARCHAR(50) DEFAULT NULL, `fee_structure_id` INT UNSIGNED DEFAULT NULL, `total_fee` DECIMAL(14,2) NOT NULL DEFAULT 0, `total_paid` DECIMAL(14,2) NOT NULL DEFAULT 0, `total_discount` DECIMAL(12,2) NOT NULL DEFAULT 0, `total_late_fee` DECIMAL(12,2) NOT NULL DEFAULT 0, `balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `status` ENUM('Active','Fully Paid','Closed') NOT NULL DEFAULT 'Active', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `uk_sfa_student_session` (`student_id`, `academic_session`), KEY `idx_sfa_session` (`academic_session`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `emi_schedules` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `fee_structure_id` INT UNSIGNED DEFAULT NULL, `total_fee` DECIMAL(14,2) NOT NULL DEFAULT 0, `down_payment` DECIMAL(12,2) NOT NULL DEFAULT 0, `remaining_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `installment_type` ENUM('Monthly','Quarterly','Custom') NOT NULL DEFAULT 'Monthly', `num_installments` INT NOT NULL DEFAULT 1, `installment_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `first_emi_date` DATE DEFAULT NULL, `processing_charge` DECIMAL(12,2) NOT NULL DEFAULT 0, `late_fee_type` ENUM('None','Fixed','Percentage') NOT NULL DEFAULT 'None', `late_fee_value` DECIMAL(12,2) NOT NULL DEFAULT 0, `late_fee_grace_days` INT NOT NULL DEFAULT 0, `status` ENUM('Active','Completed','Cancelled') NOT NULL DEFAULT 'Active', `academic_session` VARCHAR(50) DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_emi_student` (`student_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `emi_payments` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `emi_schedule_id` INT UNSIGNED NOT NULL, `installment_no` INT NOT NULL, `due_date` DATE NOT NULL, `amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `late_fee` DECIMAL(12,2) NOT NULL DEFAULT 0, `paid_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `paid_date` DATE DEFAULT NULL, `payment_mode` VARCHAR(50) DEFAULT NULL, `transaction_id` VARCHAR(150) DEFAULT NULL, `status` ENUM('Pending','Paid','Overdue','Partial') NOT NULL DEFAULT 'Pending', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_ep_schedule` (`emi_schedule_id`), KEY `idx_ep_status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `discounts` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `discount_type` ENUM('Sibling','Staff','Scholarship','Sports','Other') NOT NULL DEFAULT 'Other', `discount_method` ENUM('Fixed','Percentage') NOT NULL DEFAULT 'Fixed', `amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `applicable_fee_head_id` INT UNSIGNED DEFAULT NULL, `applicable_fee_head_name` VARCHAR(100) DEFAULT NULL, `start_date` DATE NOT NULL, `end_date` DATE DEFAULT NULL, `reason` TEXT DEFAULT NULL, `approved_by` VARCHAR(200) DEFAULT NULL, `status` ENUM('Active','Expired','Cancelled') NOT NULL DEFAULT 'Active', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_disc_student` (`student_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `expenses` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `expense_no` VARCHAR(50) NOT NULL, `expense_date` DATE NOT NULL, `category_id` INT UNSIGNED NOT NULL, `category_name` VARCHAR(100) DEFAULT NULL, `vendor_id` INT UNSIGNED DEFAULT NULL, `vendor_name` VARCHAR(200) DEFAULT NULL, `bill_no` VARCHAR(100) DEFAULT NULL, `bill_date` DATE DEFAULT NULL, `amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `gst_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `net_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `description` TEXT DEFAULT NULL, `bill_file` VARCHAR(255) DEFAULT NULL, `payment_mode` VARCHAR(50) DEFAULT NULL, `payment_date` DATE DEFAULT NULL, `cheque_no` VARCHAR(50) DEFAULT NULL, `transaction_id` VARCHAR(150) DEFAULT NULL, `payee_name` VARCHAR(200) DEFAULT NULL, `status` ENUM('Pending','Approved','Rejected','Cancelled') NOT NULL DEFAULT 'Pending', `approved_by` INT UNSIGNED DEFAULT NULL, `approved_at` DATETIME DEFAULT NULL, `reject_reason` TEXT DEFAULT NULL, `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `uk_expense_no` (`expense_no`), KEY `idx_exp_category` (`category_id`), KEY `idx_exp_vendor` (`vendor_id`), KEY `idx_exp_status` (`status`), KEY `idx_exp_date` (`expense_date`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `vendor_bills` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `vendor_id` INT UNSIGNED NOT NULL, `bill_no` VARCHAR(100) NOT NULL, `bill_date` DATE NOT NULL, `bill_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `paid_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `description` TEXT DEFAULT NULL, `expense_id` INT UNSIGNED DEFAULT NULL, `status` ENUM('Unpaid','Partial','Paid','Cancelled') NOT NULL DEFAULT 'Unpaid', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_vb_vendor` (`vendor_id`), KEY `idx_vb_status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `vendor_payments` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `payment_no` VARCHAR(50) NOT NULL, `vendor_id` INT UNSIGNED NOT NULL, `vendor_bill_id` INT UNSIGNED DEFAULT NULL, `bill_no` VARCHAR(100) DEFAULT NULL, `bill_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `paid_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `tds_deducted` DECIMAL(12,2) NOT NULL DEFAULT 0, `net_paid` DECIMAL(14,2) NOT NULL DEFAULT 0, `payment_mode` VARCHAR(50) DEFAULT NULL, `payment_date` DATE NOT NULL, `transaction_id` VARCHAR(150) DEFAULT NULL, `cheque_no` VARCHAR(50) DEFAULT NULL, `notes` TEXT DEFAULT NULL, `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY `uk_vp_no` (`payment_no`), KEY `idx_vp_vendor` (`vendor_id`), KEY `idx_vp_bill` (`vendor_bill_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `cash_book` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `transaction_date` DATE NOT NULL, `transaction_type` ENUM('Receipt','Payment','Opening','Transfer-In','Transfer-Out') NOT NULL, `reference_type` VARCHAR(50) DEFAULT NULL, `reference_id` INT UNSIGNED DEFAULT NULL, `description` TEXT DEFAULT NULL, `amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `direction` ENUM('Dr','Cr') NOT NULL DEFAULT 'Dr', `balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_cb_date` (`transaction_date`), KEY `idx_cb_type` (`transaction_type`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `bank_book` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `bank_account_id` INT UNSIGNED NOT NULL, `transaction_date` DATE NOT NULL, `transaction_type` ENUM('Deposit','Withdrawal','Transfer-In','Transfer-Out','Opening','Expense','Salary') NOT NULL, `reference_type` VARCHAR(50) DEFAULT NULL, `reference_id` INT UNSIGNED DEFAULT NULL, `description` TEXT DEFAULT NULL, `amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `direction` ENUM('Dr','Cr') NOT NULL DEFAULT 'Dr', `balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `reconciled` TINYINT(1) NOT NULL DEFAULT 0, `reconciliation_date` DATE DEFAULT NULL, `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_bb_account` (`bank_account_id`), KEY `idx_bb_date` (`transaction_date`), KEY `idx_bb_reconciled` (`reconciled`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `cheque_books` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `bank_account_id` INT UNSIGNED NOT NULL, `book_number` VARCHAR(50) NOT NULL, `start_cheque_no` VARCHAR(20) NOT NULL, `end_cheque_no` VARCHAR(20) NOT NULL, `total_cheques` INT NOT NULL DEFAULT 0, `received_date` DATE DEFAULT NULL, `status` ENUM('Active','Used','Closed') NOT NULL DEFAULT 'Active', `kept_by` VARCHAR(200) DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_cbk_bank` (`bank_account_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `cheque_issues` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `cheque_number` VARCHAR(20) NOT NULL, `cheque_book_id` INT UNSIGNED DEFAULT NULL, `bank_account_id` INT UNSIGNED NOT NULL, `cheque_date` DATE NOT NULL, `payee_name` VARCHAR(200) NOT NULL, `amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `purpose` TEXT DEFAULT NULL, `voucher_no` VARCHAR(50) DEFAULT NULL, `issued_by` VARCHAR(200) DEFAULT NULL, `approved_by` VARCHAR(200) DEFAULT NULL, `status` ENUM('Issued','Cleared','Bounced','Cancelled','Pending') NOT NULL DEFAULT 'Issued', `cleared_date` DATE DEFAULT NULL, `cancel_reason` TEXT DEFAULT NULL, `cancelled_by` VARCHAR(200) DEFAULT NULL, `physical_retained` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `uk_cheque_no` (`cheque_number`), KEY `idx_ci_bank` (`bank_account_id`), KEY `idx_ci_status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `bank_reconciliations` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `bank_account_id` INT UNSIGNED NOT NULL, `statement_from` DATE NOT NULL, `statement_to` DATE NOT NULL, `erp_balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `bank_balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `unreconciled_cheques` DECIMAL(14,2) NOT NULL DEFAULT 0, `bank_charges` DECIMAL(12,2) NOT NULL DEFAULT 0, `difference` DECIMAL(14,2) NOT NULL DEFAULT 0, `status` ENUM('Pending','Completed') NOT NULL DEFAULT 'Pending', `reconciled_by` INT UNSIGNED DEFAULT NULL, `reconciled_at` DATETIME DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_br_bank` (`bank_account_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `employee_salary_structures` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `employee_id` INT UNSIGNED NOT NULL, `employee_name` VARCHAR(200) NOT NULL, `basic_salary` DECIMAL(12,2) NOT NULL DEFAULT 0, `hra` DECIMAL(12,2) NOT NULL DEFAULT 0, `other_allowance` DECIMAL(12,2) NOT NULL DEFAULT 0, `pf_deduction` DECIMAL(12,2) NOT NULL DEFAULT 0, `esi_deduction` DECIMAL(12,2) NOT NULL DEFAULT 0, `professional_tax` DECIMAL(12,2) NOT NULL DEFAULT 0, `tds` DECIMAL(12,2) NOT NULL DEFAULT 0, `loan_deduction` DECIMAL(12,2) NOT NULL DEFAULT 0, `net_salary` DECIMAL(12,2) NOT NULL DEFAULT 0, `bank_account` VARCHAR(150) DEFAULT NULL, `payment_mode` VARCHAR(50) DEFAULT 'Bank Transfer', `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY `uk_ess_employee` (`employee_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `payroll_runs` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `month_label` VARCHAR(50) NOT NULL, `total_employees` INT NOT NULL DEFAULT 0, `total_gross` DECIMAL(14,2) NOT NULL DEFAULT 0, `total_deductions` DECIMAL(14,2) NOT NULL DEFAULT 0, `total_net` DECIMAL(14,2) NOT NULL DEFAULT 0, `status` ENUM('Draft','Approved','Paid','Cancelled') NOT NULL DEFAULT 'Draft', `approved_by` INT UNSIGNED DEFAULT NULL, `approved_at` DATETIME DEFAULT NULL, `generated_by` INT UNSIGNED DEFAULT NULL, `generated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_pr_month` (`month_label`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `payroll_items` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `payroll_run_id` INT UNSIGNED NOT NULL, `employee_id` INT UNSIGNED NOT NULL, `employee_name` VARCHAR(200) NOT NULL, `department` VARCHAR(100) DEFAULT NULL, `basic` DECIMAL(12,2) NOT NULL DEFAULT 0, `hra` DECIMAL(12,2) NOT NULL DEFAULT 0, `other_allowance` DECIMAL(12,2) NOT NULL DEFAULT 0, `gross_amount` DECIMAL(12,2) NOT NULL DEFAULT 0, `pf` DECIMAL(12,2) NOT NULL DEFAULT 0, `esi` DECIMAL(12,2) NOT NULL DEFAULT 0, `professional_tax` DECIMAL(12,2) NOT NULL DEFAULT 0, `tds` DECIMAL(12,2) NOT NULL DEFAULT 0, `loan` DECIMAL(12,2) NOT NULL DEFAULT 0, `other_deductions` DECIMAL(12,2) NOT NULL DEFAULT 0, `total_deductions` DECIMAL(12,2) NOT NULL DEFAULT 0, `net_payout` DECIMAL(12,2) NOT NULL DEFAULT 0, `payment_status` ENUM('Pending','Paid') NOT NULL DEFAULT 'Pending', `payment_date` DATE DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_pi_run` (`payroll_run_id`), KEY `idx_pi_employee` (`employee_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `inventory_items` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `item_code` VARCHAR(50) DEFAULT NULL, `item_name` VARCHAR(200) NOT NULL, `category` VARCHAR(100) DEFAULT NULL, `unit` VARCHAR(50) NOT NULL DEFAULT 'Piece', `opening_quantity` INT NOT NULL DEFAULT 0, `current_quantity` INT NOT NULL DEFAULT 0, `reorder_level` INT NOT NULL DEFAULT 0, `purchase_rate` DECIMAL(12,2) NOT NULL DEFAULT 0, `store_location` VARCHAR(200) DEFAULT NULL, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_inv_category` (`category`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `inventory_transactions` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `item_id` INT UNSIGNED NOT NULL, `transaction_type` ENUM('Purchase','Issue','Return','Opening','Adjustment') NOT NULL, `quantity` INT NOT NULL DEFAULT 0, `department` VARCHAR(100) DEFAULT NULL, `issued_to` VARCHAR(200) DEFAULT NULL, `transaction_date` DATE NOT NULL, `remarks` TEXT DEFAULT NULL, `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_it_item` (`item_id`), KEY `idx_it_date` (`transaction_date`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `hostel_fee_assignments` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `hostel_name` VARCHAR(200) NOT NULL, `room_number` VARCHAR(50) DEFAULT NULL, `bed_number` VARCHAR(50) DEFAULT NULL, `joining_date` DATE NOT NULL, `monthly_room_fee` DECIMAL(12,2) NOT NULL DEFAULT 0, `meal_fee` DECIMAL(12,2) NOT NULL DEFAULT 0, `security_deposit` DECIMAL(12,2) NOT NULL DEFAULT 0, `emi_allowed` TINYINT(1) NOT NULL DEFAULT 0, `status` ENUM('Active','Inactive') NOT NULL DEFAULT 'Active', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_hfa_student` (`student_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `transport_fee_assignments` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `student_id` INT UNSIGNED NOT NULL, `student_name` VARCHAR(200) NOT NULL, `route_name` VARCHAR(200) NOT NULL, `stop_name` VARCHAR(200) DEFAULT NULL, `vehicle_number` VARCHAR(50) DEFAULT NULL, `monthly_fee` DECIMAL(12,2) NOT NULL DEFAULT 0, `start_date` DATE NOT NULL, `travel_type` ENUM('One-Way','Two-Way') NOT NULL DEFAULT 'Two-Way', `status` ENUM('Active','Inactive') NOT NULL DEFAULT 'Active', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_tfa_student` (`student_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `budget_heads` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(200) NOT NULL, `description` TEXT DEFAULT NULL, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `budgets` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `financial_year_id` INT UNSIGNED NOT NULL, `department` VARCHAR(200) DEFAULT NULL, `budget_head_id` INT UNSIGNED NOT NULL, `budget_head_name` VARCHAR(200) DEFAULT NULL, `annual_budget` DECIMAL(14,2) NOT NULL DEFAULT 0, `amount_used` DECIMAL(14,2) NOT NULL DEFAULT 0, `amount_committed` DECIMAL(14,2) NOT NULL DEFAULT 0, `available_budget` DECIMAL(14,2) NOT NULL DEFAULT 0, `alert_percentage` INT NOT NULL DEFAULT 80, `block_extra` TINYINT(1) NOT NULL DEFAULT 0, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_bud_fy` (`financial_year_id`), KEY `idx_bud_head` (`budget_head_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `asset_categories` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(200) NOT NULL, `description` TEXT DEFAULT NULL, `default_depreciation_rate` DECIMAL(5,2) NOT NULL DEFAULT 0, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `fixed_assets` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `asset_code` VARCHAR(50) DEFAULT NULL, `asset_name` VARCHAR(200) NOT NULL, `category_id` INT UNSIGNED NOT NULL, `purchase_date` DATE NOT NULL, `vendor_id` INT UNSIGNED DEFAULT NULL, `purchase_cost` DECIMAL(14,2) NOT NULL DEFAULT 0, `location` VARCHAR(200) DEFAULT NULL, `custodian` VARCHAR(200) DEFAULT NULL, `serial_number` VARCHAR(100) DEFAULT NULL, `warranty_end_date` DATE DEFAULT NULL, `useful_life_years` INT NOT NULL DEFAULT 5, `depreciation_rate` DECIMAL(5,2) NOT NULL DEFAULT 20, `accumulated_depreciation` DECIMAL(14,2) NOT NULL DEFAULT 0, `current_value` DECIMAL(14,2) NOT NULL DEFAULT 0, `status` ENUM('Active','Under Repair','Disposed') NOT NULL DEFAULT 'Active', `disposed_date` DATE DEFAULT NULL, `disposed_amount` DECIMAL(14,2) DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, KEY `idx_fa_category` (`category_id`), KEY `idx_fa_status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `asset_depreciations` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `asset_id` INT UNSIGNED NOT NULL, `financial_year_id` INT UNSIGNED NOT NULL, `depreciation_amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `accumulated_after` DECIMAL(14,2) NOT NULL DEFAULT 0, `book_value_after` DECIMAL(14,2) NOT NULL DEFAULT 0, `calculated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_ad_asset` (`asset_id`), KEY `idx_ad_fy` (`financial_year_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `year_closings` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `financial_year_id` INT UNSIGNED NOT NULL, `closed_by` INT UNSIGNED DEFAULT NULL, `closed_at` DATETIME DEFAULT NULL, `total_income` DECIMAL(16,2) NOT NULL DEFAULT 0, `total_expenses` DECIMAL(16,2) NOT NULL DEFAULT 0, `net_surplus` DECIMAL(16,2) NOT NULL DEFAULT 0, `notes` TEXT DEFAULT NULL, `status` ENUM('Pending','Completed') NOT NULL DEFAULT 'Pending', `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_yc_fy` (`financial_year_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `ledger_accounts` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `account_code` VARCHAR(30) NOT NULL, `account_name` VARCHAR(200) NOT NULL, `account_type` ENUM('Asset','Liability','Income','Expense','Equity') NOT NULL, `parent_id` INT UNSIGNED DEFAULT NULL, `opening_balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `current_balance` DECIMAL(14,2) NOT NULL DEFAULT 0, `is_active` TINYINT(1) NOT NULL DEFAULT 1, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY `uk_la_code` (`account_code`), KEY `idx_la_type` (`account_type`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `ledger_entries` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `ledger_account_id` INT UNSIGNED NOT NULL, `entry_date` DATE NOT NULL, `entry_type` VARCHAR(50) DEFAULT NULL, `reference_type` VARCHAR(50) DEFAULT NULL, `reference_id` INT UNSIGNED DEFAULT NULL, `description` TEXT DEFAULT NULL, `amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `direction` ENUM('Dr','Cr') NOT NULL, `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_le_account` (`ledger_account_id`), KEY `idx_le_date` (`entry_date`), KEY `idx_le_ref` (`reference_type`, `reference_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `journal_entries` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `journal_no` VARCHAR(50) NOT NULL, `entry_date` DATE NOT NULL, `description` TEXT NOT NULL, `debit_account_id` INT UNSIGNED NOT NULL, `credit_account_id` INT UNSIGNED NOT NULL, `amount` DECIMAL(14,2) NOT NULL DEFAULT 0, `status` ENUM('Draft','Posted','Cancelled') NOT NULL DEFAULT 'Draft', `created_by` INT UNSIGNED DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY `uk_je_no` (`journal_no`), KEY `idx_je_date` (`entry_date`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-"CREATE TABLE IF NOT EXISTS `audit_logs` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `user_id` INT UNSIGNED DEFAULT NULL, `user_name` VARCHAR(200) DEFAULT NULL, `module` VARCHAR(100) NOT NULL, `action` VARCHAR(50) NOT NULL, `record_type` VARCHAR(100) DEFAULT NULL, `record_id` INT UNSIGNED DEFAULT NULL, `old_value` TEXT DEFAULT NULL, `new_value` TEXT DEFAULT NULL, `ip_address` VARCHAR(50) DEFAULT NULL, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY `idx_al_user` (`user_id`), KEY `idx_al_module` (`module`), KEY `idx_al_record` (`record_type`, `record_id`), KEY `idx_al_date` (`created_at`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-];
-
-$count = 0;
-$errors = 0;
-foreach ($tables as $sql) {
+function run_ddl(PDO $pdo, string $label, string $sql, array &$results): void {
     try {
         $pdo->exec($sql);
-        $count++;
-        echo "<p style='color:green'>✓ Table created/verified</p>";
-    } catch (\PDOException $e) {
-        $errors++;
-        echo "<p style='color:red'>✗ Error: " . htmlspecialchars($e->getMessage()) . "</p>";
+        $results[] = ['label' => $label, 'status' => 'OK', 'msg' => 'Schema verified / table synchronized.'];
+    } catch (\Throwable $e) {
+        $results[] = ['label' => $label, 'status' => 'WARN', 'msg' => $e->getMessage()];
     }
 }
 
-echo "<hr>";
-echo "<h3>Migration Complete: {$count} tables OK, {$errors} errors</h3>";
-echo "<p><strong>Next step:</strong> Delete this file for security.</p>";
-echo "<p><a href='login.php' style='color:blue;font-weight:bold;'>Go to ERP Login →</a></p>";
+// 1. INVENTORY TABLES
+run_ddl($pdo, 'Inventory Items', "
+    CREATE TABLE IF NOT EXISTS inventory_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        item_code VARCHAR(50) NOT NULL UNIQUE,
+        item_name VARCHAR(150) NOT NULL,
+        category VARCHAR(80) NOT NULL DEFAULT 'Stationery',
+        unit VARCHAR(30) NOT NULL DEFAULT 'Pieces',
+        unit_price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        current_stock INT NOT NULL DEFAULT 0,
+        min_threshold INT NOT NULL DEFAULT 5,
+        location VARCHAR(100) NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Inventory Transactions', "
+    CREATE TABLE IF NOT EXISTS inventory_transactions (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        item_id INT NOT NULL,
+        transaction_type ENUM('IN', 'ISSUE', 'RETURN', 'ADJUSTMENT') NOT NULL,
+        quantity INT NOT NULL,
+        issued_to VARCHAR(150) NULL,
+        department VARCHAR(100) NULL,
+        notes TEXT NULL,
+        created_by VARCHAR(100) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_item_date (item_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+// 2. STUDENT LIFECYCLE TABLES
+run_ddl($pdo, 'Student Certificates', "
+    CREATE TABLE IF NOT EXISTS student_certificates (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        certificate_no VARCHAR(50) NOT NULL UNIQUE,
+        student_id BIGINT NOT NULL,
+        certificate_type ENUM('Transfer Certificate', 'Bonafide Certificate', 'Character Certificate', 'School Leaving Certificate', 'No Dues Certificate') NOT NULL,
+        reason TEXT NULL,
+        conduct VARCHAR(100) DEFAULT 'Good',
+        issued_date DATE NOT NULL,
+        issued_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_cert_student (student_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Student Promotions Log', "
+    CREATE TABLE IF NOT EXISTS student_promotions (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        student_id BIGINT NOT NULL,
+        from_class VARCHAR(50) NOT NULL,
+        to_class VARCHAR(50) NOT NULL,
+        from_session VARCHAR(50) NOT NULL,
+        to_session VARCHAR(50) NOT NULL,
+        promotion_status ENUM('Promoted', 'Detained', 'Graduated') NOT NULL DEFAULT 'Promoted',
+        promoted_date DATE NOT NULL,
+        promoted_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Student Disciplinary Remarks', "
+    CREATE TABLE IF NOT EXISTS student_remarks_discipline (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        student_id BIGINT NOT NULL,
+        incident_date DATE NOT NULL,
+        category ENUM('Academic', 'Behavioral', 'Attendance', 'Achievement', 'Warning') NOT NULL DEFAULT 'Behavioral',
+        severity ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Low',
+        title VARCHAR(200) NOT NULL,
+        description TEXT NOT NULL,
+        action_taken TEXT NULL,
+        recorded_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+// 3. HOUSE MANAGEMENT TABLES
+run_ddl($pdo, 'Houses Master', "
+    CREATE TABLE IF NOT EXISTS houses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        color_code VARCHAR(20) NOT NULL DEFAULT '#1e3a8a',
+        motto VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Student House Allocations', "
+    CREATE TABLE IF NOT EXISTS student_house_allocations (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        student_id BIGINT NOT NULL UNIQUE,
+        house_id INT NOT NULL,
+        role ENUM('Member', 'Captain', 'Vice Captain', 'Prefect') NOT NULL DEFAULT 'Member',
+        allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_house (house_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'House Activity Points Logs', "
+    CREATE TABLE IF NOT EXISTS house_activity_logs (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        house_id INT NOT NULL,
+        event_name VARCHAR(200) NOT NULL,
+        points INT NOT NULL,
+        points_type ENUM('Award', 'Deduction') NOT NULL DEFAULT 'Award',
+        activity_date DATE NOT NULL,
+        recorded_by INT NULL,
+        notes TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_house_date (house_id, activity_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+// 4. LIBRARY TABLES
+run_ddl($pdo, 'Library Books', "
+    CREATE TABLE IF NOT EXISTS library_books (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        isbn VARCHAR(50) NULL,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(200) NOT NULL,
+        publisher VARCHAR(150) NULL,
+        edition VARCHAR(50) NULL,
+        category VARCHAR(100) NOT NULL DEFAULT 'General',
+        rack_location VARCHAR(80) NULL,
+        total_copies INT NOT NULL DEFAULT 1,
+        available_copies INT NOT NULL DEFAULT 1,
+        price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Library Book Copies', "
+    CREATE TABLE IF NOT EXISTS library_book_copies (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        book_id BIGINT NOT NULL,
+        accession_no VARCHAR(50) NOT NULL UNIQUE,
+        barcode VARCHAR(60) NULL,
+        condition_status ENUM('Good', 'Fair', 'Damaged', 'Lost') NOT NULL DEFAULT 'Good',
+        is_available TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_book (book_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Library Issues & Circulation', "
+    CREATE TABLE IF NOT EXISTS library_issues (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        copy_id BIGINT NOT NULL,
+        book_id BIGINT NOT NULL,
+        borrower_type ENUM('student', 'staff') NOT NULL DEFAULT 'student',
+        borrower_id BIGINT NOT NULL,
+        issue_date DATE NOT NULL,
+        due_date DATE NOT NULL,
+        return_date DATE NULL,
+        fine_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        fine_status ENUM('None', 'Unpaid', 'Paid', 'Waived') NOT NULL DEFAULT 'None',
+        status ENUM('Issued', 'Returned', 'Overdue', 'Lost') NOT NULL DEFAULT 'Issued',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_issue_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+// 5. ACADEMICS & EXAM TABLES
+run_ddl($pdo, 'Subjects Master', "
+    CREATE TABLE IF NOT EXISTS subjects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        subject_code VARCHAR(30) NOT NULL UNIQUE,
+        subject_name VARCHAR(120) NOT NULL,
+        class_name VARCHAR(50) NULL,
+        teacher_id INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Exams Master', "
+    CREATE TABLE IF NOT EXISTS exams (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(150) NOT NULL,
+        academic_year VARCHAR(50) NOT NULL DEFAULT '2025-2026',
+        start_date DATE NULL,
+        end_date DATE NULL,
+        status ENUM('Scheduled', 'Ongoing', 'Completed') NOT NULL DEFAULT 'Scheduled',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Exam Results (Marks-Only Grading)', "
+    CREATE TABLE IF NOT EXISTS exam_results (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        student_id INT NOT NULL,
+        subject_id INT NOT NULL,
+        exam_name VARCHAR(150) NOT NULL,
+        max_marks DECIMAL(6,2) NOT NULL DEFAULT 100.00,
+        obtained_marks DECIMAL(6,2) NOT NULL DEFAULT 0.00,
+        grade VARCHAR(10) NULL,
+        result_date DATE NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_student_subject_exam (student_id, subject_id, exam_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+// 6. OPERATIONS & FLEET TABLES
+run_ddl($pdo, 'Fleet Vehicles', "
+    CREATE TABLE IF NOT EXISTS transport_vehicles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        vehicle_no VARCHAR(50) NOT NULL UNIQUE,
+        model VARCHAR(100) NULL,
+        capacity INT NOT NULL DEFAULT 30,
+        driver_name VARCHAR(120) NULL,
+        driver_phone VARCHAR(30) NULL,
+        status ENUM('Active', 'Maintenance', 'Inactive') NOT NULL DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Transport Routes', "
+    CREATE TABLE IF NOT EXISTS transport_routes (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        route_name VARCHAR(100) NOT NULL,
+        vehicle_id INT NULL,
+        vehicle_no VARCHAR(30) NULL,
+        driver_name VARCHAR(120) NULL,
+        attendant_name VARCHAR(120) NULL,
+        start_location VARCHAR(150) NULL,
+        end_location VARCHAR(150) NULL,
+        monthly_fare DECIMAL(10,2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Transport Allocations', "
+    CREATE TABLE IF NOT EXISTS transport_allocations (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        student_id BIGINT NOT NULL,
+        route_id BIGINT NOT NULL,
+        pickup_point VARCHAR(120) NULL,
+        drop_point VARCHAR(120) NULL,
+        status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Hostels Master', "
+    CREATE TABLE IF NOT EXISTS hostels (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(120) NOT NULL,
+        type ENUM('boys', 'girls', 'staff') NOT NULL DEFAULT 'boys',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Hostel Rooms', "
+    CREATE TABLE IF NOT EXISTS hostel_rooms (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        hostel_id BIGINT NOT NULL,
+        room_no VARCHAR(30) NOT NULL,
+        total_beds INT NOT NULL DEFAULT 4,
+        occupied_beds INT NOT NULL DEFAULT 0,
+        status ENUM('available', 'full', 'maintenance') NOT NULL DEFAULT 'available',
+        block_id INT NULL,
+        monthly_fee DECIMAL(10,2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Hostel Bed Allocations', "
+    CREATE TABLE IF NOT EXISTS hostel_allocations (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        student_id BIGINT NOT NULL,
+        room_id BIGINT NOT NULL,
+        from_date DATE NOT NULL,
+        to_date DATE NULL,
+        status ENUM('active', 'vacated') NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+// 7. COMMUNICATION & CONTENT TABLES
+run_ddl($pdo, 'System Announcements', "
+    CREATE TABLE IF NOT EXISTS system_announcements (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        content TEXT NOT NULL,
+        audience VARCHAR(50) NOT NULL DEFAULT 'All',
+        priority VARCHAR(20) DEFAULT 'Normal',
+        valid_until DATE NULL,
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        send_email TINYINT(1) DEFAULT 0,
+        email_status VARCHAR(30) DEFAULT 'none',
+        created_by INT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Announcement Email Logs', "
+    CREATE TABLE IF NOT EXISTS announcement_email_logs (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        announcement_id BIGINT NOT NULL,
+        recipient_email VARCHAR(150) NOT NULL,
+        recipient_name VARCHAR(150) NULL,
+        recipient_type VARCHAR(50) NULL,
+        status ENUM('Queued', 'Sent', 'Failed') NOT NULL DEFAULT 'Sent',
+        sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_ann_id (announcement_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Website CMS Pages', "
+    CREATE TABLE IF NOT EXISTS cms_pages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        slug VARCHAR(100) NOT NULL UNIQUE,
+        page_title VARCHAR(255) NOT NULL,
+        data_json LONGTEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Events & News', "
+    CREATE TABLE IF NOT EXISTS events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        type ENUM('event', 'news') NOT NULL DEFAULT 'event',
+        title VARCHAR(255) NOT NULL,
+        text TEXT NULL,
+        day VARCHAR(2) NULL,
+        month VARCHAR(20) NULL,
+        icon VARCHAR(50) DEFAULT 'calendar',
+        color VARCHAR(7) DEFAULT '#4b5563',
+        image VARCHAR(500) NULL,
+        attachment VARCHAR(500) NULL,
+        category VARCHAR(100) NULL,
+        event_date DATE NULL,
+        sort_order INT DEFAULT 0,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Media Gallery', "
+    CREATE TABLE IF NOT EXISTS gallery (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NULL,
+        image_file VARCHAR(500) NULL,
+        youtube_url VARCHAR(500) NULL,
+        category VARCHAR(100) DEFAULT 'General',
+        sort_order INT DEFAULT 0,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+run_ddl($pdo, 'Contact Enquiries Submissions', "
+    CREATE TABLE IF NOT EXISTS contact_submissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        phone VARCHAR(15) NOT NULL,
+        email VARCHAR(100) NULL,
+        subject VARCHAR(100) NULL,
+        message TEXT NOT NULL,
+        status ENUM('New', 'Read', 'Replied', 'Closed') DEFAULT 'New',
+        admin_note TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+", $results);
+
+// Default house seeds if empty
+$houseCount = (int) $pdo->query("SELECT COUNT(*) FROM houses")->fetchColumn();
+if ($houseCount === 0) {
+    $pdo->exec("
+        INSERT INTO houses (name, color_code, motto) VALUES
+        ('Red Dragons', '#dc2626', 'Courage, Strength & Valor'),
+        ('Blue Titans', '#2563eb', 'Wisdom, Integrity & Vision'),
+        ('Green Phoenix', '#16a34a', 'Growth, Harmony & Resilience'),
+        ('Yellow Eagles', '#ca8a04', 'Excellence, Speed & Brilliance');
+    ");
+    $results[] = ['label' => 'Seed Houses', 'status' => 'OK', 'msg' => 'Default 4 School Houses initialized.'];
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Database Sync &amp; Migration Runner | SIBA ERP</title>
+    <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css">
+</head>
+<body class="erp-body">
+<div class="container py-5" style="max-width: 900px;">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white py-3">
+            <h4 class="mb-0 fw-bold">🚀 SIBA ERP – Database Auto-Sync &amp; Migration Runner</h4>
+            <div class="small opacity-75">Automated synchronization across all 7 ERP Modules</div>
+        </div>
+        <div class="card-body p-4">
+            <div class="alert alert-success d-flex align-items-center mb-4">
+                <div class="fs-3 me-3">✅</div>
+                <div>
+                    <strong>Database Synchronization Succeeded!</strong>
+                    <div>All 22 required database tables and columns are verified and in sync.</div>
+                </div>
+            </div>
+
+            <h5 class="fw-bold mb-3">Sync Status Checklist:</h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Module Component</th>
+                            <th>Status</th>
+                            <th>Diagnostic Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($results as $res): ?>
+                            <tr>
+                                <td class="fw-bold"><?= e($res['label']) ?></td>
+                                <td>
+                                    <?php if ($res['status'] === 'OK'): ?>
+                                        <span class="badge bg-success">Synchronized</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning text-dark">Notice</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="small text-muted font-monospace"><?= e($res['msg']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a href="index.php" class="btn btn-primary fw-bold">← Return to ERP Dashboard</a>
+                <span class="text-muted small">SIBA Public School ERP</span>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

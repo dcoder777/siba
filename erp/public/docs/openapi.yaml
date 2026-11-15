@@ -34,10 +34,15 @@ tags:
   - name: Auth
   - name: Admissions
   - name: Students
+  - name: Student Lifecycle
   - name: Parents
   - name: Academics
   - name: Finance
-  - name: Operations
+  - name: Operations & Fleet
+  - name: Inventory
+  - name: House Management
+  - name: Library
+  - name: Communication & Content
   - name: HR
   - name: Reports
 components:
@@ -453,6 +458,7 @@ paths:
                     type: object
                     properties:
                       application_no: { type: string, example: "SBA-2026-0001" }
+                      application_number: { type: string, example: "SBA-2026-0001" }
                       parent_id: { type: integer, example: 1 }
                       application_id: { type: integer, example: 1 }
                       user_id: { type: integer, example: 2 }
@@ -467,6 +473,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+
+  /admissions/applications/{id}:
+    get:
+      tags: [Admissions]
+      summary: Get admission application details by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      application:
+                        type: object
+        '403':
+          description: Forbidden (parent can only view own child's application)
+        '404':
+          description: Application not found
+
+  /admissions/applications/{id}/receipt:
+    get:
+      tags: [Admissions]
+      summary: Download admission application receipt (PDF or JSON metadata)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: format
+          schema: { type: string, enum: [binary, json], default: binary }
+          description: Output format - binary PDF stream (default) or JSON with base64 PDF
+      responses:
+        '200':
+          description: Application receipt PDF file or JSON metadata
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      application_id: { type: integer, example: 1 }
+                      application_no: { type: string, example: "SBA-2026-0001" }
+                      filename: { type: string, example: "SBA-2026-0001_receipt.pdf" }
+                      mime_type: { type: string, example: "application/pdf" }
+                      pdf_base64: { type: string }
+        '403':
+          description: Forbidden (parent can only download own child's receipt)
+        '404':
+          description: Application not found
+
+  /admissions/my-applications:
+    get:
+      tags: [Admissions]
+      summary: List applications for the currently authenticated parent
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+      responses:
+        '200':
+          description: List of applications belonging to the authenticated parent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      applications:
+                        type: array
+                        items:
+                          type: object
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
 
   /students:
     get:
@@ -743,6 +846,40 @@ paths:
           description: Search by name, email, or phone
       responses:
         '200': { description: OK }
+
+  /parents/me/applications:
+    get:
+      tags: [Parents]
+      summary: List applications for the currently authenticated parent
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      applications:
+                        type: array
+                        items:
+                          type: object
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Parent profile not found
 
   /parents/{id}:
     get:
@@ -2311,6 +2448,1150 @@ paths:
       responses:
         '200':
           description: CSV response
+
+  # ═══════════════════════════════════════════════════════════════
+  # MODULE 1: INVENTORY (School Consumables & Stationery)
+  # ═══════════════════════════════════════════════════════════════
+
+  /inventory/items:
+    get:
+      tags: [Inventory]
+      summary: List inventory items
+      description: Retrieve paginated inventory items (school consumables and stationery) with stock alerts.
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          description: Search by item name or code
+          schema: { type: string, example: "Notebook" }
+        - in: query
+          name: category
+          description: Filter by item category
+          schema: { type: string, example: "Stationery" }
+      responses:
+        '200':
+          description: List of inventory items returned successfully
+    post:
+      tags: [Inventory]
+      summary: Create new inventory item
+      description: Register a new consumable or stationery inventory item.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [item_name]
+              properties:
+                item_name: { type: string, example: "A4 Ruled Notebooks (100 Pages)" }
+                item_code: { type: string, example: "NB-A4-100" }
+                category: { type: string, example: "Stationery" }
+                unit: { type: string, example: "Pcs" }
+                quantity: { type: number, example: 150 }
+                reorder_level: { type: number, example: 25 }
+                unit_price: { type: number, example: 45.00 }
+                store_location: { type: string, example: "Main Store Room - Rack B" }
+      responses:
+        '200':
+          description: Inventory item created successfully
+
+  /inventory/items/{id}:
+    get:
+      tags: [Inventory]
+      summary: Get inventory item details
+      description: Fetch a single inventory item along with its latest 20 stock audit transactions.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Item details with recent transaction log
+        '404':
+          description: Item not found
+    put:
+      tags: [Inventory]
+      summary: Update inventory item
+      description: Update details, pricing, reorder levels, or location of an inventory item.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                item_name: { type: string, example: "A4 Ruled Notebooks (120 Pages)" }
+                category: { type: string, example: "Stationery" }
+                unit: { type: string, example: "Pcs" }
+                unit_price: { type: number, example: 50.00 }
+                reorder_level: { type: number, example: 30 }
+                store_location: { type: string, example: "Store Room A - Rack 2" }
+      responses:
+        '200':
+          description: Item updated successfully
+    delete:
+      tags: [Inventory]
+      summary: Delete inventory item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Item deleted successfully
+
+  /inventory/transactions:
+    get:
+      tags: [Inventory]
+      summary: List stock transactions
+      description: Audit log of all stock inbound entries and outbound issues to departments or teachers.
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: item_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: type
+          schema: { type: string, enum: [Purchase, Issue, Return, Opening, Adjustment], example: "Issue" }
+      responses:
+        '200':
+          description: Stock transactions list
+    post:
+      tags: [Inventory]
+      summary: Record stock issue or stock-in
+      description: Record a stock disbursement (Issue) or inbound procurement (Purchase/Opening) with automatic inventory balance update.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [item_id, quantity, transaction_type]
+              properties:
+                item_id: { type: integer, example: 1 }
+                transaction_type: { type: string, enum: [Issue, Purchase, Return, Opening], example: "Issue" }
+                quantity: { type: number, example: 10 }
+                department: { type: string, example: "Primary Wing" }
+                issued_to: { type: string, example: "Mrs. Sharma (Grade 3 Class Teacher)" }
+                transaction_date: { type: string, format: date, example: "2026-11-16" }
+                remarks: { type: string, example: "Classroom craft supplies" }
+      responses:
+        '200':
+          description: Transaction recorded and inventory balance adjusted
+
+  # ═══════════════════════════════════════════════════════════════
+  # MODULE 2: STUDENT LIFECYCLE
+  # ═══════════════════════════════════════════════════════════════
+
+  /students/{id}/dossier:
+    get:
+      tags: [Student Lifecycle]
+      summary: Get Student 360° Comprehensive Dossier
+      description: Retrieve complete 360° academic profile including demographic data, guardians, house allocation, attendance summary, disciplinary remarks, certificates issued, and exam scores.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 80 }
+      responses:
+        '200':
+          description: Full student dossier returned
+        '404':
+          description: Student not found
+
+  /students/{id}/remarks:
+    get:
+      tags: [Student Lifecycle]
+      summary: List disciplinary and behavioral remarks
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 80 }
+      responses:
+        '200':
+          description: Student remarks log
+    post:
+      tags: [Student Lifecycle]
+      summary: Add behavioral or disciplinary remark
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 80 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [remarks]
+              properties:
+                remark_date: { type: string, format: date, example: "2026-11-16" }
+                remark_type: { type: string, enum: [General, Appreciation, Warning, Discipline, Behaviour, Counselling, Academic Remark], example: "Appreciation" }
+                subject: { type: string, example: "Exemplary Leadership in Science Fair" }
+                remarks: { type: string, example: "Demonstrated exceptional mentoring and collaboration during the annual science exhibition." }
+                parent_notification_required: { type: integer, example: 0 }
+                entered_by: { type: string, example: "Class Teacher" }
+      responses:
+        '200':
+          description: Remark added successfully
+
+  /students/remarks/{id}:
+    delete:
+      tags: [Student Lifecycle]
+      summary: Delete student remark
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Remark deleted successfully
+
+  /students/promotions/history:
+    get:
+      tags: [Student Lifecycle]
+      summary: List academic promotion records
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+      responses:
+        '200':
+          description: Promotion history log
+
+  /students/promotions/batch:
+    post:
+      tags: [Student Lifecycle]
+      summary: Execute batch student promotion
+      description: Promote a batch of students from one grade/session to the next academic year.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_ids, to_class]
+              properties:
+                student_ids:
+                  type: array
+                  items: { type: integer }
+                  example: [65, 66, 67]
+                from_class: { type: string, example: "Class 4" }
+                to_class: { type: string, example: "Class 5" }
+                to_section: { type: string, example: "A" }
+                from_academic_year: { type: string, example: "2025-2026" }
+                to_academic_year: { type: string, example: "2026-2027" }
+      responses:
+        '200':
+          description: Students promoted successfully
+
+  /students/certificates/all:
+    get:
+      tags: [Student Lifecycle]
+      summary: List issued certificates
+      description: Retrieve list of generated Transfer Certificates (TC), Bonafide, Character, and No-Dues certificates.
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 80 }
+        - in: query
+          name: type
+          schema: { type: string, example: "Transfer Certificate" }
+      responses:
+        '200':
+          description: Certificates directory
+    post:
+      tags: [Student Lifecycle]
+      summary: Issue official certificate or Transfer Certificate (TC)
+      description: Generate an official student certificate formatted with the official SIBA Public School seal and printable template.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, certificate_type]
+              properties:
+                student_id: { type: integer, example: 80 }
+                certificate_type: { type: string, enum: [Transfer Certificate, Bonafide Certificate, Character Certificate, Leaving Certificate, Attendance Certificate, No-Dues Certificate], example: "Transfer Certificate" }
+                issue_date: { type: string, format: date, example: "2026-11-16" }
+                reason: { type: string, example: "Father transferred to another city" }
+                approved_by: { type: string, example: "Principal" }
+      responses:
+        '200':
+          description: Certificate generated successfully
+
+  /students/certificates/{id}:
+    get:
+      tags: [Student Lifecycle]
+      summary: Get certificate details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Certificate details returned
+        '404':
+          description: Certificate not found
+
+  # ═══════════════════════════════════════════════════════════════
+  # MODULE 3: HOUSE MANAGEMENT
+  # ═══════════════════════════════════════════════════════════════
+
+  /houses:
+    get:
+      tags: [House Management]
+      summary: List houses & Leaderboard
+      description: Retrieve all student houses with their live point totals, motto, theme colors, and active student counts.
+      responses:
+        '200':
+          description: Houses leaderboard returned
+    post:
+      tags: [House Management]
+      summary: Create new student house
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [house_name]
+              properties:
+                house_name: { type: string, example: "Red Dragons" }
+                house_code: { type: string, example: "RD" }
+                color_code: { type: string, example: "#ef4444" }
+                motto: { type: string, example: "Courage, Honor and Valour" }
+                description: { type: string, example: "Senior boys and girls house" }
+                points: { type: integer, example: 100 }
+      responses:
+        '200':
+          description: House created successfully
+
+  /houses/{id}:
+    get:
+      tags: [House Management]
+      summary: Get house details with recent points activity
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: House details and points history
+    put:
+      tags: [House Management]
+      summary: Update house information
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                house_name: { type: string, example: "Red Phoenix" }
+                color_code: { type: string, example: "#dc2626" }
+                motto: { type: string, example: "Rising through dedication" }
+                points: { type: integer, example: 250 }
+      responses:
+        '200':
+          description: House updated successfully
+    delete:
+      tags: [House Management]
+      summary: Delete house
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: House deleted successfully
+
+  /houses/allocations:
+    get:
+      tags: [House Management]
+      summary: List student house allocations
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: house_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 80 }
+      responses:
+        '200':
+          description: Allocations list returned
+    post:
+      tags: [House Management]
+      summary: Allocate student to a house
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_id, house_id]
+              properties:
+                student_id: { type: integer, example: 80 }
+                house_id: { type: integer, example: 1 }
+                academic_year: { type: string, example: "2026-2027" }
+                role: { type: string, enum: [Member, Captain, Vice-Captain, Prefect], example: "Member" }
+      responses:
+        '200':
+          description: Student allocated to house
+
+  /houses/points:
+    get:
+      tags: [House Management]
+      summary: List house points activity log
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: house_id
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Points log returned
+    post:
+      tags: [House Management]
+      summary: Award or deduct house points
+      description: Add or deduct points for sports day, debate competitions, cleanliness, or discipline.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [house_id, points_awarded]
+              properties:
+                house_id: { type: integer, example: 1 }
+                points_awarded: { type: integer, example: 25 }
+                event_name: { type: string, example: "Inter-House Debate Championship" }
+                event_date: { type: string, format: date, example: "2026-11-16" }
+                reason: { type: string, example: "1st Place in English Senior Debate" }
+                awarded_by: { type: string, example: "Principal" }
+      responses:
+        '200':
+          description: House points updated and logged
+
+  # ═══════════════════════════════════════════════════════════════
+  # MODULE 4: LIBRARY
+  # ═══════════════════════════════════════════════════════════════
+
+  /library/books:
+    get:
+      tags: [Library]
+      summary: List library catalog books
+      description: Search catalog by title, author, ISBN, or category with live copy availability counters.
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: q
+          schema: { type: string, example: "Physics" }
+        - in: query
+          name: category
+          schema: { type: string, example: "Science" }
+      responses:
+        '200':
+          description: Book catalog list
+    post:
+      tags: [Library]
+      summary: Register new book title
+      description: Add a book title and automatically generate individual barcode copy records.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, example: "Fundamentals of Modern Physics" }
+                isbn: { type: string, example: "978-0131495081" }
+                author: { type: string, example: "Dr. Arthur Beiser" }
+                publisher: { type: string, example: "McGraw-Hill" }
+                category: { type: string, example: "Science" }
+                language: { type: string, example: "English" }
+                rack_location: { type: string, example: "Rack B-4" }
+                total_copies: { type: integer, example: 5 }
+      responses:
+        '200':
+          description: Book registered with copy barcodes
+
+  /library/books/{id}:
+    get:
+      tags: [Library]
+      summary: Get book details with copies status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Book details and copy list
+    put:
+      tags: [Library]
+      summary: Update book title details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, example: "Concepts of Modern Physics (6th Edition)" }
+                author: { type: string, example: "Arthur Beiser" }
+                rack_location: { type: string, example: "Rack B-5" }
+      responses:
+        '200':
+          description: Book updated successfully
+    delete:
+      tags: [Library]
+      summary: Delete book title
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Book deleted
+
+  /library/circulation:
+    get:
+      tags: [Library]
+      summary: List book loans & circulation desk
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: status
+          schema: { type: string, enum: [Issued, Returned, Overdue], example: "Issued" }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 80 }
+      responses:
+        '200':
+          description: Book circulation loans list
+
+  /library/circulation/issue:
+    post:
+      tags: [Library]
+      summary: Issue book to student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [book_id, student_id]
+              properties:
+                book_id: { type: integer, example: 1 }
+                student_id: { type: integer, example: 80 }
+                due_date: { type: string, format: date, example: "2026-11-30" }
+      responses:
+        '200':
+          description: Book issued and available copies decremented
+
+  /library/circulation/return/{id}:
+    post:
+      tags: [Library]
+      summary: Return issued book & assess fine
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fine_amount: { type: number, example: 10.00 }
+      responses:
+        '200':
+          description: Book returned and copy restocked
+
+  # ═══════════════════════════════════════════════════════════════
+  # MODULE 5: ACADEMICS & EXAM
+  # ═══════════════════════════════════════════════════════════════
+
+  /academics/exams:
+    get:
+      tags: [Academics]
+      summary: List exam terms and schedules
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+      responses:
+        '200':
+          description: Exam schedules returned
+    post:
+      tags: [Academics]
+      summary: Create exam term schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, example: "Term-1 Mid-Term Assessment 2026" }
+                academic_year: { type: string, example: "2026-2027" }
+                start_date: { type: string, format: date, example: "2026-12-01" }
+                end_date: { type: string, format: date, example: "2026-12-10" }
+                status: { type: string, enum: [Upcoming, Ongoing, Completed, Cancelled], example: "Upcoming" }
+      responses:
+        '200':
+          description: Exam schedule created
+
+  /academics/exams/{id}:
+    get:
+      tags: [Academics]
+      summary: Get exam schedule details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Exam details returned
+    put:
+      tags: [Academics]
+      summary: Update exam term schedule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, example: "Term-1 Final Assessment 2026" }
+                status: { type: string, example: "Completed" }
+      responses:
+        '200':
+          description: Exam updated
+    delete:
+      tags: [Academics]
+      summary: Delete exam schedule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Exam schedule deleted
+
+  /academics/marks:
+    get:
+      tags: [Academics]
+      summary: List exam marks (Marks-Only Grading)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: exam_id
+          schema: { type: integer, example: 1 }
+        - in: query
+          name: student_id
+          schema: { type: integer, example: 80 }
+        - in: query
+          name: subject_id
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Exam marks list
+    post:
+      tags: [Academics]
+      summary: Record single student exam marks (Marks Only)
+      description: Record marks obtained for a student in a specific exam and subject. Follows strict numerical marks evaluation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [exam_id, student_id, subject_id, marks_obtained]
+              properties:
+                exam_id: { type: integer, example: 1 }
+                student_id: { type: integer, example: 80 }
+                subject_id: { type: integer, example: 1 }
+                marks_obtained: { type: number, example: 92.5 }
+                remarks: { type: string, example: "Excellent analytical skills" }
+      responses:
+        '200':
+          description: Marks saved successfully
+
+  /academics/marks/batch:
+    post:
+      tags: [Academics]
+      summary: Batch save student marks for a class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [exam_id, subject_id, marks]
+              properties:
+                exam_id: { type: integer, example: 1 }
+                subject_id: { type: integer, example: 1 }
+                marks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      student_id: { type: integer, example: 80 }
+                      marks_obtained: { type: number, example: 85.0 }
+      responses:
+        '200':
+          description: Batch marks saved
+
+  /academics/report-card/{student_id}/{exam_id}:
+    get:
+      tags: [Academics]
+      summary: Get student report card / marksheet data (Marks-Only Evaluation)
+      description: Retrieves student evaluation data across all subjects featuring aggregate marks, percentage, and formal SIBA Public School evaluation branding.
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema: { type: integer, example: 80 }
+        - in: path
+          name: exam_id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Report card marksheet dataset
+
+  # ═══════════════════════════════════════════════════════════════
+  # MODULE 6: OPERATIONS & FLEET
+  # ═══════════════════════════════════════════════════════════════
+
+  /operations/fleet/vehicles:
+    get:
+      tags: [Operations & Fleet]
+      summary: List fleet transport vehicles
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: status
+          schema: { type: string, enum: [Active, Maintenance, Inactive], example: "Active" }
+      responses:
+        '200':
+          description: Fleet vehicles list
+    post:
+      tags: [Operations & Fleet]
+      summary: Register vehicle in school fleet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vehicle_no]
+              properties:
+                vehicle_no: { type: string, example: "OD-02-AX-9944" }
+                model: { type: string, example: "Tata Starbus 45-Seater" }
+                capacity: { type: integer, example: 45 }
+                driver_name: { type: string, example: "Rajesh Behera" }
+                driver_phone: { type: string, example: "9876543210" }
+                status: { type: string, enum: [Active, Maintenance, Inactive], example: "Active" }
+      responses:
+        '200':
+          description: Vehicle added to fleet
+
+  /operations/fleet/vehicles/{id}:
+    get:
+      tags: [Operations & Fleet]
+      summary: Get vehicle details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Vehicle details
+    put:
+      tags: [Operations & Fleet]
+      summary: Update vehicle details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                driver_name: { type: string, example: "Suresh Pradhan" }
+                driver_phone: { type: string, example: "9861122334" }
+                status: { type: string, example: "Active" }
+      responses:
+        '200':
+          description: Vehicle updated
+    delete:
+      tags: [Operations & Fleet]
+      summary: Remove vehicle from fleet
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Vehicle removed
+
+  # ═══════════════════════════════════════════════════════════════
+  # MODULE 7: COMMUNICATION & CONTENT
+  # ═══════════════════════════════════════════════════════════════
+
+  /communication/announcements:
+    get:
+      tags: [Communication & Content]
+      summary: List circular notices & announcements
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: audience
+          schema: { type: string, example: "all" }
+      responses:
+        '200':
+          description: Announcements list
+    post:
+      tags: [Communication & Content]
+      summary: Publish notice circular & dispatch via Email Gateway
+      description: Broadcast an official announcement to students, teachers, or parents, and optionally trigger immediate email delivery via email gateway.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title: { type: string, example: "Annual Sports Meet 2026 Schedule" }
+                content: { type: string, example: "Dear Parents and Students, The Annual Sports Meet will be held on Dec 5th, 2026." }
+                audience: { type: string, enum: [all, students, teachers, parents], example: "all" }
+                priority: { type: string, enum: [normal, urgent], example: "urgent" }
+                valid_until: { type: string, format: date, example: "2026-12-10" }
+                send_email: { type: integer, enum: [0, 1], example: 1 }
+      responses:
+        '200':
+          description: Announcement published and email dispatched
+
+  /communication/announcements/{id}:
+    get:
+      tags: [Communication & Content]
+      summary: Get announcement with email dispatch logs
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Announcement and delivery logs returned
+    delete:
+      tags: [Communication & Content]
+      summary: Delete announcement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Announcement deleted
+
+  /content/pages:
+    get:
+      tags: [Communication & Content]
+      summary: List website CMS pages
+      responses:
+        '200':
+          description: CMS pages listing
+
+  /content/pages/{slug}:
+    get:
+      tags: [Communication & Content]
+      summary: Get CMS page content
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string, example: "about-us" }
+      responses:
+        '200':
+          description: Page content JSON
+    put:
+      tags: [Communication & Content]
+      summary: Update CMS page content
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string, example: "about-us" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page_title: { type: string, example: "About SIBA Public School" }
+                data_json: { type: object, example: { headline: "Empowering Next-Gen Leaders", body: "Established in 2010..." } }
+      responses:
+        '200':
+          description: CMS page updated
+
+  /content/events:
+    get:
+      tags: [Communication & Content]
+      summary: List school calendar events & news
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: type
+          schema: { type: string, enum: [event, news], example: "event" }
+      responses:
+        '200':
+          description: Events list returned
+    post:
+      tags: [Communication & Content]
+      summary: Create school event or news item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                type: { type: string, enum: [event, news], example: "event" }
+                title: { type: string, example: "Inter-School Science Olympiad" }
+                text: { type: string, example: "Students from grades 6-10 are invited to participate." }
+                event_date: { type: string, format: date, example: "2026-11-28" }
+                category: { type: string, example: "Academics" }
+      responses:
+        '200':
+          description: Event created
+
+  /content/events/{id}:
+    delete:
+      tags: [Communication & Content]
+      summary: Delete school event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Event deleted
+
+  /content/gallery:
+    get:
+      tags: [Communication & Content]
+      summary: List website photo/video gallery
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: category
+          schema: { type: string, example: "Campus" }
+      responses:
+        '200':
+          description: Gallery items list
+    post:
+      tags: [Communication & Content]
+      summary: Add media to gallery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, example: "Modern STEM Robotics Lab" }
+                description: { type: string, example: "Students engaging in advanced robotics assembly" }
+                image_file: { type: string, example: "uploads/gallery/robotics_lab.jpg" }
+                youtube_url: { type: string, example: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
+                category: { type: string, example: "Academics" }
+                sort_order: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Gallery item added
+
+  /content/gallery/{id}:
+    delete:
+      tags: [Communication & Content]
+      summary: Delete gallery item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Gallery item removed
+
+  /content/enquiries:
+    get:
+      tags: [Communication & Content]
+      summary: List website contact form submissions
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, example: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, example: 20 }
+        - in: query
+          name: status
+          schema: { type: string, enum: [New, Read, Replied, Closed], example: "New" }
+      responses:
+        '200':
+          description: Contact enquiries list
+
+  /content/enquiries/{id}:
+    put:
+      tags: [Communication & Content]
+      summary: Update enquiry status / admin note
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [New, Read, Replied, Closed], example: "Replied" }
+                admin_note: { type: string, example: "Telephonic briefing provided to parent regarding grade 5 admission." }
+      responses:
+        '200':
+          description: Enquiry updated
+    delete:
+      tags: [Communication & Content]
+      summary: Delete contact enquiry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, example: 1 }
+      responses:
+        '200':
+          description: Enquiry deleted
 
   /health:
     get:

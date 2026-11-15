@@ -483,4 +483,112 @@ class OperationsController extends Controller
         $this->pdo->prepare('DELETE FROM hostel_allocations WHERE id = :id')->execute(['id' => $params['id']]);
         $this->ok([], 'Hostel allocation deleted');
     }
+
+    // ═══════════════════ FLEET VEHICLES ═══════════════════
+
+    public function listVehicles(): void
+    {
+        [$page, $limit, $offset] = $this->pagination();
+        $status = trim((string) Request::query('status', ''));
+
+        $where = [];
+        $params = [];
+        if ($status !== '') {
+            $where[] = 'status = :status';
+            $params['status'] = $status;
+        }
+
+        $whereSql = empty($where) ? '' : ' WHERE ' . implode(' AND ', $where);
+
+        $countStmt = $this->pdo->prepare('SELECT COUNT(*) AS c FROM transport_vehicles' . $whereSql);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetch()['c'];
+
+        $sql = 'SELECT * FROM transport_vehicles' . $whereSql . ' ORDER BY id DESC LIMIT :limit OFFSET :offset';
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->listResponse($stmt->fetchAll(), $total, $page, $limit, 'vehicles');
+    }
+
+    public function createVehicle(): void
+    {
+        $data = Request::json();
+        $vehNo = trim((string) ($data['vehicle_no'] ?? ''));
+        if ($vehNo === '') {
+            $this->fail('vehicle_no is required', 422);
+            return;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO transport_vehicles (
+                vehicle_no, model, capacity, driver_name, driver_phone, status, created_at
+            ) VALUES (
+                :vno, :model, :cap, :dname, :dphone, :status, NOW()
+            )'
+        );
+        $stmt->execute([
+            'vno' => $vehNo,
+            'model' => $data['model'] ?? 'Standard Bus',
+            'cap' => (int) ($data['capacity'] ?? 30),
+            'dname' => $data['driver_name'] ?? '',
+            'dphone' => $data['driver_phone'] ?? '',
+            'status' => $data['status'] ?? 'Active',
+        ]);
+
+        $this->ok(['id' => (int) $this->pdo->lastInsertId(), 'vehicle_no' => $vehNo], 'Vehicle added to fleet');
+    }
+
+    public function getVehicle(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $stmt = $this->pdo->prepare('SELECT * FROM transport_vehicles WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $veh = $stmt->fetch();
+        if (!$veh) {
+            $this->fail('Vehicle not found', 404);
+            return;
+        }
+        $this->ok(['vehicle' => $veh]);
+    }
+
+    public function updateVehicle(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $data = Request::json();
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE transport_vehicles SET
+                vehicle_no = COALESCE(:vno, vehicle_no),
+                model = COALESCE(:model, model),
+                capacity = COALESCE(:cap, capacity),
+                driver_name = COALESCE(:dname, driver_name),
+                driver_phone = COALESCE(:dphone, driver_phone),
+                status = COALESCE(:status, status)
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $id,
+            'vno' => isset($data['vehicle_no']) ? trim((string) $data['vehicle_no']) : null,
+            'model' => isset($data['model']) ? trim((string) $data['model']) : null,
+            'cap' => isset($data['capacity']) ? (int) $data['capacity'] : null,
+            'dname' => isset($data['driver_name']) ? trim((string) $data['driver_name']) : null,
+            'dphone' => isset($data['driver_phone']) ? trim((string) $data['driver_phone']) : null,
+            'status' => isset($data['status']) ? trim((string) $data['status']) : null,
+        ]);
+
+        $this->ok(['id' => $id], 'Vehicle updated successfully');
+    }
+
+    public function deleteVehicle(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $this->pdo->prepare('DELETE FROM transport_vehicles WHERE id = :id')->execute(['id' => $id]);
+        $this->ok(['id' => $id], 'Vehicle removed from fleet');
+    }
 }

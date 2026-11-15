@@ -45,8 +45,7 @@ class AdmissionController extends Controller
             return [];
         }
         if ($email === '') {
-            $this->fail('Email is required', 422);
-            return [];
+            $email = $phone . '@sibapublicschool.com';
         }
 
         // Find existing parent by phone or email — reuse if found
@@ -72,8 +71,7 @@ class AdmissionController extends Controller
         // Parent not found — create new parent + user
         $password = (string) ($payload['password'] ?? '');
         if ($password === '') {
-            $this->fail('Password is required for new parent account', 422);
-            return [];
+            $password = substr(bin2hex(random_bytes(4)), 0, 8);
         }
 
         $roleStmt = $this->pdo->prepare("SELECT id FROM roles WHERE name = 'parent' LIMIT 1");
@@ -150,13 +148,26 @@ class AdmissionController extends Controller
         }
     }
 
-    public function apply(): void
+    public function apply(array $context = []): void
     {
         // Support both application/json and multipart/form-data
         $payload = !empty($_POST) ? array_merge(Request::json(), $_POST) : Request::json();
         if (empty($payload) && empty($_FILES)) {
             $this->fail('Request body is required', 422);
             return;
+        }
+
+        // If authenticated as parent and parent_id not supplied, automatically link to logged-in parent
+        if (empty($payload['parent_id']) && !empty($context['user']) && ($context['user']['role_name'] ?? '') === 'parent') {
+            $pStmt = $this->pdo->prepare('SELECT id, name, email, phone FROM parents WHERE user_id = :uid LIMIT 1');
+            $pStmt->execute(['uid' => $context['user']['id']]);
+            $pRow = $pStmt->fetch();
+            if ($pRow) {
+                $payload['parent_id'] = (int) $pRow['id'];
+                if (empty($payload['name'])) $payload['name'] = $pRow['name'];
+                if (empty($payload['email'])) $payload['email'] = $pRow['email'];
+                if (empty($payload['phone'])) $payload['phone'] = $pRow['phone'];
+            }
         }
 
         $studentName = trim((string) ($payload['student_name'] ?? ''));
@@ -323,6 +334,10 @@ class AdmissionController extends Controller
             $placeholders[] = ':application_no';
             $params['application_no'] = $appNo;
 
+            $colNames[] = 'application_number';
+            $placeholders[] = ':application_number';
+            $params['application_number'] = $appNo;
+
             $appStmt = $this->pdo->prepare(
                 'INSERT INTO applications (' . implode(', ', $colNames) . ", status, applied_at) VALUES (" . implode(', ', $placeholders) . ", 'Application started', NOW())"
             );
@@ -333,6 +348,7 @@ class AdmissionController extends Controller
 
             $this->ok([
                 'application_no' => $appNo,
+                'application_number' => $appNo,
                 'parent_id' => $parentResult['parent_id'],
                 'application_id' => $applicationId,
                 'user_id' => $parentResult['user_id'],
@@ -357,8 +373,9 @@ class AdmissionController extends Controller
         $params = [];
 
         if ($q !== '') {
-            $where[] = '(a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5)';
+            $where[] = '(a.application_no LIKE :q0 OR a.application_number LIKE :q0 OR a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5)';
             $likeQ = '%' . $q . '%';
+            $params['q0'] = $likeQ;
             $params['q1'] = $likeQ;
             $params['q2'] = $likeQ;
             $params['q3'] = $likeQ;
@@ -378,8 +395,9 @@ class AdmissionController extends Controller
         $countStmt->execute($params);
         $total = (int) $countStmt->fetch()['c'];
 
-        $sql = 'SELECT a.id, a.student_name, a.first_name, a.middle_name, a.last_name, a.dob, a.gender,
-                       a.class_sought, a.status, a.admission_no, a.student_id, a.applied_at,
+        $sql = 'SELECT a.id, a.application_no, a.application_no AS application_number,
+                       a.student_name, a.first_name, a.middle_name, a.last_name, a.dob, a.gender,
+                       a.class_sought, a.status, a.payment_status, a.admission_no, a.student_id, a.applied_at,
                        p.name AS parent_name, p.phone AS parent_phone
                 FROM applications a
                 LEFT JOIN parents p ON p.id = a.parent_id' . $whereSql . '
@@ -395,5 +413,104 @@ class AdmissionController extends Controller
         $stmt->execute();
 
         $this->listResponse($stmt->fetchAll(), $total, $page, $limit, 'applications');
+    }
+
+    public function show(array $params, array $context = []): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        if ($id <= 0) {
+            $this->fail('Invalid application ID', 422);
+            return;
+        }
+
+        $user = $context['user'] ?? null;
+        if (!$user) {
+            $this->fail('Unauthorized', 401);
+            return;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'SELECT a.*, p.name AS parent_name, p.phone AS parent_phone, p.email AS parent_email, p.user_id AS parent_user_id
+             FROM applications a
+             LEFT JOIN parents p ON p.id = a.parent_id
+             WHERE a.id = :id
+             LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+        $app = $stmt->fetch();
+
+        if (!$app) {
+            $this->fail('Application not found', 404);
+            return;
+        }
+
+        if ($user['role_name'] === 'parent' && (int) ($app['parent_user_id'] ?? 0) !== (int) $user['id']) {
+            $this->fail('Forbidden', 403);
+            return;
+        }
+
+        $app['application_no'] = $app['application_no'] ?: ($app['application_number'] ?? null);
+        $app['application_number'] = $app['application_no'];
+
+        $this->ok(['application' => $app]);
+    }
+
+    public function downloadReceipt(array $params, array $context = []): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        if ($id <= 0) {
+            $this->fail('Invalid application ID', 422);
+            return;
+        }
+
+        $user = $context['user'] ?? null;
+        if (!$user) {
+            $this->fail('Unauthorized', 401);
+            return;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'SELECT a.*, p.name AS parent_name, p.phone AS parent_phone, p.email AS parent_email, p.user_id AS parent_user_id
+             FROM applications a
+             LEFT JOIN parents p ON p.id = a.parent_id
+             WHERE a.id = :id
+             LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+        $app = $stmt->fetch();
+
+        if (!$app) {
+            $this->fail('Application not found', 404);
+            return;
+        }
+
+        if ($user['role_name'] === 'parent' && (int) ($app['parent_user_id'] ?? 0) !== (int) $user['id']) {
+            $this->fail('You do not have permission to download this receipt', 403);
+            return;
+        }
+
+        require_once dirname(__DIR__, 3) . '/includes/receipt_pdf.php';
+
+        $pdf = siba_receipt_pdf($app);
+        $filename = siba_receipt_filename($app, $id);
+
+        if (Request::query('format') === 'json') {
+            $this->ok([
+                'application_id' => $id,
+                'application_no' => $app['application_no'] ?? '',
+                'filename' => $filename,
+                'mime_type' => 'application/pdf',
+                'pdf_base64' => base64_encode($pdf),
+            ]);
+            return;
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($pdf));
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: public');
+        echo $pdf;
+        exit;
     }
 }

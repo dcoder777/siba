@@ -44,6 +44,52 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
     </div>
 
     <div class="nav-group">
+        <div class="nav-title">STUDENT LIFECYCLE</div>
+        <a class="nav-link<?= $activePage === 'student-lifecycle.php' ? ' active' : '' ?>" href="student-lifecycle.php">
+            <span class="sidebar-icon">🎓</span><span>Student 360° Directory</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'student-promotions.php' ? ' active' : '' ?>" href="student-promotions.php">
+            <span class="sidebar-icon">🚀</span><span>Session Promotions</span>
+        </a>
+        <a class="nav-link<?= in_array($activePage, ['student-certificates.php', 'certificate-print.php']) ? ' active' : '' ?>" href="student-certificates.php">
+            <span class="sidebar-icon">📜</span><span>Certificate Generator</span>
+        </a>
+    </div>
+
+    <div class="nav-group">
+        <div class="nav-title">ACADEMICS & EXAM</div>
+        <a class="nav-link<?= $activePage === 'academic-subjects.php' ? ' active' : '' ?>" href="academic-subjects.php">
+            <span class="sidebar-icon">📖</span><span>Subjects & Curriculum</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'exam-schedules.php' ? ' active' : '' ?>" href="exam-schedules.php">
+            <span class="sidebar-icon">📅</span><span>Exam Schedules</span>
+        </a>
+        <a class="nav-link<?= in_array($activePage, ['exam-marks.php', 'exam-report-card.php']) ? ' active' : '' ?>" href="exam-marks.php">
+            <span class="sidebar-icon">📝</span><span>Marks Entry & Report Cards</span>
+        </a>
+    </div>
+
+    <div class="nav-group">
+        <div class="nav-title">HOUSE MANAGEMENT</div>
+        <a class="nav-link<?= $activePage === 'house-management.php' ? ' active' : '' ?>" href="house-management.php">
+            <span class="sidebar-icon">🏰</span><span>Leaderboard & Points</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'house-allocations.php' ? ' active' : '' ?>" href="house-allocations.php">
+            <span class="sidebar-icon">👥</span><span>Student Allocations</span>
+        </a>
+    </div>
+
+    <div class="nav-group">
+        <div class="nav-title">LIBRARY</div>
+        <a class="nav-link<?= $activePage === 'library-books.php' ? ' active' : '' ?>" href="library-books.php">
+            <span class="sidebar-icon">📚</span><span>Book Catalog</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'library-circulation.php' ? ' active' : '' ?>" href="library-circulation.php">
+            <span class="sidebar-icon">🔄</span><span>Circulation (Issue/Return)</span>
+        </a>
+    </div>
+
+    <div class="nav-group">
         <div class="nav-title">Accounts</div>
         <a class="nav-link<?= $activePage === 'finance-dashboard.php' ? ' active' : '' ?>" href="finance-dashboard.php">
             <span class="sidebar-icon">📊</span><span>Dashboard</span>
@@ -64,6 +110,20 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
             <span class="sidebar-icon">🏦</span><span>Cash & Bank</span>
         </a>
     </div>
+
+    <?php 
+    $userId = (int)($user['id'] ?? 0);
+    $userRoles = function_exists('fetch_user_roles') ? fetch_user_roles($pdo, $userId, $user['role'] ?? '') : [];
+    $userModules = function_exists('fetch_user_module_access') ? array_unique(array_merge(default_modules_for_roles($userRoles), fetch_user_module_access($pdo, $userId))) : [];
+    if ($isOwner || in_array('inventory', $userModules)): 
+    ?>
+    <div class="nav-group">
+        <div class="nav-title">INVENTORY</div>
+        <a class="nav-link<?= $activePage === 'inventory.php' ? ' active' : '' ?>" href="inventory.php">
+            <span class="sidebar-icon">📦</span><span>Stationery & Consumables</span>
+        </a>
+    </div>
+    <?php endif; ?>
 
     <?php 
     $userId = (int)($user['id'] ?? 0);

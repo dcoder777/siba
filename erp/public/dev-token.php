@@ -12,10 +12,8 @@
  */
 
 declare(strict_types=1);
-require __DIR__ . '/../../config/config.php';
-require __DIR__ . '/../../core/Database.php';
-
-$pdo = Database::connect($config['database']);
+$config = require dirname(__DIR__) . '/bootstrap.php';
+$pdo = core\Database::connection($config['db']);
 
 $plainToken = 'siba-dev-static-token-2026';
 $tokenHash  = hash('sha256', $plainToken);

@@ -12,6 +12,10 @@ use modules\Reports\ReportController;
 use modules\Admissions\AdmissionController;
 use modules\Students\StudentController;
 use modules\Parents\ParentController;
+use modules\Inventory\InventoryController;
+use modules\Houses\HouseController;
+use modules\Library\LibraryController;
+use modules\Communication\CommunicationController;
 
 return function (Router $router, array $context): void {
     $auth = new AuthController($context['pdo']);
@@ -23,6 +27,10 @@ return function (Router $router, array $context): void {
     $reports = new ReportController($context['pdo']);
     $admissions = new AdmissionController($context['pdo']);
     $parents = new ParentController($context['pdo']);
+    $inventory = new InventoryController($context['pdo']);
+    $houses = new HouseController($context['pdo']);
+    $library = new LibraryController($context['pdo']);
+    $communication = new CommunicationController($context['pdo']);
 
     $router->add('POST', '/api/v1/auth/login', fn() => $auth->login(), false);
     $router->add('GET', '/api/v1/auth/me', fn($_, $ctx) => $auth->me($ctx), true);
@@ -121,14 +129,95 @@ return function (Router $router, array $context): void {
 
     $router->add('POST', '/api/v1/admissions/register-parent', fn() => $admissions->registerParent(), false);
     $router->add('GET', '/api/v1/admissions/applications', fn() => $admissions->list(), true, ['admin'], 'admissions');
-    $router->add('POST', '/api/v1/admissions/apply', fn() => $admissions->apply(), true, ['admin', 'parent'], 'admissions');
+    $router->add('POST', '/api/v1/admissions/apply', fn($_, $ctx) => $admissions->apply($ctx), true, ['admin', 'parent'], 'admissions');
+    $router->add('GET', '/api/v1/admissions/applications/{id}', fn($p, $ctx) => $admissions->show($p, $ctx), true, ['admin', 'parent'], 'admissions');
+    $router->add('GET', '/api/v1/admissions/applications/{id}/receipt', fn($p, $ctx) => $admissions->downloadReceipt($p, $ctx), true, ['admin', 'parent'], 'admissions');
+    $router->add('GET', '/api/v1/admissions/my-applications', fn($_, $ctx) => $parents->meApplications($ctx), true, ['admin', 'parent'], 'admissions');
 
     // Parents
     $router->add('GET', '/api/v1/parents', fn() => $parents->list(), true, ['admin'], 'parents');
+    $router->add('GET', '/api/v1/parents/me/applications', fn($_, $ctx) => $parents->meApplications($ctx), true, ['admin', 'parent'], 'parents');
     $router->add('GET', '/api/v1/parents/{id}', fn($p) => $parents->get($p), true, ['admin'], 'parents');
     $router->add('PUT', '/api/v1/parents/{id}', fn($p) => $parents->update($p), true, ['admin'], 'parents');
-    $router->add('GET', '/api/v1/parents/{id}/applications', fn($p) => $parents->applications($p), true, ['admin'], 'parents');
+    $router->add('GET', '/api/v1/parents/{id}/applications', fn($p, $ctx) => $parents->applications($p, $ctx), true, ['admin', 'parent'], 'parents');
 
     $router->add('GET', '/api/v1/reports/dashboard', fn() => $reports->dashboard(), true, ['admin', 'finance', 'hr'], 'reports');
     $router->add('GET', '/api/v1/reports/payroll-export', fn() => $reports->payrollExport(), true, ['admin', 'hr', 'finance'], 'reports');
+
+    // ═══════════════════ MODULE 1: INVENTORY ═══════════════════
+    $router->add('GET', '/api/v1/inventory/items', fn() => $inventory->listItems(), true, ['admin', 'finance'], 'inventory');
+    $router->add('POST', '/api/v1/inventory/items', fn() => $inventory->createItem(), true, ['admin'], 'inventory');
+    $router->add('GET', '/api/v1/inventory/items/{id}', fn($p) => $inventory->getItem($p), true, ['admin', 'finance'], 'inventory');
+    $router->add('PUT', '/api/v1/inventory/items/{id}', fn($p) => $inventory->updateItem($p), true, ['admin'], 'inventory');
+    $router->add('DELETE', '/api/v1/inventory/items/{id}', fn($p) => $inventory->deleteItem($p), true, ['admin'], 'inventory');
+    $router->add('GET', '/api/v1/inventory/transactions', fn() => $inventory->listTransactions(), true, ['admin', 'finance'], 'inventory');
+    $router->add('POST', '/api/v1/inventory/transactions', fn() => $inventory->createTransaction(), true, ['admin'], 'inventory');
+
+    // ═══════════════════ MODULE 2: STUDENT LIFECYCLE ═══════════════════
+    $router->add('GET', '/api/v1/students/{id}/dossier', fn($p) => $students->dossier($p), true, ['admin', 'teacher'], 'students');
+    $router->add('GET', '/api/v1/students/{id}/remarks', fn($p) => $students->listRemarks($p), true, ['admin', 'teacher'], 'students');
+    $router->add('POST', '/api/v1/students/{id}/remarks', fn($p) => $students->createRemark($p), true, ['admin', 'teacher'], 'students');
+    $router->add('DELETE', '/api/v1/students/remarks/{id}', fn($p) => $students->deleteRemark($p), true, ['admin'], 'students');
+    $router->add('GET', '/api/v1/students/promotions/history', fn() => $students->listPromotions(), true, ['admin'], 'students');
+    $router->add('POST', '/api/v1/students/promotions/batch', fn() => $students->batchPromote(), true, ['admin'], 'students');
+    $router->add('GET', '/api/v1/students/certificates/all', fn() => $students->listCertificates(), true, ['admin'], 'students');
+    $router->add('POST', '/api/v1/students/certificates/issue', fn() => $students->issueCertificate(), true, ['admin'], 'students');
+    $router->add('GET', '/api/v1/students/certificates/{id}', fn($p) => $students->getCertificate($p), true, ['admin'], 'students');
+
+    // ═══════════════════ MODULE 3: HOUSE MANAGEMENT ═══════════════════
+    $router->add('GET', '/api/v1/houses', fn() => $houses->listHouses(), true, ['admin', 'teacher'], 'houses');
+    $router->add('POST', '/api/v1/houses', fn() => $houses->createHouse(), true, ['admin'], 'houses');
+    $router->add('GET', '/api/v1/houses/allocations', fn() => $houses->listAllocations(), true, ['admin', 'teacher'], 'houses');
+    $router->add('POST', '/api/v1/houses/allocations', fn() => $houses->allocateStudent(), true, ['admin'], 'houses');
+    $router->add('GET', '/api/v1/houses/points', fn() => $houses->listPointsLog(), true, ['admin', 'teacher'], 'houses');
+    $router->add('POST', '/api/v1/houses/points', fn() => $houses->awardPoints(), true, ['admin', 'teacher'], 'houses');
+    $router->add('GET', '/api/v1/houses/{id}', fn($p) => $houses->getHouse($p), true, ['admin', 'teacher'], 'houses');
+    $router->add('PUT', '/api/v1/houses/{id}', fn($p) => $houses->updateHouse($p), true, ['admin'], 'houses');
+    $router->add('DELETE', '/api/v1/houses/{id}', fn($p) => $houses->deleteHouse($p), true, ['admin'], 'houses');
+
+    // ═══════════════════ MODULE 4: LIBRARY ═══════════════════
+    $router->add('GET', '/api/v1/library/books', fn() => $library->listBooks(), true, ['admin', 'teacher', 'student'], 'library');
+    $router->add('POST', '/api/v1/library/books', fn() => $library->createBook(), true, ['admin'], 'library');
+    $router->add('GET', '/api/v1/library/circulation', fn() => $library->listCirculation(), true, ['admin'], 'library');
+    $router->add('POST', '/api/v1/library/circulation/issue', fn() => $library->issueBook(), true, ['admin'], 'library');
+    $router->add('POST', '/api/v1/library/circulation/return/{id}', fn($p) => $library->returnBook($p), true, ['admin'], 'library');
+    $router->add('GET', '/api/v1/library/books/{id}', fn($p) => $library->getBook($p), true, ['admin', 'teacher', 'student'], 'library');
+    $router->add('PUT', '/api/v1/library/books/{id}', fn($p) => $library->updateBook($p), true, ['admin'], 'library');
+    $router->add('DELETE', '/api/v1/library/books/{id}', fn($p) => $library->deleteBook($p), true, ['admin'], 'library');
+
+    // ═══════════════════ MODULE 5: ACADEMICS & EXAMS ═══════════════════
+    $router->add('GET', '/api/v1/academics/exams', fn() => $academics->listExams(), true, ['admin', 'teacher'], 'academics');
+    $router->add('POST', '/api/v1/academics/exams', fn() => $academics->createExam(), true, ['admin'], 'academics');
+    $router->add('GET', '/api/v1/academics/exams/{id}', fn($p) => $academics->getExam($p), true, ['admin', 'teacher'], 'academics');
+    $router->add('PUT', '/api/v1/academics/exams/{id}', fn($p) => $academics->updateExam($p), true, ['admin'], 'academics');
+    $router->add('DELETE', '/api/v1/academics/exams/{id}', fn($p) => $academics->deleteExam($p), true, ['admin'], 'academics');
+    $router->add('GET', '/api/v1/academics/marks', fn() => $academics->listMarks(), true, ['admin', 'teacher'], 'academics');
+    $router->add('POST', '/api/v1/academics/marks', fn() => $academics->saveMarks(), true, ['admin', 'teacher'], 'academics');
+    $router->add('POST', '/api/v1/academics/marks/batch', fn() => $academics->batchSaveMarks(), true, ['admin', 'teacher'], 'academics');
+    $router->add('GET', '/api/v1/academics/report-card/{student_id}/{exam_id}', fn($p) => $academics->reportCard($p), true, ['admin', 'teacher', 'parent', 'student'], 'academics');
+
+    // ═══════════════════ MODULE 6: OPERATIONS & FLEET ═══════════════════
+    $router->add('GET', '/api/v1/operations/fleet/vehicles', fn() => $operations->listVehicles(), true, ['admin'], 'operations');
+    $router->add('POST', '/api/v1/operations/fleet/vehicles', fn() => $operations->createVehicle(), true, ['admin'], 'operations');
+    $router->add('GET', '/api/v1/operations/fleet/vehicles/{id}', fn($p) => $operations->getVehicle($p), true, ['admin'], 'operations');
+    $router->add('PUT', '/api/v1/operations/fleet/vehicles/{id}', fn($p) => $operations->updateVehicle($p), true, ['admin'], 'operations');
+    $router->add('DELETE', '/api/v1/operations/fleet/vehicles/{id}', fn($p) => $operations->deleteVehicle($p), true, ['admin'], 'operations');
+
+    // ═══════════════════ MODULE 7: COMMUNICATION & CONTENT ═══════════════════
+    $router->add('GET', '/api/v1/communication/announcements', fn() => $communication->listAnnouncements(), true, ['admin', 'teacher', 'parent', 'student'], 'communication');
+    $router->add('POST', '/api/v1/communication/announcements', fn() => $communication->createAnnouncement(), true, ['admin'], 'communication');
+    $router->add('GET', '/api/v1/communication/announcements/{id}', fn($p) => $communication->getAnnouncement($p), true, ['admin', 'teacher', 'parent', 'student'], 'communication');
+    $router->add('DELETE', '/api/v1/communication/announcements/{id}', fn($p) => $communication->deleteAnnouncement($p), true, ['admin'], 'communication');
+    $router->add('GET', '/api/v1/content/pages', fn() => $communication->listPages(), true, ['admin'], 'content');
+    $router->add('GET', '/api/v1/content/pages/{slug}', fn($p) => $communication->getPage($p), true, ['admin'], 'content');
+    $router->add('PUT', '/api/v1/content/pages/{slug}', fn($p) => $communication->updatePage($p), true, ['admin'], 'content');
+    $router->add('GET', '/api/v1/content/events', fn() => $communication->listEvents(), true, ['admin'], 'content');
+    $router->add('POST', '/api/v1/content/events', fn() => $communication->createEvent(), true, ['admin'], 'content');
+    $router->add('DELETE', '/api/v1/content/events/{id}', fn($p) => $communication->deleteEvent($p), true, ['admin'], 'content');
+    $router->add('GET', '/api/v1/content/gallery', fn() => $communication->listGallery(), true, ['admin'], 'content');
+    $router->add('POST', '/api/v1/content/gallery', fn() => $communication->createGallery(), true, ['admin'], 'content');
+    $router->add('DELETE', '/api/v1/content/gallery/{id}', fn($p) => $communication->deleteGallery($p), true, ['admin'], 'content');
+    $router->add('GET', '/api/v1/content/enquiries', fn() => $communication->listEnquiries(), true, ['admin'], 'content');
+    $router->add('PUT', '/api/v1/content/enquiries/{id}', fn($p) => $communication->updateEnquiry($p), true, ['admin'], 'content');
+    $router->add('DELETE', '/api/v1/content/enquiries/{id}', fn($p) => $communication->deleteEnquiry($p), true, ['admin'], 'content');
 };

@@ -295,4 +295,278 @@ class StudentController extends Controller
         $this->pdo->prepare('DELETE FROM student_enrollments WHERE id = :id')->execute(['id' => $params['id']]);
         $this->ok([], 'Lifecycle record deleted');
     }
+
+    // ═══════════════════ STUDENT 360° DOSSIER ═══════════════════
+
+    public function dossier(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $sStmt = $this->pdo->prepare(
+            'SELECT s.*, se.class_name, se.section_name, se.status AS enrollment_status,
+                    h.house_name, h.color_code AS house_color
+             FROM students s
+             LEFT JOIN student_enrollments se ON se.student_id = s.id AND se.is_current = 1
+             LEFT JOIN student_house_allocations sha ON sha.student_id = s.id AND sha.status = "Active"
+             LEFT JOIN houses h ON h.id = sha.house_id
+             WHERE s.id = :id LIMIT 1'
+        );
+        $sStmt->execute(['id' => $id]);
+        $student = $sStmt->fetch();
+        if (!$student) {
+            $this->fail('Student not found', 404);
+            return;
+        }
+
+        // Guardians
+        $gStmt = $this->pdo->prepare('SELECT * FROM guardians WHERE student_id = :id');
+        $gStmt->execute(['id' => $id]);
+        $student['guardians'] = $gStmt->fetchAll();
+
+        // Remarks
+        $rStmt = $this->pdo->prepare('SELECT * FROM student_remarks_discipline WHERE student_id = :id ORDER BY id DESC');
+        $rStmt->execute(['id' => $id]);
+        $student['remarks'] = $rStmt->fetchAll();
+
+        // Certificates
+        $cStmt = $this->pdo->prepare('SELECT * FROM student_certificates WHERE student_id = :id ORDER BY id DESC');
+        $cStmt->execute(['id' => $id]);
+        $student['certificates'] = $cStmt->fetchAll();
+
+        // Recent Exam Results
+        $mStmt = $this->pdo->prepare(
+            'SELECT em.*, e.title AS exam_title, sub.subject_name
+             FROM exam_marks em
+             JOIN exams e ON e.id = em.exam_id
+             JOIN subjects sub ON sub.id = em.subject_id
+             WHERE em.student_id = :id ORDER BY em.id DESC LIMIT 20'
+        );
+        $mStmt->execute(['id' => $id]);
+        $student['exam_results'] = $mStmt->fetchAll();
+
+        $this->ok(['dossier' => $student]);
+    }
+
+    // ═══════════════════ REMARKS & DISCIPLINE ═══════════════════
+
+    public function listRemarks(array $params): void
+    {
+        $studentId = (int) ($params['id'] ?? 0);
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM student_remarks_discipline WHERE student_id = :sid ORDER BY id DESC'
+        );
+        $stmt->execute(['sid' => $studentId]);
+        $this->ok(['remarks' => $stmt->fetchAll()]);
+    }
+
+    public function createRemark(array $params): void
+    {
+        $studentId = (int) ($params['id'] ?? 0);
+        $data = Request::json();
+
+        $remarks = trim((string) ($data['remarks'] ?? ''));
+        if ($remarks === '') {
+            $this->fail('remarks text is required', 422);
+            return;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO student_remarks_discipline (
+                student_id, remark_date, remark_type, subject, remarks, parent_notification_required, entered_by, created_at
+            ) VALUES (
+                :sid, :rdate, :rtype, :subj, :rem, :pnotif, :by, NOW()
+            )'
+        );
+        $stmt->execute([
+            'sid' => $studentId,
+            'rdate' => $data['remark_date'] ?? date('Y-m-d'),
+            'rtype' => $data['remark_type'] ?? 'General',
+            'subj' => $data['subject'] ?? 'Discipline & Conduct',
+            'rem' => $remarks,
+            'pnotif' => !empty($data['parent_notification_required']) ? 1 : 0,
+            'by' => $data['entered_by'] ?? 'Teacher',
+        ]);
+
+        $this->ok(['id' => (int) $this->pdo->lastInsertId(), 'student_id' => $studentId], 'Remark recorded successfully');
+    }
+
+    public function deleteRemark(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $this->pdo->prepare('DELETE FROM student_remarks_discipline WHERE id = :id')->execute(['id' => $id]);
+        $this->ok(['id' => $id], 'Remark deleted successfully');
+    }
+
+    // ═══════════════════ PROMOTIONS ═══════════════════
+
+    public function listPromotions(): void
+    {
+        [$page, $limit, $offset] = $this->pagination();
+        $countStmt = $this->pdo->query('SELECT COUNT(*) AS c FROM student_promotions');
+        $total = (int) $countStmt->fetch()['c'];
+
+        $sql = 'SELECT p.*, s.first_name, s.last_name, s.admission_no
+                FROM student_promotions p
+                JOIN students s ON s.id = p.student_id
+                ORDER BY p.id DESC LIMIT :limit OFFSET :offset';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->listResponse($stmt->fetchAll(), $total, $page, $limit, 'promotions');
+    }
+
+    public function batchPromote(): void
+    {
+        $data = Request::json();
+        $studentIds = $data['student_ids'] ?? [];
+        $fromClass = trim((string) ($data['from_class'] ?? ''));
+        $toClass = trim((string) ($data['to_class'] ?? ''));
+        $fromYear = trim((string) ($data['from_academic_year'] ?? '2025-2026'));
+        $toYear = trim((string) ($data['to_academic_year'] ?? '2026-2027'));
+
+        if (empty($studentIds) || !is_array($studentIds) || $toClass === '') {
+            $this->fail('student_ids (array) and to_class are required', 422);
+            return;
+        }
+
+        $insStmt = $this->pdo->prepare(
+            'INSERT INTO student_promotions (
+                student_id, from_academic_year, from_class, to_academic_year, to_class,
+                to_section, final_result, promotion_status, promoted_by, promoted_at
+            ) VALUES (
+                :sid, :fy, :fc, :ty, :tc, :tsec, "Pass", "Promoted", "Admin", NOW()
+            )'
+        );
+
+        $upEnr = $this->pdo->prepare(
+            'UPDATE student_enrollments SET is_current = 0 WHERE student_id = :sid'
+        );
+
+        $newEnr = $this->pdo->prepare(
+            'INSERT INTO student_enrollments (student_id, class_name, section_name, session_label, status, is_current, created_at)
+             VALUES (:sid, :class_name, :section_name, :session_label, "promoted", 1, NOW())'
+        );
+
+        $promotedCount = 0;
+        foreach ($studentIds as $sid) {
+            $sid = (int) $sid;
+            if ($sid <= 0) continue;
+
+            $insStmt->execute([
+                'sid' => $sid,
+                'fy' => $fromYear,
+                'fc' => $fromClass,
+                'ty' => $toYear,
+                'tc' => $toClass,
+                'tsec' => $data['to_section'] ?? 'A',
+            ]);
+
+            $upEnr->execute(['sid' => $sid]);
+            $newEnr->execute([
+                'sid' => $sid,
+                'class_name' => $toClass,
+                'section_name' => $data['to_section'] ?? 'A',
+                'session_label' => $toYear,
+            ]);
+            $promotedCount++;
+        }
+
+        $this->ok(['promoted_count' => $promotedCount, 'to_class' => $toClass], 'Students promoted successfully');
+    }
+
+    // ═══════════════════ CERTIFICATES & TC GENERATOR ═══════════════════
+
+    public function listCertificates(): void
+    {
+        [$page, $limit, $offset] = $this->pagination();
+        $studentId = Request::intQuery('student_id', 0);
+        $type = trim((string) Request::query('type', ''));
+
+        $where = [];
+        $params = [];
+        if ($studentId > 0) {
+            $where[] = 'c.student_id = :sid';
+            $params['sid'] = $studentId;
+        }
+        if ($type !== '') {
+            $where[] = 'c.certificate_type = :type';
+            $params['type'] = $type;
+        }
+
+        $whereSql = empty($where) ? '' : ' WHERE ' . implode(' AND ', $where);
+
+        $countStmt = $this->pdo->prepare('SELECT COUNT(*) AS c FROM student_certificates c' . $whereSql);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetch()['c'];
+
+        $sql = 'SELECT c.*, s.first_name, s.last_name, s.admission_no
+                FROM student_certificates c
+                JOIN students s ON s.id = c.student_id' . $whereSql . '
+                ORDER BY c.id DESC LIMIT :limit OFFSET :offset';
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->listResponse($stmt->fetchAll(), $total, $page, $limit, 'certificates');
+    }
+
+    public function issueCertificate(): void
+    {
+        $data = Request::json();
+        $studentId = (int) ($data['student_id'] ?? 0);
+        $certType = trim((string) ($data['certificate_type'] ?? 'Transfer Certificate'));
+
+        if ($studentId <= 0) {
+            $this->fail('student_id is required', 422);
+            return;
+        }
+
+        $certNo = 'SIBA/' . date('Y') . '/' . strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $certType), 0, 2)) . '-' . rand(1000, 9999);
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO student_certificates (
+                certificate_no, student_id, certificate_type, issue_date, reason, status, approved_by, content_json, created_at
+            ) VALUES (
+                :cno, :sid, :ctype, :idate, :reason, "Issued", :by, :json, NOW()
+            )'
+        );
+        $stmt->execute([
+            'cno' => $certNo,
+            'sid' => $studentId,
+            'ctype' => $certType,
+            'idate' => $data['issue_date'] ?? date('Y-m-d'),
+            'reason' => $data['reason'] ?? 'Application by parents',
+            'by' => $data['approved_by'] ?? 'Principal',
+            'json' => json_encode($data['custom_fields'] ?? []),
+        ]);
+
+        $id = (int) $this->pdo->lastInsertId();
+        $this->ok(['id' => $id, 'certificate_no' => $certNo, 'certificate_type' => $certType], 'Certificate issued successfully');
+    }
+
+    public function getCertificate(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $stmt = $this->pdo->prepare(
+            'SELECT c.*, s.first_name, s.last_name, s.admission_no, s.dob, s.gender,
+                    se.class_name, se.section_name
+             FROM student_certificates c
+             JOIN students s ON s.id = c.student_id
+             LEFT JOIN student_enrollments se ON se.student_id = s.id AND se.is_current = 1
+             WHERE c.id = :id LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+        $cert = $stmt->fetch();
+        if (!$cert) {
+            $this->fail('Certificate not found', 404);
+            return;
+        }
+
+        $this->ok(['certificate' => $cert]);
+    }
 }

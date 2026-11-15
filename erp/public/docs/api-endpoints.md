@@ -125,11 +125,15 @@ The site (public website & parent portal) and ERP now share a single database **
 
 ## Admissions
 - `POST /admissions/register-parent` — Register parent account (public)
-- `GET /admissions/applications` — List applications (supports pagination, `q`, `status`)
-- `POST /admissions/apply` — Submit application with multipart/form-data document uploads (`birth_cert`, `aadhaar`, `leaving_cert`, `prev_marksheet`, `photo`, `caste_cert`, `father_photo`, `mother_photo`, `father_aadhaar`, `mother_aadhaar`, `father_voter`, `mother_voter`, `disability_cert`, `guardian_signature`)
+- `GET /admissions/applications` — List applications (supports pagination, `q`, `status`; returns `application_no` and `application_number`)
+- `POST /admissions/apply` — Submit application with multipart/form-data document uploads (`birth_cert`, `aadhaar`, `leaving_cert`, `prev_marksheet`, `photo`, `caste_cert`, `father_photo`, `mother_photo`, `father_aadhaar`, `mother_aadhaar`, `father_voter`, `mother_voter`, `disability_cert`, `guardian_signature`; returns `application_no` and `application_number`)
+- `GET /admissions/applications/{id}` — Get single application details by ID
+- `GET /admissions/applications/{id}/receipt` — Download application acknowledgement receipt as PDF (`format=binary`, default) or JSON (`format=json`)
+- `GET /admissions/my-applications` — List applications for the currently authenticated parent
 
 ## Parents
 - `GET /parents`
+- `GET /parents/me/applications` — List applications for the currently authenticated parent
 - `GET /parents/{id}`
 - `PUT /parents/{id}`
 - `GET /parents/{id}/applications`
@@ -138,6 +142,91 @@ The site (public website & parent portal) and ERP now share a single database **
 - `GET /reports/dashboard`
 - `GET /reports/payroll-export?month=YYYY-MM`
 
+## Module 1: Inventory (Stationery & Consumables)
+- `GET /inventory/items` — List catalog items (supports `q`, `category`, pagination)
+- `POST /inventory/items` — Register consumable/stationery item
+- `GET /inventory/items/{id}` — Item details & recent 20 audit transactions
+- `PUT /inventory/items/{id}` — Update item pricing, location, or reorder limits
+- `DELETE /inventory/items/{id}` — Delete inventory item
+- `GET /inventory/transactions` — Stock audit transactions history (`item_id`, `type`, pagination)
+- `POST /inventory/transactions` — Record stock issue or inbound stock-in with automatic balance adjustment
+
+## Module 2: Student Lifecycle
+- `GET /students/{id}/dossier` — Complete 360° student dossier (demographics, guardians, remarks, house, certificates, marks)
+- `GET /students/{id}/remarks` — List disciplinary and behavioral remarks for student
+- `POST /students/{id}/remarks` — Record behavioral or disciplinary remark
+- `DELETE /students/remarks/{id}` — Delete remark record
+- `GET /students/promotions/history` — List promotion history logs
+- `POST /students/promotions/batch` — Execute batch student promotions to next grade
+- `GET /students/certificates/all` — List issued certificates directory
+- `POST /students/certificates/issue` — Issue official Transfer Certificate (TC), Bonafide, Character, or No-Dues certificate
+- `GET /students/certificates/{id}` — Retrieve certificate print details
+
+## Module 3: House Management
+- `GET /houses` — List all houses with live points totals & leaderboard
+- `POST /houses` — Create new student house
+- `GET /houses/{id}` — House profile, student roster, and recent points log
+- `PUT /houses/{id}` — Update house information
+- `DELETE /houses/{id}` — Delete house
+- `GET /houses/allocations` — List student house allocations
+- `POST /houses/allocations` — Assign student to a house
+- `GET /houses/points` — List points activity log
+- `POST /houses/points` — Award or deduct house points
+
+## Module 4: Library
+- `GET /library/books` — Catalog listing of books (supports `q`, `category`, pagination)
+- `POST /library/books` — Add book title and auto-generate barcode copies
+- `GET /library/books/{id}` — Book details & individual copy status
+- `PUT /library/books/{id}` — Update book title & rack location
+- `DELETE /library/books/{id}` — Delete book title
+- `GET /library/circulation` — Active, overdue, and returned book loans
+- `POST /library/circulation/issue` — Issue book to student with due date
+- `POST /library/circulation/return/{id}` — Return issued book & record overdue fines
+
+## Module 5: Academics and EXAM
+- `GET /academics/exams` — List exam terms & schedules
+- `POST /academics/exams` — Create exam term schedule
+- `GET /academics/exams/{id}` — Get exam schedule details
+- `PUT /academics/exams/{id}` — Update exam schedule
+- `DELETE /academics/exams/{id}` — Delete exam schedule
+- `GET /academics/marks` — List entered marks (filtered by `exam_id`, `student_id`, `subject_id`)
+- `POST /academics/marks` — Record student marks (strictly marks-only evaluation)
+- `POST /academics/marks/batch` — Bulk save student marks for a class
+- `GET /academics/report-card/{student_id}/{exam_id}` — Consolidated report card marksheet data (marks only)
+
+## Module 6: Operations & Fleet
+- `GET /operations/fleet/vehicles` — List fleet vehicles
+- `POST /operations/fleet/vehicles` — Register vehicle in school fleet
+- `GET /operations/fleet/vehicles/{id}` — Get vehicle details
+- `PUT /operations/fleet/vehicles/{id}` — Update vehicle information
+- `DELETE /operations/fleet/vehicles/{id}` — Remove vehicle from fleet
+- `GET /operations/transport/routes` — List transport routes
+- `POST /operations/transport/routes` — Create transport route
+- `GET /operations/transport/allocations` — List student transport allocations
+- `POST /operations/transport/allocations` — Assign student to bus route
+- `GET /operations/hostels` — List hostels
+- `GET /operations/hostels/rooms` — List rooms with bed capacities and occupancy
+- `POST /operations/hostels/rooms` — Create room
+- `GET /operations/hostel/allocations` — List student hostel bed allocations
+- `POST /operations/hostel/allocations` — Allocate student to hostel room bed
+
+## Module 7: Communication & Content
+- `GET /communication/announcements` — List circular notices & announcements
+- `POST /communication/announcements` — Publish notice circular & trigger email gateway dispatch
+- `GET /communication/announcements/{id}` — Get announcement details & email dispatch logs
+- `DELETE /communication/announcements/{id}` — Delete announcement
+- `GET /content/pages` — List CMS website pages
+- `GET /content/pages/{slug}` — Get CMS page content
+- `PUT /content/pages/{slug}` — Update CMS page content
+- `GET /content/events` — List school events & calendar
+- `POST /content/events` — Create school event or news item
+- `DELETE /content/events/{id}` — Delete school event
+- `GET /content/gallery` — List website photo/video gallery
+- `POST /content/gallery` — Add media item to gallery
+- `DELETE /content/gallery/{id}` — Delete gallery item
+- `GET /content/enquiries` — List website contact enquiries
+- `PUT /content/enquiries/{id}` — Update enquiry status & admin note
+- `DELETE /content/enquiries/{id}` — Delete enquiry
+
 ## Health
 - `GET /health`
-

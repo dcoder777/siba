@@ -48,9 +48,14 @@ function available_modules(): array
 {
     return [
         'students' => ['label' => 'Students', 'entities' => ['students', 'student_enrollments', 'attendance_records']],
-        'academics' => ['label' => 'Academics', 'entities' => ['subjects', 'assignments', 'exam_results', 'assignment_submissions', 'parent_teacher_messages']],
+        'student_lifecycle' => ['label' => 'Student Lifecycle', 'entities' => ['students', 'student_enrollments', 'student_promotions', 'student_certificates', 'student_remarks_discipline']],
+        'academics' => ['label' => 'Academics & EXAM', 'entities' => ['subjects', 'timetables', 'assignments', 'exams', 'exam_marks', 'exam_results', 'assignment_submissions', 'parent_teacher_messages']],
+        'house_management' => ['label' => 'House Management', 'entities' => ['houses', 'student_house_allocations', 'house_activity_logs']],
+        'library' => ['label' => 'Library', 'entities' => ['library_books', 'library_book_copies', 'library_issues', 'library_returns_fines']],
+        'operations' => ['label' => 'Operations & Fleet', 'entities' => ['transport_vehicles', 'transport_routes', 'transport_allocations', 'hostels', 'hostel_rooms', 'hostel_allocations']],
+        'inventory' => ['label' => 'Inventory', 'entities' => ['inventory_items', 'inventory_transactions', 'inventory_categories']],
+        'communication' => ['label' => 'Communication & Content', 'entities' => ['system_announcements', 'cms_pages', 'events', 'gallery', 'contact_submissions']],
         'finance' => ['label' => 'Finance', 'entities' => ['fee_heads', 'fee_structures', 'fee_collections', 'expenses', 'income_categories', 'vendors', 'bank_accounts', 'ledger_accounts']],
-        'operations' => ['label' => 'Operations', 'entities' => ['timetables', 'transport_routes', 'transport_allocations', 'hostels', 'hostel_rooms', 'hostel_allocations']],
         'hr' => ['label' => 'HR', 'entities' => ['employees', 'leave_requests', 'payroll_runs', 'payroll_items']],
         'reports' => ['label' => 'Reports', 'entities' => []],
     ];

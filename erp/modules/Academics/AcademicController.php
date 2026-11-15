@@ -432,4 +432,276 @@ class AcademicController extends Controller
             default => 'F',
         };
     }
+
+    // ═══════════════════ EXAM SCHEDULES & TERMS ═══════════════════
+
+    public function listExams(): void
+    {
+        [$page, $limit, $offset] = $this->pagination();
+        $countStmt = $this->pdo->query('SELECT COUNT(*) AS c FROM exams');
+        $total = (int) $countStmt->fetch()['c'];
+
+        $stmt = $this->pdo->prepare('SELECT * FROM exams ORDER BY start_date DESC, id DESC LIMIT :limit OFFSET :offset');
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->listResponse($stmt->fetchAll(), $total, $page, $limit, 'exams');
+    }
+
+    public function createExam(): void
+    {
+        $data = Request::json();
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            $this->fail('title is required', 422);
+            return;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO exams (title, academic_year, start_date, end_date, status, created_at)
+             VALUES (:title, :ay, :sdate, :edate, :status, NOW())'
+        );
+        $stmt->execute([
+            'title' => $title,
+            'ay' => $data['academic_year'] ?? '2026-2027',
+            'sdate' => $data['start_date'] ?? date('Y-m-d'),
+            'edate' => $data['end_date'] ?? date('Y-m-d', strtotime('+7 days')),
+            'status' => $data['status'] ?? 'Upcoming',
+        ]);
+
+        $this->ok(['id' => (int) $this->pdo->lastInsertId(), 'title' => $title], 'Exam term created successfully');
+    }
+
+    public function getExam(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $stmt = $this->pdo->prepare('SELECT * FROM exams WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $exam = $stmt->fetch();
+        if (!$exam) {
+            $this->fail('Exam not found', 404);
+            return;
+        }
+
+        $this->ok(['exam' => $exam]);
+    }
+
+    public function updateExam(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $data = Request::json();
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE exams SET
+                title = COALESCE(:title, title),
+                academic_year = COALESCE(:ay, academic_year),
+                start_date = COALESCE(:sdate, start_date),
+                end_date = COALESCE(:edate, end_date),
+                status = COALESCE(:status, status)
+             WHERE id = :id'
+        );
+        $stmt->execute([
+            'id' => $id,
+            'title' => isset($data['title']) ? trim((string) $data['title']) : null,
+            'ay' => isset($data['academic_year']) ? trim((string) $data['academic_year']) : null,
+            'sdate' => $data['start_date'] ?? null,
+            'edate' => $data['end_date'] ?? null,
+            'status' => isset($data['status']) ? trim((string) $data['status']) : null,
+        ]);
+
+        $this->ok(['id' => $id], 'Exam updated successfully');
+    }
+
+    public function deleteExam(array $params): void
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $this->pdo->prepare('DELETE FROM exams WHERE id = :id')->execute(['id' => $id]);
+        $this->ok(['id' => $id], 'Exam deleted successfully');
+    }
+
+    // ═══════════════════ EXAM MARKS (MARKS ONLY) ═══════════════════
+
+    public function listMarks(): void
+    {
+        [$page, $limit, $offset] = $this->pagination();
+        $examId = Request::intQuery('exam_id', 0);
+        $studentId = Request::intQuery('student_id', 0);
+        $subjectId = Request::intQuery('subject_id', 0);
+
+        $where = [];
+        $params = [];
+        if ($examId > 0) {
+            $where[] = 'em.exam_id = :eid';
+            $params['eid'] = $examId;
+        }
+        if ($studentId > 0) {
+            $where[] = 'em.student_id = :sid';
+            $params['sid'] = $studentId;
+        }
+        if ($subjectId > 0) {
+            $where[] = 'em.subject_id = :subid';
+            $params['subid'] = $subjectId;
+        }
+
+        $whereSql = empty($where) ? '' : ' WHERE ' . implode(' AND ', $where);
+
+        $countStmt = $this->pdo->prepare('SELECT COUNT(*) AS c FROM exam_marks em' . $whereSql);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetch()['c'];
+
+        $sql = 'SELECT em.*, e.title AS exam_title, s.admission_no, s.first_name, s.last_name, sub.subject_name, sub.subject_code
+                FROM exam_marks em
+                JOIN exams e ON e.id = em.exam_id
+                JOIN students s ON s.id = em.student_id
+                JOIN subjects sub ON sub.id = em.subject_id' . $whereSql . '
+                ORDER BY em.id DESC LIMIT :limit OFFSET :offset';
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->listResponse($stmt->fetchAll(), $total, $page, $limit, 'marks');
+    }
+
+    public function saveMarks(): void
+    {
+        $data = Request::json();
+        $examId = (int) ($data['exam_id'] ?? 0);
+        $studentId = (int) ($data['student_id'] ?? 0);
+        $subjectId = (int) ($data['subject_id'] ?? 0);
+        $marks = (float) ($data['marks_obtained'] ?? 0);
+
+        if ($examId <= 0 || $studentId <= 0 || $subjectId <= 0) {
+            $this->fail('exam_id, student_id, and subject_id are required', 422);
+            return;
+        }
+
+        $chk = $this->pdo->prepare(
+            'SELECT id FROM exam_marks WHERE exam_id = :eid AND student_id = :sid AND subject_id = :subid LIMIT 1'
+        );
+        $chk->execute(['eid' => $examId, 'sid' => $studentId, 'subid' => $subjectId]);
+        $existing = $chk->fetch();
+
+        if ($existing) {
+            $up = $this->pdo->prepare(
+                'UPDATE exam_marks SET marks_obtained = :m, remarks = :rem WHERE id = :id'
+            );
+            $up->execute(['m' => $marks, 'rem' => $data['remarks'] ?? '', 'id' => $existing['id']]);
+            $this->ok(['id' => (int) $existing['id'], 'marks_obtained' => $marks], 'Marks updated successfully');
+        } else {
+            $ins = $this->pdo->prepare(
+                'INSERT INTO exam_marks (exam_id, student_id, subject_id, marks_obtained, remarks, created_at)
+                 VALUES (:eid, :sid, :subid, :m, :rem, NOW())'
+            );
+            $ins->execute([
+                'eid' => $examId,
+                'sid' => $studentId,
+                'subid' => $subjectId,
+                'm' => $marks,
+                'rem' => $data['remarks'] ?? '',
+            ]);
+            $this->ok(['id' => (int) $this->pdo->lastInsertId(), 'marks_obtained' => $marks], 'Marks recorded successfully');
+        }
+    }
+
+    public function batchSaveMarks(): void
+    {
+        $data = Request::json();
+        $examId = (int) ($data['exam_id'] ?? 0);
+        $subjectId = (int) ($data['subject_id'] ?? 0);
+        $entries = $data['marks'] ?? [];
+
+        if ($examId <= 0 || $subjectId <= 0 || empty($entries) || !is_array($entries)) {
+            $this->fail('exam_id, subject_id, and marks array are required', 422);
+            return;
+        }
+
+        $saved = 0;
+        foreach ($entries as $e) {
+            $studentId = (int) ($e['student_id'] ?? 0);
+            $marks = (float) ($e['marks_obtained'] ?? 0);
+            if ($studentId <= 0) continue;
+
+            $chk = $this->pdo->prepare('SELECT id FROM exam_marks WHERE exam_id = :eid AND student_id = :sid AND subject_id = :subid LIMIT 1');
+            $chk->execute(['eid' => $examId, 'sid' => $studentId, 'subid' => $subjectId]);
+            $row = $chk->fetch();
+
+            if ($row) {
+                $this->pdo->prepare('UPDATE exam_marks SET marks_obtained = :m WHERE id = :id')
+                    ->execute(['m' => $marks, 'id' => $row['id']]);
+            } else {
+                $this->pdo->prepare('INSERT INTO exam_marks (exam_id, student_id, subject_id, marks_obtained, created_at) VALUES (:eid, :sid, :subid, :m, NOW())')
+                    ->execute(['eid' => $examId, 'sid' => $studentId, 'subid' => $subjectId, 'm' => $marks]);
+            }
+            $saved++;
+        }
+
+        $this->ok(['exam_id' => $examId, 'subject_id' => $subjectId, 'saved_count' => $saved], 'Batch marks recorded successfully');
+    }
+
+    public function reportCard(array $params): void
+    {
+        $studentId = (int) ($params['student_id'] ?? 0);
+        $examId = (int) ($params['exam_id'] ?? 0);
+
+        // Student details
+        $sStmt = $this->pdo->prepare(
+            'SELECT s.*, se.class_name, se.section_name
+             FROM students s
+             LEFT JOIN student_enrollments se ON se.student_id = s.id AND se.is_current = 1
+             WHERE s.id = :id LIMIT 1'
+        );
+        $sStmt->execute(['id' => $studentId]);
+        $student = $sStmt->fetch();
+        if (!$student) {
+            $this->fail('Student not found', 404);
+            return;
+        }
+
+        // Exam details
+        $eStmt = $this->pdo->prepare('SELECT * FROM exams WHERE id = :id LIMIT 1');
+        $eStmt->execute(['id' => $examId]);
+        $exam = $eStmt->fetch();
+        if (!$exam) {
+            $this->fail('Exam not found', 404);
+            return;
+        }
+
+        // Marks (Marks-only evaluation system as requested)
+        $mStmt = $this->pdo->prepare(
+            'SELECT em.marks_obtained, em.remarks, sub.subject_name, sub.subject_code, 100 AS max_marks
+             FROM exam_marks em
+             JOIN subjects sub ON sub.id = em.subject_id
+             WHERE em.student_id = :sid AND em.exam_id = :eid
+             ORDER BY sub.subject_name ASC'
+        );
+        $mStmt->execute(['sid' => $studentId, 'eid' => $examId]);
+        $subjectsMarks = $mStmt->fetchAll();
+
+        $totalObtained = 0.0;
+        $totalMax = 0.0;
+        foreach ($subjectsMarks as $row) {
+            $totalObtained += (float) $row['marks_obtained'];
+            $totalMax += (float) $row['max_marks'];
+        }
+
+        $percentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
+
+        $this->ok([
+            'student' => $student,
+            'exam' => $exam,
+            'subjects' => $subjectsMarks,
+            'summary' => [
+                'total_obtained' => $totalObtained,
+                'total_max' => $totalMax,
+                'percentage' => $percentage,
+                'result' => $percentage >= 33.0 ? 'PASSED' : 'NEEDS IMPROVEMENT',
+                'evaluation_scheme' => 'Marks Only',
+            ]
+        ]);
+    }
 }
