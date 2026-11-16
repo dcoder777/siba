@@ -103,8 +103,8 @@ $filterStatus = trim((string) ($_GET['status'] ?? ''));
 
 $sql = "
     SELECT v.*, 
-           (SELECT COUNT(*) FROM transport_routes WHERE vehicle_id = v.id OR vehicle_no = v.vehicle_no) as assigned_routes,
-           (SELECT route_name FROM transport_routes WHERE vehicle_id = v.id OR vehicle_no = v.vehicle_no LIMIT 1) as primary_route
+           (SELECT COUNT(*) FROM transport_routes WHERE vehicle_id = v.id OR vehicle_no = (v.vehicle_no COLLATE utf8mb4_unicode_ci)) as assigned_routes,
+           (SELECT route_name FROM transport_routes WHERE vehicle_id = v.id OR vehicle_no = (v.vehicle_no COLLATE utf8mb4_unicode_ci) LIMIT 1) as primary_route
     FROM transport_vehicles v
     WHERE 1=1
 ";
@@ -138,13 +138,13 @@ $totalCapacity = (int) $pdo->query("SELECT SUM(capacity) FROM transport_vehicles
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Fleet & Vehicles Master | Operations & Fleet</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
 </head>
-<body class="erp-body">
-<div class="erp-layout">
-    <?php include __DIR__ . '/_sidebar.php'; ?>
+<body style="min-height:100vh;">
+<div class="admin-layout">
+    <?php $activePage = basename(__FILE__); include __DIR__ . '/_sidebar.php'; ?>
 
-    <main class="erp-main">
+    <main class="admin-main stack" style="padding:1.5rem;">
         <header class="erp-header">
             <div>
                 <nav class="breadcrumb-nav">

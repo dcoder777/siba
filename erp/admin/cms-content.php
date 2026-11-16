@@ -92,13 +92,13 @@ if (!$activePageData && !empty($allPages)) {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Website CMS Editor | Communication & Content</title>
     <link rel="stylesheet" href="../assets/vendor/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="../assets/erp-ui.css">
+    <link rel="stylesheet" href="../assets/erp-ui.css?v=<?php echo filemtime(__DIR__ . '/../assets/erp-ui.css'); ?>">
 </head>
-<body class="erp-body">
-<div class="erp-layout">
-    <?php include __DIR__ . '/_sidebar.php'; ?>
+<body style="min-height:100vh;">
+<div class="admin-layout">
+    <?php $activePage = basename(__FILE__); include __DIR__ . '/_sidebar.php'; ?>
 
-    <main class="erp-main">
+    <main class="admin-main stack" style="padding:1.5rem;">
         <header class="erp-header">
             <div>
                 <nav class="breadcrumb-nav">

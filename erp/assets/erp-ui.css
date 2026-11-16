@@ -132,20 +132,54 @@ p{margin:0}
 /* ─────────────────────────────────────────────────────────────
    LAYOUT
    ───────────────────────────────────────────────────────────── */
-.admin-layout{
+.admin-layout,
+.erp-layout{
     display:grid;
     grid-template-columns:240px minmax(0,1fr);
     min-height:100vh;
     transition:grid-template-columns .2s ease;
 }
 
-.admin-layout.sidebar-collapsed{
+.admin-layout.sidebar-collapsed,
+.erp-layout.sidebar-collapsed{
     grid-template-columns:64px minmax(0,1fr);
 }
 
-.admin-main{
-    padding:1.25rem;
+.admin-main,
+.erp-main{
+    padding:1.5rem;
     background:var(--surface-alt);
+    min-width:0;
+    overflow-x:hidden;
+}
+
+.erp-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    margin-bottom:1.25rem;
+    padding-bottom:1rem;
+    border-bottom:1px solid var(--line);
+}
+
+.breadcrumb-nav{
+    font-size:.82rem;
+    color:var(--muted);
+    margin-bottom:.25rem;
+}
+
+.page-title{
+    font-size:1.5rem;
+    font-weight:700;
+    color:var(--ink);
+    margin:0;
+}
+
+.erp-content{
+    display:flex;
+    flex-direction:column;
+    gap:1.25rem;
 }
 
 .stack{display:grid;gap:1rem}
