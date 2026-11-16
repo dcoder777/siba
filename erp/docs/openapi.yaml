@@ -205,9 +205,13 @@ paths:
           name: limit
           schema: { type: integer, default: 20, example: 20 }
         - in: query
+          name: id
+          schema: { type: integer, example: 1 }
+          description: Search and filter by application ID
+        - in: query
           name: q
-          schema: { type: string, example: Sharma }
-          description: Search by student name, father name, mother name, parent name, or phone
+          schema: { type: string, example: "1" }
+          description: Search by application ID, application number, student name, father name, mother name, parent name, or phone
         - in: query
           name: status
           schema: { type: string, example: "Application started" }

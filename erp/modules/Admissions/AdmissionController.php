@@ -366,21 +366,33 @@ class AdmissionController extends Controller
     public function list(): void
     {
         [$page, $limit, $offset] = $this->pagination();
+        $idParam = trim((string) Request::query('id', ''));
         $q = trim((string) Request::query('q', ''));
         $status = trim((string) Request::query('status', ''));
 
         $where = [];
         $params = [];
 
+        if ($idParam !== '' && is_numeric($idParam)) {
+            $where[] = 'a.id = :id_filter';
+            $params['id_filter'] = (int) $idParam;
+        }
+
         if ($q !== '') {
-            $where[] = '(a.application_no LIKE :q0 OR a.application_number LIKE :q0 OR a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5)';
             $likeQ = '%' . $q . '%';
+            if (ctype_digit($q) || is_numeric($q)) {
+                $where[] = '(a.id = :qid_exact OR a.application_no LIKE :q0 OR a.application_number LIKE :q0 OR a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5 OR a.contact_no LIKE :q6)';
+                $params['qid_exact'] = (int) $q;
+            } else {
+                $where[] = '(a.application_no LIKE :q0 OR a.application_number LIKE :q0 OR a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5 OR a.contact_no LIKE :q6)';
+            }
             $params['q0'] = $likeQ;
             $params['q1'] = $likeQ;
             $params['q2'] = $likeQ;
             $params['q3'] = $likeQ;
             $params['q4'] = $likeQ;
             $params['q5'] = $likeQ;
+            $params['q6'] = $likeQ;
         }
         if ($status !== '') {
             $where[] = 'a.status = :status';

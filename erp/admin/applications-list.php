@@ -114,13 +114,24 @@ HTML;
 // ─── Fetch Applications ───
 $where = [];
 $params = [];
+$idFilter = trim((string) ($_GET['id'] ?? ''));
+if ($idFilter !== '' && is_numeric($idFilter)) {
+    $where[] = 'a.id = :id_filter';
+    $params['id_filter'] = (int) $idFilter;
+}
 if ($currentStatus !== '') {
     $where[] = 'a.status = :status';
     $params['status'] = $currentStatus;
 }
 if ($searchQ !== '') {
-    $where[] = '(a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5 OR a.contact_no LIKE :q6)';
     $likeQ = '%' . $searchQ . '%';
+    if (ctype_digit($searchQ) || is_numeric($searchQ)) {
+        $where[] = '(a.id = :qid_exact OR a.application_no LIKE :q0 OR a.application_number LIKE :q0 OR a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5 OR a.contact_no LIKE :q6)';
+        $params['qid_exact'] = (int) $searchQ;
+    } else {
+        $where[] = '(a.application_no LIKE :q0 OR a.application_number LIKE :q0 OR a.student_name LIKE :q1 OR a.father_name LIKE :q2 OR a.mother_name LIKE :q3 OR p.name LIKE :q4 OR p.phone LIKE :q5 OR a.contact_no LIKE :q6)';
+    }
+    $params['q0'] = $likeQ;
     $params['q1'] = $likeQ;
     $params['q2'] = $likeQ;
     $params['q3'] = $likeQ;
@@ -223,7 +234,7 @@ function statusBadge(string $s): string {
         <?php endif; ?>
 
         <form method="get" class="app-filters">
-            <input type="text" name="q" placeholder="Search name, phone, parent..." value="<?= e($searchQ) ?>" style="min-width:220px;">
+            <input type="text" name="q" placeholder="Search by ID, App No, name, phone..." value="<?= e($searchQ) ?>" style="min-width:240px;">
             <select name="status">
                 <option value="">All statuses</option>
                 <?php foreach ($statusOptions as $s): ?>

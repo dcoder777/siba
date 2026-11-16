@@ -125,7 +125,7 @@ The site (public website & parent portal) and ERP now share a single database **
 
 ## Admissions
 - `POST /admissions/register-parent` — Register parent account (public)
-- `GET /admissions/applications` — List applications (supports pagination, `q`, `status`; returns `application_no` and `application_number`)
+- `GET /admissions/applications` — List applications (supports pagination, `id`, `q` [by application ID, app no, student name, parent], and `status`; returns `application_no` and `application_number`)
 - `POST /admissions/apply` — Submit application with multipart/form-data document uploads (`birth_cert`, `aadhaar`, `leaving_cert`, `prev_marksheet`, `photo`, `caste_cert`, `father_photo`, `mother_photo`, `father_aadhaar`, `mother_aadhaar`, `father_voter`, `mother_voter`, `disability_cert`, `guardian_signature`; returns `application_no` and `application_number`)
 - `GET /admissions/applications/{id}` — Get single application details by ID
 - `GET /admissions/applications/{id}/receipt` — Download application acknowledgement receipt as PDF (`format=binary`, default) or JSON (`format=json`)
