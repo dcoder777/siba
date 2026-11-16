@@ -581,10 +581,10 @@ function openReturnModal(issueId, bookTitle, memberName, daysOverdue) {
     var fine = Math.max(0, daysOverdue * 5.00);
     var box = document.getElementById('returnSummaryBox');
     box.innerHTML = `
-        <div><strong>Borrower:</strong> \${memberName}</div>
-        <div><strong>Book Title:</strong> \${bookTitle}</div>
-        <div style="margin-top:.5rem;color:\${daysOverdue > 0 ? '#dc2626' : '#16a34a'};font-weight:700;">
-            \${daysOverdue > 0 ? ('⚠️ Overdue by ' + daysOverdue + ' day(s). Calculated Fine: ₹ ' + fine.toFixed(2)) : '✓ Returned on time! No overdue fine.'}
+        <div><strong>Borrower:</strong> ${memberName}</div>
+        <div><strong>Book Title:</strong> ${bookTitle}</div>
+        <div style="margin-top:.5rem;color:${daysOverdue > 0 ? '#dc2626' : '#16a34a'};font-weight:700;">
+            ${daysOverdue > 0 ? ('⚠️ Overdue by ' + daysOverdue + ' day(s). Calculated Fine: ₹ ' + fine.toFixed(2)) : '✓ Returned on time! No overdue fine.'}
         </div>
     `;
     openModal('returnBookModal');

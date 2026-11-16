@@ -404,16 +404,20 @@ $issuedCertsCount = (int) $pdo->query("SELECT COUNT(*) FROM student_certificates
 
 <!-- ═══════════════════ STUDENT 360° DOSSIER MODAL ═══════════════════ -->
 <div id="student360Modal" class="modal-backdrop">
-    <div class="modal-box" style="max-width:720px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:14px;box-shadow:0 25px 60px -15px rgba(0,0,0,.35);overflow:hidden;">
-        <div class="modal-head">
-            <h2 id="dossierTitle" style="margin:0;font-size:1.15rem;font-weight:700;">Student 360° Dossier</h2>
+    <div class="modal-box" style="max-width:780px;width:94%;max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:16px;box-shadow:0 25px 60px -15px rgba(0,0,0,.35);overflow:hidden;">
+        <div class="modal-head" style="padding:1.15rem 1.5rem;border-bottom:1px solid #e2e8f0;background:#ffffff;display:flex;justify-content:space-between;align-items:center;">
+            <div id="dossierTitle" style="margin:0;">
+                <h2 style="margin:0;font-size:1.15rem;font-weight:700;">Student 360° Dossier</h2>
+            </div>
             <button type="button" class="icon-btn" onclick="closeModal('student360Modal')">✕</button>
         </div>
-        <div style="padding:1.5rem;background:#fff;" id="dossierBody">
+        <div style="padding:1.5rem;background:#fff;flex:1;overflow-y:auto;" id="dossierBody">
             <!-- Populated via JS -->
         </div>
-        <div style="padding:1rem 1.5rem;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:.5rem;background:#f8fafc;">
-            <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('student360Modal')">Close</button>
+        <div id="dossierFooter" style="padding:1rem 1.5rem;border-top:1px solid #e2e8f0;background:#f8fafc;">
+            <div style="display:flex;justify-content:flex-end;">
+                <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('student360Modal')">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -468,6 +472,21 @@ $issuedCertsCount = (int) $pdo->query("SELECT COUNT(*) FROM student_certificates
 </div>
 
 <script>
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function escapeJs(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
 function openModal(id) {
     var el = document.getElementById(id);
     if (el) el.classList.add('show');
@@ -482,74 +501,178 @@ function openRemarkModal(studentId, studentName) {
     openModal('remarkModal');
 }
 function openStudent360(s) {
-    document.getElementById('dossierTitle').textContent = 'Student 360° Dossier: ' + s.first_name + ' ' + s.last_name + ' (' + s.admission_no + ')';
-    var body = document.getElementById('dossierBody');
-    body.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;background:#f8fafc;padding:1rem;border-radius:8px;border:1px solid #e2e8f0;">
-            <div>
-                <div style="font-size:.78rem;color:#64748b;">Full Name</div>
-                <div style="font-size:1rem;font-weight:700;color:#0f172a;">\${s.first_name} \${s.last_name}</div>
-            </div>
-            <div>
-                <div style="font-size:.78rem;color:#64748b;">Admission No</div>
-                <div style="font-size:1rem;font-weight:700;font-family:monospace;color:#1e3a8a;">\${s.admission_no}</div>
-            </div>
-            <div>
-                <div style="font-size:.78rem;color:#64748b;">Gender / Date of Birth</div>
-                <div style="font-weight:600;">\${s.gender || '—'} | \${s.dob || '—'}</div>
-            </div>
-            <div>
-                <div style="font-size:.78rem;color:#64748b;">Blood Group</div>
-                <div style="font-weight:600;">\${s.blood_group || 'Not recorded'}</div>
-            </div>
-            <div>
-                <div style="font-size:.78rem;color:#64748b;">Contact Phone</div>
-                <div style="font-weight:600;">\${s.phone || '—'}</div>
-            </div>
-            <div>
-                <div style="font-size:.78rem;color:#64748b;">Contact Email</div>
-                <div style="font-weight:600;">\${s.email || '—'}</div>
-            </div>
-        </div>
+    var fullName = ((s.first_name || '') + ' ' + (s.last_name || '')).trim() || 'Student';
+    var admNo = s.admission_no || '—';
+    var initials = ((s.first_name ? s.first_name[0] : '') + (s.last_name ? s.last_name[0] : '')).toUpperCase() || 'ST';
+    var status = (s.enrollment_status || 'active').toLowerCase();
 
-        <h4 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem;">Academic & Campus Life Allocation</h4>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
-            <div style="border:1px solid #e2e8f0;padding:.85rem;border-radius:8px;">
-                <div style="font-size:.78rem;color:#64748b;">Enrolled Class</div>
-                <div style="font-size:1.05rem;font-weight:700;color:#2563eb;">\${s.class_name || '—'} \${s.section_name ? ('(' + s.section_name + ')') : ''}</div>
-                <div style="font-size:.75rem;color:#64748b;">Session: \${s.session_label || 'Current'}</div>
-            </div>
-            <div style="border:1px solid #e2e8f0;padding:.85rem;border-radius:8px;">
-                <div style="font-size:.78rem;color:#64748b;">House Allocation</div>
-                <div style="font-size:1.05rem;font-weight:700;color:\${s.house_color || '#334155'};">\${s.house_name || 'Unallocated'}</div>
-                <div style="font-size:.75rem;color:#64748b;">Role: \${s.house_role || 'Member'}</div>
-            </div>
-            <div style="border:1px solid #e2e8f0;padding:.85rem;border-radius:8px;">
-                <div style="font-size:.78rem;color:#64748b;">Transport Fleet</div>
-                <div style="font-size:1.05rem;font-weight:700;color:#0f172a;">\${s.route_name || 'Self Travel'}</div>
-                <div style="font-size:.75rem;color:#64748b;">Stop: \${s.pickup_stop || '—'}</div>
-            </div>
-        </div>
+    var statusBadgeStyle = 'background:#d1fae5;color:#065f46;';
+    if (status === 'promoted') statusBadgeStyle = 'background:#dbeafe;color:#1e40af;';
+    else if (status === 'transferred') statusBadgeStyle = 'background:#fef3c7;color:#92400e;';
+    else if (status === 'withdrawn') statusBadgeStyle = 'background:#fee2e2;color:#991b1b;';
+    else if (status === 'alumni') statusBadgeStyle = 'background:#f1f5f9;color:#475569;';
 
-        <h4 style="font-size:.95rem;font-weight:700;margin-bottom:.5rem;">Financial & Certificate Standing</h4>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
-            <div style="border:1px solid #e2e8f0;padding:.85rem;border-radius:8px;">
-                <div style="font-size:.78rem;color:#64748b;">Outstanding Fee Balance</div>
-                <div style="font-size:1.15rem;font-weight:700;color:\${parseFloat(s.fee_due) > 0 ? '#dc2626' : '#16a34a'};">
-                    \${parseFloat(s.fee_due) > 0 ? ('₹ ' + parseFloat(s.fee_due).toFixed(2)) : '✓ No Dues Pending'}
+    document.getElementById('dossierTitle').innerHTML = `
+        <div style="display:flex;align-items:center;gap:.85rem;">
+            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.15rem;box-shadow:0 3px 8px rgba(37,99,235,.25);flex-shrink:0;">
+                ${escapeHtml(initials)}
+            </div>
+            <div>
+                <div style="font-size:1.15rem;font-weight:700;color:#0f172a;line-height:1.2;">
+                    ${escapeHtml(fullName)}
+                </div>
+                <div style="font-size:.8rem;color:#64748b;margin-top:.2rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+                    <span>Admission No: <strong style="font-family:monospace;color:#1e40af;">${escapeHtml(admNo)}</strong></span>
+                    <span>•</span>
+                    <span class="badge" style="${statusBadgeStyle}font-size:.72rem;padding:.2rem .55rem;border-radius:20px;text-transform:capitalize;">
+                        ${escapeHtml(status)}
+                    </span>
                 </div>
             </div>
-            <div style="border:1px solid #e2e8f0;padding:.85rem;border-radius:8px;">
-                <div style="font-size:.78rem;color:#64748b;">Certificates Issued</div>
-                <div style="font-size:1.15rem;font-weight:700;color:#0f172a;">\${s.certs_count} Certificate(s)</div>
+        </div>
+    `;
+
+    var feeDue = parseFloat(s.fee_due || 0);
+    var feeBadge = feeDue > 0
+        ? `<div style="font-size:1.15rem;font-weight:700;color:#dc2626;">₹ ${feeDue.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div><div style="font-size:.72rem;color:#dc2626;">Payment pending</div>`
+        : `<div style="font-size:1.05rem;font-weight:700;color:#16a34a;">✓ No Dues Pending</div><div style="font-size:.72rem;color:#16a34a;">Fee account in good standing</div>`;
+
+    var houseName = s.house_name || 'Unallocated';
+    var houseColor = s.house_color || '#64748b';
+    var houseRole = s.house_role || 'Member';
+
+    var routeName = s.route_name || 'Self Travel';
+    var pickupStop = s.pickup_stop ? ('Stop: ' + s.pickup_stop) : (s.route_name ? 'Standard Route Stop' : 'No school bus allocated');
+
+    var body = document.getElementById('dossierBody');
+    body.innerHTML = `
+        <!-- Section 1: Personal & Contact Information -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:1.15rem;margin-bottom:1.25rem;">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;margin-bottom:.85rem;display:flex;align-items:center;gap:.4rem;">
+                <span>👤</span> Personal & Contact Profile
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:1rem;">
+                <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Full Name</div>
+                    <div style="font-weight:700;color:#0f172a;font-size:.95rem;">${escapeHtml(fullName)}</div>
+                </div>
+                <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Admission Number</div>
+                    <div style="font-weight:700;font-family:monospace;color:#1e40af;font-size:.95rem;">${escapeHtml(admNo)}</div>
+                </div>
+                <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Gender / Date of Birth</div>
+                    <div style="font-weight:600;color:#334155;font-size:.9rem;">
+                        ${escapeHtml(s.gender || '—')} &nbsp;|&nbsp; ${escapeHtml(s.dob || '—')}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Blood Group</div>
+                    <div>
+                        <span class="badge" style="background:#fee2e2;color:#991b1b;font-weight:700;font-size:.78rem;padding:.25rem .5rem;border-radius:6px;">
+                            ${escapeHtml(s.blood_group || 'Not recorded')}
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Contact Phone</div>
+                    <div style="font-weight:600;color:#334155;font-size:.9rem;">
+                        ${s.phone ? ('📞 ' + escapeHtml(s.phone)) : '<span style="color:#94a3b8;">Not provided</span>'}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Parent / Contact Email</div>
+                    <div style="font-weight:600;color:#334155;font-size:.9rem;">
+                        ${s.email ? ('✉️ ' + escapeHtml(s.email)) : '<span style="color:#94a3b8;">Not provided</span>'}
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div style="display:flex;gap:.5rem;justify-content:flex-end;">
-            <a href="student-certificates.php?student_id=\${s.id}" class="btn btn-sm btn-outline">Generate Certificate</a>
-            <a href="student-promotions.php" class="btn btn-sm btn-soft">Promote Student</a>
+        <!-- Section 2: Academic & Campus Allocations -->
+        <div style="margin-bottom:1.25rem;">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;margin-bottom:.85rem;display:flex;align-items:center;gap:.4rem;">
+                <span>🏫</span> Academic & Campus Allocations
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:1rem;">
+                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;border-left:4px solid #3b82f6;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.25rem;">Enrolled Class & Section</div>
+                    <div style="font-size:1.1rem;font-weight:700;color:#1e3a8a;">
+                        ${escapeHtml(s.class_name || '—')} ${s.section_name ? ('(' + escapeHtml(s.section_name) + ')') : ''}
+                    </div>
+                    <div style="font-size:.75rem;color:#64748b;margin-top:.35rem;">
+                        Session: <strong>${escapeHtml(s.session_label || 'Current')}</strong>
+                    </div>
+                </div>
+                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;border-left:4px solid ${escapeHtml(houseColor)};box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.25rem;">House Management</div>
+                    <div style="font-size:1.1rem;font-weight:700;color:${escapeHtml(houseColor)};">
+                        ${escapeHtml(houseName)}
+                    </div>
+                    <div style="font-size:.75rem;color:#64748b;margin-top:.35rem;">
+                        Role: <strong>${escapeHtml(houseRole)}</strong>
+                    </div>
+                </div>
+                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;border-left:4px solid #f59e0b;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.25rem;">Operations & Fleet</div>
+                    <div style="font-size:1.05rem;font-weight:700;color:#0f172a;">
+                        ${escapeHtml(routeName)}
+                    </div>
+                    <div style="font-size:.75rem;color:#64748b;margin-top:.35rem;">
+                        ${escapeHtml(pickupStop)}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Standing, Dues & Records -->
+        <div style="margin-bottom:.5rem;">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;margin-bottom:.85rem;display:flex;align-items:center;gap:.4rem;">
+                <span>📊</span> Financial & Administrative Records
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:1rem;">
+                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.35rem;">Fee Dues Status</div>
+                    ${feeBadge}
+                </div>
+                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.35rem;">Official Certificates</div>
+                    <div style="font-size:1.15rem;font-weight:700;color:#0f172a;">
+                        ${parseInt(s.certs_count || 0)} Issued
+                    </div>
+                    <div style="font-size:.72rem;color:#64748b;margin-top:.2rem;">TC, Bonafide, Character</div>
+                </div>
+                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.35rem;">Discipline & Progress</div>
+                    <div style="font-size:1.15rem;font-weight:700;color:${(parseInt(s.remarks_count || 0) > 0) ? '#d97706' : '#0f172a'};">
+                        ${parseInt(s.remarks_count || 0)} Logged
+                    </div>
+                    <div style="font-size:.72rem;color:#64748b;margin-top:.2rem;">Staff remarks on profile</div>
+                </div>
+            </div>
         </div>
     `;
+
+    var footer = document.getElementById('dossierFooter');
+    if (footer) {
+        footer.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:.75rem;flex-wrap:wrap;">
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+                    <a href="student-certificates.php?student_id=${s.id}" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:.35rem;">
+                        📜 Generate Certificate
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="closeModal('student360Modal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
+                        ⚠️ Add Remark
+                    </button>
+                    <a href="student-promotions.php" class="btn btn-sm btn-soft">
+                        🚀 Promote Student
+                    </a>
+                </div>
+                <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('student360Modal')">Close</button>
+            </div>
+        `;
+    }
+
     openModal('student360Modal');
 }
 document.addEventListener('DOMContentLoaded', function() {
