@@ -1,6 +1,6 @@
 <?php
 /** Shared admin sidebar — include after admin_user() is available. */
-$activePage = $activePage ?? '';
+$activePage = !empty($activePage) ? $activePage : basename($_SERVER['SCRIPT_NAME'] ?? '');
 $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
 ?>
 <aside class="sidebar" style="display:flex;flex-direction:column;">
@@ -31,15 +31,6 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         </a>
         <a class="nav-link<?= $activePage === 'parents-list.php' ? ' active' : '' ?>" href="parents-list.php">
             <span class="sidebar-icon">👤</span><span>Parents</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'events-manager.php' ? ' active' : '' ?>" href="events-manager.php">
-            <span class="sidebar-icon">📅</span><span>Events & News</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'gallery-manager.php' ? ' active' : '' ?>" href="gallery-manager.php">
-            <span class="sidebar-icon">🖼</span><span>Gallery</span>
-        </a>
-        <a class="nav-link<?= $activePage === 'enquiries.php' ? ' active' : '' ?>" href="enquiries.php">
-            <span class="sidebar-icon">📩</span><span>Enquiries</span>
         </a>
     </div>
 
@@ -90,6 +81,48 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
     </div>
 
     <div class="nav-group">
+        <div class="nav-title">INVENTORY</div>
+        <a class="nav-link<?= $activePage === 'inventory.php' ? ' active' : '' ?>" href="inventory.php">
+            <span class="sidebar-icon">📦</span><span>Stationery & Consumables</span>
+        </a>
+    </div>
+
+    <div class="nav-group">
+        <div class="nav-title">OPERATIONS & FLEET</div>
+        <a class="nav-link<?= $activePage === 'fleet-management.php' ? ' active' : '' ?>" href="fleet-management.php">
+            <span class="sidebar-icon">🚌</span><span>Fleet Vehicles</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'transport-routes.php' ? ' active' : '' ?>" href="transport-routes.php">
+            <span class="sidebar-icon">🗺</span><span>Transport Routes</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'transport-allocations.php' ? ' active' : '' ?>" href="transport-allocations.php">
+            <span class="sidebar-icon">💺</span><span>Student Transport</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'hostel-management.php' ? ' active' : '' ?>" href="hostel-management.php">
+            <span class="sidebar-icon">🛏</span><span>Hostels & Beds</span>
+        </a>
+    </div>
+
+    <div class="nav-group">
+        <div class="nav-title">COMMUNICATION & CONTENT</div>
+        <a class="nav-link<?= $activePage === 'announcements.php' ? ' active' : '' ?>" href="announcements.php">
+            <span class="sidebar-icon">📢</span><span>Notice Circulars & Email</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'cms-content.php' ? ' active' : '' ?>" href="cms-content.php">
+            <span class="sidebar-icon">🌐</span><span>Website CMS Pages</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'events-manager.php' ? ' active' : '' ?>" href="events-manager.php">
+            <span class="sidebar-icon">📅</span><span>Events & News</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'gallery-manager.php' ? ' active' : '' ?>" href="gallery-manager.php">
+            <span class="sidebar-icon">🖼</span><span>Photo & Video Gallery</span>
+        </a>
+        <a class="nav-link<?= $activePage === 'enquiries.php' ? ' active' : '' ?>" href="enquiries.php">
+            <span class="sidebar-icon">📩</span><span>Contact Enquiries</span>
+        </a>
+    </div>
+
+    <div class="nav-group">
         <div class="nav-title">Accounts</div>
         <a class="nav-link<?= $activePage === 'finance-dashboard.php' ? ' active' : '' ?>" href="finance-dashboard.php">
             <span class="sidebar-icon">📊</span><span>Dashboard</span>
@@ -110,20 +143,6 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
             <span class="sidebar-icon">🏦</span><span>Cash & Bank</span>
         </a>
     </div>
-
-    <?php 
-    $userId = (int)($user['id'] ?? 0);
-    $userRoles = function_exists('fetch_user_roles') ? fetch_user_roles($pdo, $userId, $user['role'] ?? '') : [];
-    $userModules = function_exists('fetch_user_module_access') ? array_unique(array_merge(default_modules_for_roles($userRoles), fetch_user_module_access($pdo, $userId))) : [];
-    if ($isOwner || in_array('inventory', $userModules)): 
-    ?>
-    <div class="nav-group">
-        <div class="nav-title">INVENTORY</div>
-        <a class="nav-link<?= $activePage === 'inventory.php' ? ' active' : '' ?>" href="inventory.php">
-            <span class="sidebar-icon">📦</span><span>Stationery & Consumables</span>
-        </a>
-    </div>
-    <?php endif; ?>
 
     <?php 
     $userId = (int)($user['id'] ?? 0);
