@@ -208,6 +208,9 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                     <h1>Student Lifecycle & 360° Dossier</h1>
                     <p>Track student profiles from admission to alumni, academic allocations, and disciplinary logs.</p>
                 </div>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+                    <a href="student-promotions.php" class="btn btn-sm btn-outline">🚀 Session Promotions</a>
+                </div>
             </div>
         </section>
 
@@ -812,6 +815,9 @@ function openStudent360(s) {
                     <button type="button" class="btn btn-sm btn-outline" onclick="closeModal('student360Modal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
                         ⚠️ Add Remark
                     </button>
+                    <a href="student-promotions.php" class="btn btn-sm btn-soft">
+                        🚀 Promote Student
+                    </a>
                 </div>
                 <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('student360Modal')">Close</button>
             </div>
