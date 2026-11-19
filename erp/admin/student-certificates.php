@@ -13,10 +13,28 @@ $canDelete = can_user_delete($pdo, (int)$user['id'], 'student_lifecycle');
 
 $pageTitle = 'Student Certificates & TC Generator';
 $error = '';
-$success = '';
+$successMessage = '';
+$printCertId = 0;
 
 if (isset($_GET['success'])) {
-    $success = htmlspecialchars($_GET['success']);
+    $sCode = (string) $_GET['success'];
+    if ($sCode === 'issued') {
+        $cNo = trim((string) ($_GET['cert_no'] ?? ''));
+        $printCertId = (int) ($_GET['cert_id'] ?? 0);
+        $successMessage = "Certificate <strong>" . e($cNo) . "</strong> generated successfully.";
+    } elseif ($sCode === 'cancelled') {
+        $successMessage = "Certificate cancelled successfully.";
+    } elseif (str_contains($sCode, '<a href=') || str_contains($sCode, '&lt;a href=')) {
+        if (preg_match('/id[=\']+(\d+)/', $sCode, $m)) {
+            $printCertId = (int) $m[1];
+        }
+        $clean = html_entity_decode($sCode);
+        $clean = strip_tags($clean);
+        $clean = trim(str_ireplace('Click here to Print', '', $clean));
+        $successMessage = e($clean);
+    } else {
+        $successMessage = e($sCode);
+    }
 }
 
 // ── Ensure table exists ──
@@ -108,23 +126,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $stmt->execute([$certNo, $studentId, $certType, $issueDate, $reason, $approvedBy, json_encode($payload)]);
 
             $newCertId = (int) $pdo->lastInsertId();
-            $success = "Certificate '{$certNo}' generated successfully. <a href='certificate-print.php?id={$newCertId}' target='_blank' style='color:#1e40af;font-weight:700;text-decoration:underline;'>Click here to Print</a>";
+            header('Location: student-certificates.php?success=issued&cert_no=' . urlencode($certNo) . '&cert_id=' . $newCertId);
+            exit;
         }
 
         if ($action === 'cancel_certificate') {
             $certId = (int) ($_POST['id'] ?? 0);
             if ($certId > 0) {
                 $pdo->prepare("UPDATE student_certificates SET status = 'Cancelled' WHERE id = ?")->execute([$certId]);
-                $success = 'Certificate cancelled successfully.';
+                header('Location: student-certificates.php?success=cancelled');
+                exit;
             }
         }
     } catch (Throwable $e) {
         $error = $e->getMessage();
-    }
-
-    if ($error === '' && $success !== '') {
-        header('Location: student-certificates.php?success=' . urlencode($success));
-        exit;
     }
 }
 
@@ -196,8 +211,20 @@ $allStudents = $pdo->query("
         <?php if ($error !== ''): ?>
             <div class="flash" style="background:#fee2e2;border:1px solid #fecaca;color:#991b1b;margin-bottom:1rem;"><?= e($error) ?></div>
         <?php endif; ?>
-        <?php if ($success !== ''): ?>
-            <div class="flash" style="background:#d1fae5;border:1px solid #a7f3d0;color:#065f46;margin-bottom:1rem;"><?= $success ?></div>
+        <?php if ($successMessage !== ''): ?>
+            <div class="flash" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;padding:.75rem 1.15rem;border-radius:8px;">
+                <div style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;">
+                    <span style="font-size:1.1rem;">✅</span>
+                    <span><?= $successMessage ?></span>
+                </div>
+                <?php if ($printCertId > 0): ?>
+                    <div>
+                        <a href="certificate-print.php?id=<?= $printCertId ?>" target="_blank" class="btn btn-sm btn-primary" style="display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;">
+                            🖨️ Print Certificate
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
 
         <!-- Filter Bar -->
