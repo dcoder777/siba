@@ -210,6 +210,7 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                 </div>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
                     <a href="student-promotions.php" class="btn btn-sm btn-outline">🚀 Session Promotions</a>
+                    <a href="student-certificates.php" class="btn btn-sm btn-outline">📜 Certificate Generator</a>
                 </div>
             </div>
         </section>
@@ -404,6 +405,9 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                                             <button type="button" class="btn btn-sm btn-outline" onclick="openRemarkModal(<?= (int)$s['id'] ?>, '<?= e(addslashes($s['first_name'] . ' ' . $s['last_name'])) ?>')">
                                                 + Remark
                                             </button>
+                                            <a href="student-certificates.php?student_id=<?= (int)$s['id'] ?>" class="btn btn-sm btn-outline" title="Issue Certificate">
+                                                📜
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -751,6 +755,13 @@ function openStudent360(s) {
                     ${feeBadge}
                 </div>
                 <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.35rem;">Official Certificates</div>
+                    <div style="font-size:1.15rem;font-weight:700;color:#0f172a;">
+                        ${parseInt(s.certs_count || 0)} Issued
+                    </div>
+                    <div style="font-size:.72rem;color:#64748b;margin-top:.2rem;">TC, Bonafide, Character</div>
+                </div>
+                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
                     <div style="font-size:.75rem;color:#64748b;margin-bottom:.35rem;">Discipline & Progress</div>
                     <div style="font-size:1.15rem;font-weight:700;color:${(parseInt(s.remarks_count || 0) > 0) ? '#d97706' : '#0f172a'};">
                         ${parseInt(s.remarks_count || 0)} Logged
@@ -812,6 +823,9 @@ function openStudent360(s) {
         footer.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:.75rem;flex-wrap:wrap;">
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+                    <a href="student-certificates.php?student_id=${s.id}" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:.35rem;">
+                        📜 Generate Certificate
+                    </a>
                     <button type="button" class="btn btn-sm btn-outline" onclick="closeModal('student360Modal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
                         ⚠️ Add Remark
                     </button>
