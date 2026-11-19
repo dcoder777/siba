@@ -268,7 +268,6 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                     <span style="font-size:.78rem; color:#475569; background:#e2e8f0; padding:2px 8px; border-radius:12px; font-weight:600;">Active &amp; Historical</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:.5rem;">
-                    <span style="font-size:.78rem; color:#64748b; font-weight:600;">⇄ Horizontal Scroller:</span>
                     <button type="button" class="btn btn-sm btn-outline" onclick="scrollStudentTable(-280)" title="Scroll Left" style="padding:3px 10px; font-weight:700; font-size:.8rem;">
                         ◀ Left
                     </button>
@@ -385,8 +384,7 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                     </table>
                 </div>
 
-                <div style="padding:0.6rem 1.25rem; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; font-size:.78rem; color:#64748b;">
-                    <span>⇄ <strong>Horizontal Scroller:</strong> Scroll across or use ◀ Left / Right ▶ buttons to view all columns.</span>
+                <div style="padding:0.6rem 1.25rem; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end; align-items:center; font-size:.78rem; color:#64748b;">
                     <span>Showing <?= count($students) ?> students</span>
                 </div>
             <?php endif; ?>
