@@ -39,6 +39,17 @@ try {
 
 // Distinct classes and sessions
 $classList = $pdo->query("SELECT DISTINCT class_name FROM student_enrollments WHERE class_name IS NOT NULL AND class_name <> '' ORDER BY class_name ASC")->fetchAll(PDO::FETCH_COLUMN);
+
+// Standard and database classes for promote-to dropdown
+$standardClasses = [
+    'Playgroup', 'Nursery', 'LKG', 'UKG',
+    'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+    'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+    'Class 11', 'Class 12',
+    'Graduated / Alumni'
+];
+$toClassList = array_values(array_unique(array_merge($classList, $standardClasses)));
+
 $currentSession = '2025-2026';
 $nextSession = '2026-2027';
 
@@ -141,6 +152,32 @@ $recentPromotions = $pdo->query("
     ORDER BY p.id DESC
     LIMIT 20
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+// Compute suggested next class based on selectedFromClass
+$suggestedNextClass = '';
+if (is_numeric($selectedFromClass)) {
+    $nextNum = ((int) $selectedFromClass) + 1;
+    if (in_array((string) $nextNum, $toClassList, true)) {
+        $suggestedNextClass = (string) $nextNum;
+    } elseif (in_array('Class ' . $nextNum, $toClassList, true)) {
+        $suggestedNextClass = 'Class ' . $nextNum;
+    }
+} elseif (preg_match('/class\s*(\d+)/i', $selectedFromClass, $m)) {
+    $nextNum = ((int) $m[1]) + 1;
+    if (in_array('Class ' . $nextNum, $toClassList, true)) {
+        $suggestedNextClass = 'Class ' . $nextNum;
+    } elseif (in_array((string) $nextNum, $toClassList, true)) {
+        $suggestedNextClass = (string) $nextNum;
+    }
+} elseif ($selectedFromClass === 'Playgroup' || $selectedFromClass === 'Play School') {
+    $suggestedNextClass = 'Nursery';
+} elseif ($selectedFromClass === 'Nursery') {
+    $suggestedNextClass = 'LKG';
+} elseif ($selectedFromClass === 'LKG') {
+    $suggestedNextClass = 'UKG';
+} elseif ($selectedFromClass === 'UKG') {
+    $suggestedNextClass = in_array('Class 1', $toClassList, true) ? 'Class 1' : (in_array('1', $toClassList, true) ? '1' : 'Class 1');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -211,7 +248,14 @@ $recentPromotions = $pdo->query("
                     </div>
                     <div>
                         <label style="display:block;font-size:.82rem;font-weight:600;color:#0369a1;margin-bottom:.3rem;">Promote To Class *</label>
-                        <input type="text" name="to_class" placeholder="e.g. Class 2" required style="width:100%;padding:.45rem .75rem;border:1px solid #93c5fd;border-radius:6px;background:#fff;">
+                        <select name="to_class" required style="width:100%;padding:.45rem .75rem;border:1px solid #93c5fd;border-radius:6px;background:#fff;font-weight:600;color:#0f172a;">
+                            <option value="">-- Select Target Class --</option>
+                            <?php foreach ($toClassList as $cls): ?>
+                                <option value="<?= e($cls) ?>" <?= ($suggestedNextClass === $cls) ? 'selected' : '' ?>>
+                                    <?= e($cls) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div>
                         <label style="display:block;font-size:.82rem;font-weight:600;color:#0369a1;margin-bottom:.3rem;">Section *</label>
