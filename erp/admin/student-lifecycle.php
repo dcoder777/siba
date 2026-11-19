@@ -368,9 +368,13 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                                     </td>
                                     <td>
                                         <?php if ($s['remarks_count'] > 0): ?>
-                                            <span class="badge" style="background:#fef3c7;color:#92400e;font-size:.75rem;font-weight:600;"><?= $s['remarks_count'] ?> remark(s)</span>
+                                            <button type="button" class="btn btn-sm" onclick='viewStudentRemarks(<?= json_encode($s) ?>)' style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:.78rem;font-weight:700;padding:.2rem .55rem;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;" title="Click to view full remarks">
+                                                👁️ <?= $s['remarks_count'] ?> remark(s)
+                                            </button>
                                         <?php else: ?>
-                                            <span style="color:#94a3b8;font-size:.8rem;">0</span>
+                                            <button type="button" class="btn btn-sm" onclick="openRemarkModal(<?= (int)$s['id'] ?>, '<?= e(addslashes($s['first_name'] . ' ' . $s['last_name'])) ?>')" style="color:#94a3b8;font-size:.8rem;padding:2px 8px;background:transparent;border:1px dashed #cbd5e1;border-radius:10px;" title="Click to add a remark">
+                                                0 <span style="font-size:.75rem;color:#64748b;">+</span>
+                                            </button>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -483,6 +487,24 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
     </div>
 </div>
 
+<!-- ═══════════════════ VIEW REMARKS MODAL ═══════════════════ -->
+<div id="remarksHistoryModal" class="modal-backdrop">
+    <div class="modal-box" style="max-width:680px;width:94%;max-height:85vh;display:flex;flex-direction:column;background:#fff;border-radius:16px;box-shadow:0 25px 60px -15px rgba(0,0,0,.35);overflow:hidden;">
+        <div class="modal-head" style="padding:1.15rem 1.5rem;border-bottom:1px solid #e2e8f0;background:#ffffff;display:flex;justify-content:space-between;align-items:center;">
+            <div id="remarksHistoryTitle" style="margin:0;">
+                <h2 style="margin:0;font-size:1.15rem;font-weight:700;">Student Remarks History</h2>
+            </div>
+            <button type="button" class="icon-btn" onclick="closeModal('remarksHistoryModal')">✕</button>
+        </div>
+        <div style="padding:1.5rem;background:#fff;flex:1;overflow-y:auto;" id="remarksHistoryBody">
+            <!-- Populated via JS -->
+        </div>
+        <div id="remarksHistoryFooter" style="padding:1rem 1.5rem;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;">
+            <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('remarksHistoryModal')">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
@@ -511,6 +533,84 @@ function openRemarkModal(studentId, studentName) {
     document.getElementById('remarkStudentId').value = studentId;
     document.getElementById('remarkModalTitle').textContent = 'Remark for ' + studentName;
     openModal('remarkModal');
+}
+function viewStudentRemarks(s) {
+    var fullName = ((s.first_name || '') + ' ' + (s.last_name || '')).trim() || 'Student';
+    var admNo = s.admission_no || '—';
+
+    document.getElementById('remarksHistoryTitle').innerHTML = `
+        <div style="display:flex;align-items:center;gap:.6rem;">
+            <span style="font-size:1.3rem;">📝</span>
+            <div>
+                <h2 style="margin:0;font-size:1.1rem;font-weight:700;color:#0f172a;">
+                    Remarks: ${escapeHtml(fullName)}
+                </h2>
+                <div style="font-size:.78rem;color:#64748b;margin-top:.15rem;">
+                    Admission No: <strong style="font-family:monospace;color:#1e40af;">${escapeHtml(admNo)}</strong>
+                    <span style="margin:0 .35rem;">•</span>
+                    <span>${(s.remarks_list || []).length} recorded remark(s)</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    var list = s.remarks_list || [];
+    var body = document.getElementById('remarksHistoryBody');
+
+    if (list.length === 0) {
+        body.innerHTML = `
+            <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:2rem;text-align:center;color:#64748b;">
+                <div style="font-size:1.6rem;margin-bottom:.5rem;">📋</div>
+                <div style="font-weight:600;color:#334155;margin-bottom:.25rem;">No remarks recorded</div>
+                <div style="font-size:.82rem;">No disciplinary or behavioral notes have been recorded for this student yet.</div>
+            </div>
+        `;
+    } else {
+        body.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:.75rem;">
+                ${list.map(function(r) {
+                    var badgeColor = 'background:#f1f5f9;color:#475569;';
+                    if (r.remark_type === 'Appreciation') badgeColor = 'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;';
+                    else if (r.remark_type === 'Discipline' || r.remark_type === 'Warning') badgeColor = 'background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;';
+                    else if (r.remark_type === 'Behaviour') badgeColor = 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;';
+                    else if (r.remark_type === 'Academic Remark' || r.remark_type === 'Counselling') badgeColor = 'background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;';
+
+                    return `
+                        <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem 1.15rem;box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;flex-wrap:wrap;gap:.4rem;">
+                                <div style="display:flex;align-items:center;gap:.5rem;">
+                                    <span class="badge" style="${badgeColor}font-size:.75rem;font-weight:700;padding:.25rem .55rem;border-radius:6px;">
+                                        ${escapeHtml(r.remark_type)}
+                                    </span>
+                                    <strong style="font-size:.92rem;color:#0f172a;">${escapeHtml(r.subject || 'Remark Entry')}</strong>
+                                </div>
+                                <span style="font-size:.75rem;color:#64748b;font-weight:500;">
+                                    📅 ${escapeHtml(r.remark_date || '')}
+                                </span>
+                            </div>
+                            <div style="font-size:.875rem;color:#334155;line-height:1.5;margin-bottom:.65rem;background:#f8fafc;padding:.75rem;border-radius:6px;border-left:3px solid #cbd5e1;white-space:pre-wrap;">${escapeHtml(r.remarks)}</div>
+                            <div style="font-size:.72rem;color:#64748b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
+                                <span>👤 Recorded by: <strong>${escapeHtml(r.entered_by || 'Staff')}</strong></span>
+                                ${parseInt(r.parent_notification_required) === 1 ? '<span style="color:#2563eb;font-weight:600;">✉️ Parent notification requested</span>' : '<span style="color:#94a3b8;">No parent notification</span>'}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    var footer = document.getElementById('remarksHistoryFooter');
+    if (footer) {
+        footer.innerHTML = `
+            <button type="button" class="btn btn-sm btn-primary" onclick="closeModal('remarksHistoryModal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
+                + Add Another Remark
+            </button>
+            <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('remarksHistoryModal')">Close</button>
+        `;
+    }
+
+    openModal('remarksHistoryModal');
 }
 function openStudent360(s) {
     var fullName = ((s.first_name || '') + ' ' + (s.last_name || '')).trim() || 'Student';
