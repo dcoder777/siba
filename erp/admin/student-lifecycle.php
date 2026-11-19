@@ -118,6 +118,27 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Load recent remarks for loaded students
+$studentIds = array_filter(array_column($students, 'id'));
+$remarksByStudent = [];
+if (!empty($studentIds)) {
+    $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
+    $rStmt = $pdo->prepare("
+        SELECT id, student_id, remark_date, remark_type, subject, remarks, parent_notification_required, entered_by, created_at
+        FROM student_remarks_discipline
+        WHERE student_id IN ($placeholders)
+        ORDER BY id DESC
+    ");
+    $rStmt->execute(array_values($studentIds));
+    while ($r = $rStmt->fetch(PDO::FETCH_ASSOC)) {
+        $remarksByStudent[$r['student_id']][] = $r;
+    }
+}
+foreach ($students as &$st) {
+    $st['remarks_list'] = $remarksByStudent[$st['id']] ?? [];
+}
+unset($st);
+
 // Overall Lifecycle KPIs
 $totalStudents = (int) $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
 $activeEnrolled = (int) $pdo->query("SELECT COUNT(*) FROM student_enrollments WHERE is_current = 1 AND status = 'active'")->fetchColumn();
@@ -634,6 +655,52 @@ function openStudent360(s) {
                     <div style="font-size:.72rem;color:#64748b;margin-top:.2rem;">Staff remarks on profile</div>
                 </div>
             </div>
+        </div>
+
+        <!-- Section 4: Behavioral & Disciplinary Remarks History -->
+        <div style="margin-top:1.25rem;">
+            <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;">
+                <span style="display:flex;align-items:center;gap:.4rem;">
+                    <span>📝</span> Logged Remarks & Observations (${(s.remarks_list || []).length})
+                </span>
+                <button type="button" class="btn btn-sm btn-outline" style="font-size:.75rem;padding:.2rem .5rem;" onclick="closeModal('student360Modal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
+                    + Add New Remark
+                </button>
+            </div>
+            ${(s.remarks_list && s.remarks_list.length > 0) ? `
+                <div style="display:flex;flex-direction:column;gap:.6rem;max-height:220px;overflow-y:auto;padding-right:.25rem;">
+                    ${s.remarks_list.map(function(r) {
+                        var badgeColor = 'background:#f1f5f9;color:#475569;';
+                        if (r.remark_type === 'Appreciation') badgeColor = 'background:#dcfce7;color:#15803d;';
+                        else if (r.remark_type === 'Discipline' || r.remark_type === 'Warning') badgeColor = 'background:#fee2e2;color:#b91c1c;';
+                        else if (r.remark_type === 'Behaviour') badgeColor = 'background:#fef3c7;color:#b45309;';
+                        else if (r.remark_type === 'Academic Remark' || r.remark_type === 'Counselling') badgeColor = 'background:#e0f2fe;color:#0369a1;';
+
+                        return `
+                            <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:8px;padding:.8rem .95rem;box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem;flex-wrap:wrap;gap:.35rem;">
+                                    <div style="display:flex;align-items:center;gap:.5rem;">
+                                        <span class="badge" style="${badgeColor}font-size:.72rem;font-weight:700;padding:.2rem .5rem;border-radius:4px;">
+                                            ${escapeHtml(r.remark_type)}
+                                        </span>
+                                        <strong style="font-size:.85rem;color:#0f172a;">${escapeHtml(r.subject || 'Remark Entry')}</strong>
+                                    </div>
+                                    <span style="font-size:.72rem;color:#64748b;">${escapeHtml(r.remark_date || '')}</span>
+                                </div>
+                                <div style="font-size:.82rem;color:#334155;line-height:1.4;margin-bottom:.35rem;white-space:pre-wrap;">${escapeHtml(r.remarks)}</div>
+                                <div style="font-size:.7rem;color:#94a3b8;display:flex;gap:.75rem;align-items:center;">
+                                    <span>👤 By: <strong>${escapeHtml(r.entered_by || 'Staff')}</strong></span>
+                                    ${parseInt(r.parent_notification_required) === 1 ? '<span style="color:#2563eb;">✉️ Parent notification requested</span>' : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            ` : `
+                <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:1.1rem;text-align:center;color:#64748b;font-size:.82rem;">
+                    No remarks recorded yet for this student. Use the "<strong>+ Remark</strong>" button to log disciplinary or behavioral notes.
+                </div>
+            `}
         </div>
     `;
 
