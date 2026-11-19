@@ -298,7 +298,7 @@ $allStudents = $pdo->query("
                                     <td style="text-align:center;">
                                         <div style="display:flex;gap:.35rem;justify-content:center;">
                                             <a href="certificate-print.php?id=<?= (int)$c['id'] ?>" target="_blank" class="btn btn-sm btn-primary" title="Print Official Certificate">
-                                                🖨 Print Layout
+                                                🖨 Print
                                             </a>
                                             <?php if ($c['status'] === 'Issued' && ($canDelete || $isOwner)): ?>
                                                 <form method="post" style="display:inline;" onsubmit="return confirm('Cancel certificate <?= e($c['certificate_no']) ?>?');">
