@@ -148,32 +148,20 @@ $certType = $cert['certificate_type'];
             padding: 0 0.25rem;
         }
         .cert-signatures {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
             margin-top: auto;
             padding-top: 0.5rem;
         }
         .sig-block {
+            min-width: 200px;
             padding-top: 1.75rem;
             border-top: 1px solid #94a3b8;
             font-weight: 700;
             font-size: 0.85rem;
             color: #334155;
-        }
-        .seal-box {
-            width: 70px;
-            height: 70px;
-            border: 2px dashed #94a3b8;
-            border-radius: 50%;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            color: #94a3b8;
-            font-weight: 600;
-            text-transform: uppercase;
+            text-align: center;
         }
         .no-print-toolbar {
             max-width: 780px;
@@ -275,13 +263,9 @@ $certType = $cert['certificate_type'];
                 padding-top: 2mm !important;
             }
             .sig-block {
+                min-width: 180px !important;
                 padding-top: 1.25rem !important;
                 font-size: 0.82rem !important;
-            }
-            .seal-box {
-                width: 60px !important;
-                height: 60px !important;
-                font-size: 0.65rem !important;
             }
         }
     </style>
@@ -297,8 +281,8 @@ $certType = $cert['certificate_type'];
     <div class="cert-header">
         <img src="../../assets/images/logo.jpg" alt="SIBA Public School" class="school-logo" onerror="this.src='https://sibapublicschool.com/assets/images/logo.jpg'">
         <h1 class="school-title">SIBA Public School</h1>
-        <div class="school-tagline">Excellence in Education & Character Building</div>
-        <div class="school-address">Affiliated & Recognized Institution | Website: sibapublicschool.com</div>
+        <div class="school-tagline">Nurturing Young Minds for a Brighter Future</div>
+        <div class="school-address">Email: info@sibapublicschool.com | Website: sibapublicschool.com</div>
     </div>
 
     <div class="cert-meta">
@@ -368,11 +352,6 @@ $certType = $cert['certificate_type'];
     <div class="cert-signatures">
         <div class="sig-block">
             Class Teacher
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;">
-            <div class="seal-box">
-                School Seal
-            </div>
         </div>
         <div class="sig-block">
             <?= e($cert['approved_by'] ?: 'Principal') ?><br>
