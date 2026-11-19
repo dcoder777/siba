@@ -121,8 +121,8 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Overall Lifecycle KPIs
 $totalStudents = (int) $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
 $activeEnrolled = (int) $pdo->query("SELECT COUNT(*) FROM student_enrollments WHERE is_current = 1 AND status = 'active'")->fetchColumn();
-$promotedCount = (int) $pdo->query("SELECT COUNT(DISTINCT student_id) FROM student_promotions")->fetchColumn();
-$issuedCertsCount = (int) $pdo->query("SELECT COUNT(*) FROM student_certificates WHERE status = 'Issued'")->fetchColumn();
+$housesAssignedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_house_allocations WHERE status = 'Active'")->fetchColumn();
+$remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_discipline")->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -185,11 +185,7 @@ $issuedCertsCount = (int) $pdo->query("SELECT COUNT(*) FROM student_certificates
                 <div class="stack" style="gap:.4rem">
                     <span class="eyebrow">Academic Administration</span>
                     <h1>Student Lifecycle & 360° Dossier</h1>
-                    <p>Track student profiles from admission to alumni, academic promotions, disciplinary logs, and certificate issuance.</p>
-                </div>
-                <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
-                    <a href="student-promotions.php" class="btn btn-sm btn-outline">🚀 Session Promotions</a>
-                    <a href="student-certificates.php" class="btn btn-sm btn-outline">📜 Certificate Generator</a>
+                    <p>Track student profiles from admission to alumni, academic allocations, and disciplinary logs.</p>
                 </div>
             </div>
         </section>
@@ -214,14 +210,14 @@ $issuedCertsCount = (int) $pdo->query("SELECT COUNT(*) FROM student_certificates
                 <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Active students in current session</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Session Promotions</div>
-                <div class="kpi-value"><?= $promotedCount ?></div>
-                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Students promoted across sessions</div>
+                <div class="kpi-label">House Allocations</div>
+                <div class="kpi-value"><?= $housesAssignedCount ?></div>
+                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Active house assignments</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Certificates Issued</div>
-                <div class="kpi-value"><?= $issuedCertsCount ?></div>
-                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">TC, Bonafide & Character Certs</div>
+                <div class="kpi-label">Disciplinary Logs</div>
+                <div class="kpi-value"><?= $remarksLoggedCount ?></div>
+                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Behavioral & staff records</div>
             </div>
         </div>
 
@@ -381,9 +377,6 @@ $issuedCertsCount = (int) $pdo->query("SELECT COUNT(*) FROM student_certificates
                                             <button type="button" class="btn btn-sm btn-outline" onclick="openRemarkModal(<?= (int)$s['id'] ?>, '<?= e(addslashes($s['first_name'] . ' ' . $s['last_name'])) ?>')">
                                                 + Remark
                                             </button>
-                                            <a href="student-certificates.php?student_id=<?= (int)$s['id'] ?>" class="btn btn-sm btn-outline" title="Issue Certificate">
-                                                📜
-                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -636,13 +629,6 @@ function openStudent360(s) {
                     ${feeBadge}
                 </div>
                 <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.35rem;">Official Certificates</div>
-                    <div style="font-size:1.15rem;font-weight:700;color:#0f172a;">
-                        ${parseInt(s.certs_count || 0)} Issued
-                    </div>
-                    <div style="font-size:.72rem;color:#64748b;margin-top:.2rem;">TC, Bonafide, Character</div>
-                </div>
-                <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
                     <div style="font-size:.75rem;color:#64748b;margin-bottom:.35rem;">Discipline & Progress</div>
                     <div style="font-size:1.15rem;font-weight:700;color:${(parseInt(s.remarks_count || 0) > 0) ? '#d97706' : '#0f172a'};">
                         ${parseInt(s.remarks_count || 0)} Logged
@@ -658,15 +644,9 @@ function openStudent360(s) {
         footer.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:.75rem;flex-wrap:wrap;">
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-                    <a href="student-certificates.php?student_id=${s.id}" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:.35rem;">
-                        📜 Generate Certificate
-                    </a>
                     <button type="button" class="btn btn-sm btn-outline" onclick="closeModal('student360Modal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
                         ⚠️ Add Remark
                     </button>
-                    <a href="student-promotions.php" class="btn btn-sm btn-soft">
-                        🚀 Promote Student
-                    </a>
                 </div>
                 <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('student360Modal')">Close</button>
             </div>

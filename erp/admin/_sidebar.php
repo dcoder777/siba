@@ -39,12 +39,6 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
         <a class="nav-link<?= $activePage === 'student-lifecycle.php' ? ' active' : '' ?>" href="student-lifecycle.php">
             <span class="sidebar-icon">🎓</span><span>Student 360° Directory</span>
         </a>
-        <a class="nav-link<?= $activePage === 'student-promotions.php' ? ' active' : '' ?>" href="student-promotions.php">
-            <span class="sidebar-icon">🚀</span><span>Session Promotions</span>
-        </a>
-        <a class="nav-link<?= in_array($activePage, ['student-certificates.php', 'certificate-print.php']) ? ' active' : '' ?>" href="student-certificates.php">
-            <span class="sidebar-icon">📜</span><span>Certificate Generator</span>
-        </a>
     </div>
 
     <div class="nav-group">
