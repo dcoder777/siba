@@ -270,7 +270,6 @@ foreach ($activeLoans as $al) {
                 </div>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
                     <button type="button" class="btn btn-sm btn-primary" onclick="openModal('issueBookModal')">📖 Issue Book to Member</button>
-                    <a href="library-books.php" class="btn btn-sm btn-outline">📚 Book Catalog</a>
                 </div>
             </div>
         </section>

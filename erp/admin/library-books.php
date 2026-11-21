@@ -201,7 +201,6 @@ $activeIssuesCount = (int) $pdo->query("SELECT COUNT(*) FROM library_issues WHER
                     <p>Manage the school library book collection, physical accession copies, shelf locations, and circulation availability.</p>
                 </div>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
-                    <a href="library-circulation.php" class="btn btn-sm btn-outline">🔄 Circulation Desk (Issue / Return)</a>
                     <button type="button" class="btn btn-sm btn-primary" onclick="openAddBookModal()">+ Add New Book</button>
                 </div>
             </div>
