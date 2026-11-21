@@ -159,8 +159,6 @@ $totalResults = (int) $pdo->query("SELECT COUNT(*) FROM exam_results")->fetchCol
                     <p>Configure classes, curriculum subjects, syllabus courses, and academic structures.</p>
                 </div>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
-                    <a href="exam-schedules.php" class="btn btn-sm btn-outline">📅 Exam Datesheets</a>
-                    <a href="exam-marks.php" class="btn btn-sm btn-outline">📝 Marks Entry</a>
                     <button type="button" class="btn btn-sm btn-primary" onclick="openAddSubjectModal()">+ Add New Subject</button>
                 </div>
             </div>
