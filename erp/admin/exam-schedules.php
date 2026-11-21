@@ -25,12 +25,16 @@ try {
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(150) NOT NULL,
         academic_year VARCHAR(30) NOT NULL DEFAULT '2025-2026',
+        teacher_id INT NULL DEFAULT NULL,
+        teacher_name VARCHAR(120) NULL DEFAULT NULL,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
         status ENUM('Upcoming','Ongoing','Completed','Cancelled') NOT NULL DEFAULT 'Upcoming',
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 } catch (Throwable $e) {}
+try { $pdo->exec("ALTER TABLE exams ADD COLUMN teacher_id INT NULL DEFAULT NULL AFTER academic_year"); } catch (\Throwable $e) {}
+try { $pdo->exec("ALTER TABLE exams ADD COLUMN teacher_name VARCHAR(120) NULL DEFAULT NULL AFTER teacher_id"); } catch (\Throwable $e) {}
 
 // Pre-populate standard exams if empty
 $examCount = (int) $pdo->query("SELECT COUNT(*) FROM exams")->fetchColumn();
@@ -53,15 +57,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $start = trim((string) ($_POST['start_date'] ?? date('Y-m-d')));
             $end = trim((string) ($_POST['end_date'] ?? date('Y-m-d', strtotime('+7 days'))));
             $status = trim((string) ($_POST['status'] ?? 'Upcoming'));
+            $teacherIdRaw = trim((string) ($_POST['teacher_id'] ?? ''));
+            $teacherName = trim((string) ($_POST['teacher_name'] ?? ''));
 
             if ($title === '') {
                 throw new \RuntimeException('Exam title is required.');
             }
 
-            $stmt = $pdo->prepare("INSERT INTO exams (title, academic_year, start_date, end_date, status) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$title, $year, $start, $end, $status]);
+            $teacherId = null;
+            if (is_numeric($teacherIdRaw) && (int)$teacherIdRaw > 0) {
+                $teacherId = (int) $teacherIdRaw;
+                if ($teacherName === '') {
+                    $tStmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+                    $tStmt->execute([$teacherId]);
+                    $teacherName = (string) $tStmt->fetchColumn();
+                }
+            }
 
-            $success = "Exam '{$title}' created successfully.";
+            if ($teacherName === '') {
+                throw new \RuntimeException('Please select or specify an assigned teacher for this examination term.');
+            }
+
+            $stmt = $pdo->prepare("INSERT INTO exams (title, academic_year, teacher_id, teacher_name, start_date, end_date, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$title, $year, $teacherId, $teacherName, $start, $end, $status]);
+
+            $success = "Exam '{$title}' assigned to {$teacherName} created successfully.";
         }
 
         if ($action === 'update_status') {
@@ -88,6 +108,26 @@ $exams = $pdo->query("
     FROM exams e
     ORDER BY e.start_date DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch active teachers from users and staff who can log in and enter marks
+$teachers = $pdo->query("
+    SELECT u.id, u.name, u.email 
+    FROM users u 
+    JOIN roles r ON r.id = u.role_id 
+    WHERE r.name = 'teacher' AND u.is_active = 1
+    ORDER BY u.name ASC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+try {
+    $staffTeachers = $pdo->query("
+        SELECT id, name, email 
+        FROM staff 
+        WHERE (staff_type = 'Teaching' OR designation LIKE '%Teacher%') AND status = 'Active'
+        ORDER BY name ASC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (\Throwable $e) {
+    $staffTeachers = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -146,6 +186,18 @@ $exams = $pdo->query("
 
                     <h2 style="margin:0 0 .5rem;font-size:1.15rem;font-weight:800;color:#0f172a;"><?= e($ex['title']) ?></h2>
 
+                    <div style="background:#f1f5f9;border-left:3px solid #2563eb;padding:.5rem .75rem;border-radius:6px;margin-bottom:.75rem;font-size:.85rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
+                        <div>
+                            <span style="color:#64748b;font-size:.72rem;display:block;text-transform:uppercase;font-weight:700;">Assigned Evaluator</span>
+                            <span style="font-weight:700;color:#0f172a;display:inline-flex;align-items:center;gap:.3rem;">
+                                👨‍🏫 <?= !empty($ex['teacher_name']) ? e($ex['teacher_name']) : '<span style="color:#94a3b8;font-weight:normal;">Unassigned</span>' ?>
+                            </span>
+                        </div>
+                        <?php if (!empty($ex['teacher_id']) && (int)($user['id'] ?? 0) === (int)$ex['teacher_id']): ?>
+                            <span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;font-size:.72rem;">Assigned to You</span>
+                        <?php endif; ?>
+                    </div>
+
                     <div style="font-size:.85rem;color:#475569;margin-bottom:1rem;">
                         📅 <strong>Period:</strong> <?= date('d M, Y', strtotime($ex['start_date'])) ?> – <?= date('d M, Y', strtotime($ex['end_date'])) ?>
                     </div>
@@ -198,6 +250,24 @@ $exams = $pdo->query("
                 <input type="text" name="academic_year" value="2025-2026" required style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;">
             </div>
 
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.3rem;">Assigned Teacher *</label>
+                <select name="teacher_id" id="examTeacherSelect" required onchange="handleTeacherSelect(this)" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;margin-bottom:.4rem;">
+                    <option value="">— Select Assigned Teacher —</option>
+                    <?php foreach ($teachers as $t): ?>
+                        <option value="<?= (int)$t['id'] ?>" data-name="<?= e($t['name']) ?>"><?= e($t['name']) ?> (<?= e($t['email']) ?>)</option>
+                    <?php endforeach; ?>
+                    <?php foreach ($staffTeachers as $st): ?>
+                        <?php if (!in_array($st['name'], array_column($teachers, 'name'))): ?>
+                            <option value="staff_<?= (int)$st['id'] ?>" data-name="<?= e($st['name']) ?>"><?= e($st['name']) ?> (Staff / <?= e($st['email'] ?: 'No email') ?>)</option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <option value="custom">✏️ Enter Custom Teacher Name...</option>
+                </select>
+                <input type="text" name="teacher_name" id="examTeacherName" placeholder="Enter teacher name..." style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;display:none;">
+                <span style="font-size:.74rem;color:#64748b;">The assigned teacher logs into the ERP/App with their credentials to record & submit marks.</span>
+            </div>
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                 <div>
                     <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.3rem;">Start Date *</label>
@@ -227,6 +297,21 @@ $exams = $pdo->query("
 </div>
 
 <script>
+function handleTeacherSelect(sel) {
+    var nameInput = document.getElementById('examTeacherName');
+    if (!sel || !nameInput) return;
+    var selectedOpt = sel.options[sel.selectedIndex];
+    if (sel.value === 'custom') {
+        nameInput.style.display = 'block';
+        nameInput.value = '';
+        nameInput.required = true;
+        nameInput.focus();
+    } else {
+        nameInput.style.display = 'none';
+        nameInput.required = false;
+        nameInput.value = selectedOpt.getAttribute('data-name') || '';
+    }
+}
 function openModal(id) {
     var el = document.getElementById(id);
     if (el) el.classList.add('show');

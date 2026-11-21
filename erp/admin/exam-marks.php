@@ -48,6 +48,12 @@ if (empty($classList)) {
 $selectedExam = trim((string) ($_GET['exam_title'] ?? ($examList[0] ?? 'Unit Test 1')));
 $selectedClass = trim((string) ($_GET['class_name'] ?? ($classList[0] ?? '1')));
 
+$examTeacherStmt = $pdo->prepare("SELECT teacher_name, teacher_id FROM exams WHERE title = ? LIMIT 1");
+$examTeacherStmt->execute([$selectedExam]);
+$examTeacherRow = $examTeacherStmt->fetch(PDO::FETCH_ASSOC);
+$assignedTeacherName = $examTeacherRow['teacher_name'] ?? '';
+$assignedTeacherId = (int) ($examTeacherRow['teacher_id'] ?? 0);
+
 // ── Handle Batch Marks Save POST ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['action'] ?? ''));
@@ -208,6 +214,18 @@ if (!empty($students) && !empty($subjects)) {
                 <div style="margin-top:auto;">
                     <button type="submit" class="btn btn-sm">Load Evaluation Grid</button>
                 </div>
+                <?php if ($assignedTeacherName): ?>
+                    <div style="margin-left:auto;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.4rem .85rem;display:flex;align-items:center;gap:.5rem;font-size:.82rem;">
+                        <span style="font-size:1.1rem;">👨‍🏫</span>
+                        <div>
+                            <span style="color:#64748b;font-size:.72rem;display:block;font-weight:600;">Assigned Evaluator</span>
+                            <strong style="color:#1e40af;"><?= e($assignedTeacherName) ?></strong>
+                            <?php if ($assignedTeacherId > 0 && (int)($user['id'] ?? 0) === $assignedTeacherId): ?>
+                                <span class="badge" style="background:#dcfce7;color:#15803d;font-size:.68rem;margin-left:.25rem;">(You)</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </form>
         </div>
 

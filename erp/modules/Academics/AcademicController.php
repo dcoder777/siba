@@ -458,13 +458,23 @@ class AcademicController extends Controller
             return;
         }
 
+        $teacherId = isset($data['teacher_id']) && is_numeric($data['teacher_id']) ? (int) $data['teacher_id'] : null;
+        $teacherName = isset($data['teacher_name']) ? trim((string) $data['teacher_name']) : null;
+        if ($teacherId !== null && $teacherName === null) {
+            $tStmt = $this->pdo->prepare('SELECT name FROM users WHERE id = ?');
+            $tStmt->execute([$teacherId]);
+            $teacherName = $tStmt->fetchColumn() ?: null;
+        }
+
         $stmt = $this->pdo->prepare(
-            'INSERT INTO exams (title, academic_year, start_date, end_date, status, created_at)
-             VALUES (:title, :ay, :sdate, :edate, :status, NOW())'
+            'INSERT INTO exams (title, academic_year, teacher_id, teacher_name, start_date, end_date, status, created_at)
+             VALUES (:title, :ay, :tid, :tname, :sdate, :edate, :status, NOW())'
         );
         $stmt->execute([
             'title' => $title,
             'ay' => $data['academic_year'] ?? '2026-2027',
+            'tid' => $teacherId,
+            'tname' => $teacherName,
             'sdate' => $data['start_date'] ?? date('Y-m-d'),
             'edate' => $data['end_date'] ?? date('Y-m-d', strtotime('+7 days')),
             'status' => $data['status'] ?? 'Upcoming',
@@ -492,10 +502,20 @@ class AcademicController extends Controller
         $id = (int) ($params['id'] ?? 0);
         $data = Request::json();
 
+        $teacherId = isset($data['teacher_id']) && is_numeric($data['teacher_id']) ? (int) $data['teacher_id'] : null;
+        $teacherName = isset($data['teacher_name']) ? trim((string) $data['teacher_name']) : null;
+        if ($teacherId !== null && $teacherName === null) {
+            $tStmt = $this->pdo->prepare('SELECT name FROM users WHERE id = ?');
+            $tStmt->execute([$teacherId]);
+            $teacherName = $tStmt->fetchColumn() ?: null;
+        }
+
         $stmt = $this->pdo->prepare(
             'UPDATE exams SET
                 title = COALESCE(:title, title),
                 academic_year = COALESCE(:ay, academic_year),
+                teacher_id = COALESCE(:tid, teacher_id),
+                teacher_name = COALESCE(:tname, teacher_name),
                 start_date = COALESCE(:sdate, start_date),
                 end_date = COALESCE(:edate, end_date),
                 status = COALESCE(:status, status)
@@ -505,6 +525,8 @@ class AcademicController extends Controller
             'id' => $id,
             'title' => isset($data['title']) ? trim((string) $data['title']) : null,
             'ay' => isset($data['academic_year']) ? trim((string) $data['academic_year']) : null,
+            'tid' => $teacherId,
+            'tname' => $teacherName,
             'sdate' => $data['start_date'] ?? null,
             'edate' => $data['end_date'] ?? null,
             'status' => isset($data['status']) ? trim((string) $data['status']) : null,
