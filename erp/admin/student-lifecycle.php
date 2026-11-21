@@ -104,7 +104,7 @@ if ($filterStatus === 'deleted') {
 }
 
 if ($search !== '') {
-    $whereSql .= " AND (s.admission_no LIKE :q OR s.first_name LIKE :q OR s.last_name LIKE :q OR s.phone LIKE :q)";
+    $whereSql .= " AND (s.admission_no LIKE :q OR s.student_id_code LIKE :q OR s.registration_no LIKE :q OR s.first_name LIKE :q OR s.last_name LIKE :q OR s.phone LIKE :q)";
     $params['q'] = '%' . $search . '%';
 }
 if ($filterClass !== '') {
@@ -118,7 +118,8 @@ if ($filterHouse !== '') {
 
 $query = "
     SELECT 
-        s.id, s.admission_no, s.first_name, s.last_name, s.gender, s.dob, s.phone, s.email, s.blood_group, s.deleted_at,
+        s.id, s.admission_no, s.student_id_code, s.registration_no, COALESCE(e.roll_no, s.roll_no) as roll_no,
+        s.first_name, s.last_name, s.gender, s.dob, s.phone, s.email, s.blood_group, s.deleted_at,
         e.class_name, e.section_name, e.session_label, e.status as enrollment_status,
         h.house_name, h.color_code as house_color, sha.role as house_role,
         tr.route_name, ta.pickup_stop,
@@ -284,7 +285,7 @@ $deletedStudentsCount = (int) $pdo->query("SELECT COUNT(*) FROM students WHERE d
         <div class="panel" style="padding:1rem 1.25rem;margin-bottom:1.25rem;">
             <form method="get" action="student-lifecycle.php" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;">
                 <div style="flex:1;min-width:200px;">
-                    <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search by Admission No, Name, or Phone..." style="width:100%;padding:.45rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
+                    <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search by Admission No, Student ID, Reg No, Name, or Phone..." style="width:100%;padding:.45rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
                 </div>
                 <div>
                     <select name="class" style="padding:.45rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
@@ -370,7 +371,15 @@ $deletedStudentsCount = (int) $pdo->query("SELECT COUNT(*) FROM students WHERE d
                         <tbody>
                             <?php foreach ($students as $s): ?>
                                 <tr>
-                                    <td style="font-family:monospace;font-weight:700;color:#1e3a8a;"><?= e($s['admission_no']) ?></td>
+                                    <td style="font-family:monospace;font-weight:700;color:#1e3a8a;">
+                                        <?= e($s['admission_no']) ?>
+                                        <?php if (!empty($s['student_id_code'])): ?>
+                                            <div style="font-size:.72rem;font-weight:600;color:#0284c7;font-family:monospace;" title="Student ID"><?= e($s['student_id_code']) ?></div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($s['registration_no'])): ?>
+                                            <div style="font-size:.7rem;font-weight:500;color:#64748b;font-family:monospace;" title="Registration No">Reg: <?= e($s['registration_no']) ?></div>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <div style="font-weight:700;color:#0f172a;"><?= e($s['first_name'] . ' ' . $s['last_name']) ?></div>
                                         <div style="font-size:.78rem;color:#64748b;"><?= e($s['gender'] ?: '—') ?> | DOB: <?= e($s['dob'] ?: '—') ?></div>
@@ -378,6 +387,9 @@ $deletedStudentsCount = (int) $pdo->query("SELECT COUNT(*) FROM students WHERE d
                                     <td>
                                         <strong><?= e($s['class_name'] ?: 'Not Enrolled') ?></strong>
                                         <?= $s['section_name'] ? ('- ' . e($s['section_name'])) : '' ?>
+                                        <?php if (!empty($s['roll_no'])): ?>
+                                            <div style="font-size:.75rem;color:#047857;font-weight:700;">Roll No: <?= e($s['roll_no']) ?></div>
+                                        <?php endif; ?>
                                         <div style="font-size:.75rem;color:#64748b;"><?= e($s['session_label'] ?: 'Current') ?></div>
                                     </td>
                                     <td>
@@ -712,6 +724,8 @@ function openStudent360(s) {
                 </div>
                 <div style="font-size:.8rem;color:#64748b;margin-top:.2rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
                     <span>Admission No: <strong style="font-family:monospace;color:#1e40af;">${escapeHtml(admNo)}</strong></span>
+                    ${s.student_id_code ? `<span>•</span><span>Student ID: <strong style="font-family:monospace;color:#0284c7;">${escapeHtml(s.student_id_code)}</strong></span>` : ''}
+                    ${s.roll_no ? `<span>•</span><span>Roll No: <strong style="color:#047857;">${escapeHtml(s.roll_no)}</strong></span>` : ''}
                     <span>•</span>
                     <span class="badge" style="${statusBadgeStyle}font-size:.72rem;padding:.2rem .55rem;border-radius:20px;text-transform:capitalize;font-weight:700;">
                         ${isDeleted ? '🗑 Soft-Deleted' : escapeHtml(status)}
@@ -771,6 +785,18 @@ function openStudent360(s) {
                     <div style="font-weight:700;font-family:monospace;color:#1e40af;font-size:.95rem;">${escapeHtml(admNo)}</div>
                 </div>
                 <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Student ID</div>
+                    <div style="font-weight:700;font-family:monospace;color:#0284c7;font-size:.95rem;">
+                        ${s.student_id_code ? escapeHtml(s.student_id_code) : '<span style="color:#94a3b8;font-weight:normal;">Not assigned</span>'}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Student Registration No</div>
+                    <div style="font-weight:700;font-family:monospace;color:#334155;font-size:.95rem;">
+                        ${s.registration_no ? escapeHtml(s.registration_no) : '<span style="color:#94a3b8;font-weight:normal;">Not registered</span>'}
+                    </div>
+                </div>
+                <div>
                     <div style="font-size:.75rem;color:#64748b;margin-bottom:.15rem;">Gender / Date of Birth</div>
                     <div style="font-weight:600;color:#334155;font-size:.9rem;">
                         ${escapeHtml(s.gender || '—')} &nbsp;|&nbsp; ${escapeHtml(s.dob || '—')}
@@ -808,10 +834,11 @@ function openStudent360(s) {
                 <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;border-left:4px solid #3b82f6;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
                     <div style="font-size:.75rem;color:#64748b;margin-bottom:.25rem;">Enrolled Class & Section</div>
                     <div style="font-size:1.1rem;font-weight:700;color:#1e3a8a;">
-                        ${escapeHtml(s.class_name || '—')} ${s.section_name ? ('(' + escapeHtml(s.section_name) + ')') : ''}
+                        ${escapeHtml(s.class_name || '—')}${s.section_name ? (' - Sec ' + escapeHtml(s.section_name)) : ''}
                     </div>
-                    <div style="font-size:.75rem;color:#64748b;margin-top:.35rem;">
-                        Session: <strong>${escapeHtml(s.session_label || 'Current')}</strong>
+                    <div style="display:flex;align-items:center;gap:.65rem;margin-top:.35rem;flex-wrap:wrap;">
+                        <span style="font-size:.75rem;color:#64748b;">Session: <strong>${escapeHtml(s.session_label || 'Current')}</strong></span>
+                        ${s.roll_no ? `<span style="font-size:.75rem;background:#d1fae5;color:#065f46;padding:1px 7px;border-radius:6px;font-weight:700;">Roll No: ${escapeHtml(s.roll_no)}</span>` : ''}
                     </div>
                 </div>
                 <div style="border:1px solid #e2e8f0;background:#ffffff;border-radius:10px;padding:1rem;border-left:4px solid ${escapeHtml(houseColor)};box-shadow:0 1px 3px rgba(0,0,0,0.03);">

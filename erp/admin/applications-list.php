@@ -149,18 +149,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batch_status_update']
             $nextAdmNum = $maxAdm + 1;
 
             $insStudentStmt = $pdo->prepare("
-                INSERT INTO students (admission_no, first_name, last_name, gender, dob, blood_group, phone, email, address, created_at) 
-                VALUES (:admission_no, :first_name, :last_name, :gender, :dob, :blood_group, :phone, :email, :address, NOW())
+                INSERT INTO students (admission_no, student_id_code, registration_no, roll_no, first_name, last_name, gender, dob, blood_group, phone, email, address, created_at) 
+                VALUES (:admission_no, :student_id_code, :registration_no, :roll_no, :first_name, :last_name, :gender, :dob, :blood_group, :phone, :email, :address, NOW())
             ");
 
             $enrollStmt = $pdo->prepare("
-                INSERT INTO student_enrollments (student_id, class_name, session_label, status, is_current) 
-                VALUES (:student_id, :class_name, :session_label, 'active', 1)
+                INSERT INTO student_enrollments (student_id, class_name, section_name, roll_no, session_label, status, is_current) 
+                VALUES (:student_id, :class_name, :section_name, :roll_no, :session_label, 'active', 1)
             ");
 
             $updateAppStmt = $pdo->prepare("
                 UPDATE applications 
-                SET status = :status, student_id = COALESCE(:student_id, student_id), admission_no = COALESCE(:admission_no, admission_no) 
+                SET status = :status, student_id = COALESCE(:student_id, student_id), admission_no = COALESCE(:admission_no, admission_no), student_id_code = COALESCE(:student_id_code, student_id_code) 
                 WHERE id = :id
             ");
 
@@ -180,6 +180,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batch_status_update']
                     $lastName = $nameParts[1] ?? '';
 
                     $assignedAdmNo = sprintf("ADM%04d", $nextAdmNum++);
+                    $studentIdCode = !empty($appData['student_id_code']) ? $appData['student_id_code'] : sprintf("STU-%s-%05d", date('Y'), $nextAdmNum - 1);
+                    $regNo = $appData['registration_no'] ?? null;
+                    $rollNo = $appData['roll_no'] ?? null;
+                    $sectionName = $appData['section_name'] ?? null;
+
                     $addrParts = array_filter([
                         $appData['address_line1'],
                         $appData['address_line2'],
@@ -191,6 +196,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batch_status_update']
 
                     $insStudentStmt->execute([
                         'admission_no' => $assignedAdmNo,
+                        'student_id_code' => $studentIdCode,
+                        'registration_no' => $regNo,
+                        'roll_no' => $rollNo,
                         'first_name' => $firstName,
                         'last_name' => $lastName,
                         'gender' => $appData['gender'] ?? null,
@@ -207,6 +215,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batch_status_update']
                     $enrollStmt->execute([
                         'student_id' => $newStudentId,
                         'class_name' => $appData['class_sought'],
+                        'section_name' => $sectionName,
+                        'roll_no' => $rollNo,
                         'session_label' => $sessionLabel,
                     ]);
 
@@ -217,6 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batch_status_update']
                     'status' => $targetStatus,
                     'student_id' => $newStudentId,
                     'admission_no' => $newAdmNo,
+                    'student_id_code' => $studentIdCode ?? ($appData['student_id_code'] ?? null),
                     'id' => $appId
                 ]);
 

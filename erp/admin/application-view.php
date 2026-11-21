@@ -20,13 +20,28 @@ if (!$appId) {
 
 try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
 
-$stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id AND a.deleted_at IS NULL AND a.deleted_at IS NULL");
+$stmt = $pdo->prepare("
+    SELECT a.*, 
+           p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone,
+           s.student_id_code AS student_code, s.registration_no AS st_reg_no, s.roll_no AS st_roll_no,
+           se.section_name AS enr_section, se.roll_no AS enr_roll_no
+    FROM applications a 
+    LEFT JOIN parents p ON p.id = a.parent_id 
+    LEFT JOIN students s ON s.id = a.student_id
+    LEFT JOIN student_enrollments se ON se.student_id = a.student_id AND se.is_current = 1
+    WHERE a.id = :id AND a.deleted_at IS NULL
+");
 $stmt->execute(['id' => $appId]);
 $app = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$app) {
     header("Location: applications-list.php");
     exit();
 }
+
+$sectionVal = !empty($app['section_name']) ? $app['section_name'] : ($app['enr_section'] ?? '');
+$studentIdCodeVal = !empty($app['student_id_code']) ? $app['student_id_code'] : ($app['student_code'] ?? '');
+$regNoVal = !empty($app['registration_no']) ? $app['registration_no'] : ($app['st_reg_no'] ?? '');
+$rollNoVal = !empty($app['roll_no']) ? $app['roll_no'] : (!empty($app['enr_roll_no']) ? $app['enr_roll_no'] : ($app['st_roll_no'] ?? ''));
 
 $success = '';
 $error = '';
@@ -41,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
     $fields = [
         'student_name', 'dob', 'gender', 'religion', 'blood_group', 'aadhaar_no',
         'caste', 'disability', 'disability_details', 'previous_school', 'previous_class', 'class_sought',
+        'section_name', 'student_id_code', 'registration_no', 'roll_no',
         'father_name', 'father_occupation', 'father_aadhaar_no', 'mother_name', 'mother_occupation',
         'mother_aadhaar_no', 'guardian_name', 'guardian_occupation', 'family_annual_income',
         'father_voter_no', 'mother_voter_no',
@@ -83,20 +99,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
         $stmt->execute(['id' => $appId]);
         $app = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (($params[':status'] ?? '') === 'Admitted' && empty($app['student_id'])) {
+        $postedStatus  = trim((string) ($_POST['status'] ?? ''));
+        $sectionName   = trim((string) ($_POST['section_name'] ?? ''));
+        $studentIdCode = trim((string) ($_POST['student_id_code'] ?? ''));
+        $regNo         = trim((string) ($_POST['registration_no'] ?? ''));
+        $rollNo        = trim((string) ($_POST['roll_no'] ?? ''));
+        $admissionNo   = trim((string) ($_POST['admission_no'] ?? ''));
+        $classSought   = trim((string) ($_POST['class_sought'] ?? ($app['class_sought'] ?? '')));
+
+        if ($postedStatus === 'Admitted' && empty($app['student_id'])) {
             $nameParts = explode(' ', trim($app['student_name']), 2);
             $firstName = $nameParts[0];
             $lastName = $nameParts[1] ?? '';
 
-            $cntStmt = $pdo->query("SELECT COUNT(*) AS cnt FROM students");
-            $admissionNo = sprintf("ADM%04d", ((int) $cntStmt->fetch()['cnt']) + 1);
+            $maxAdm = (int) $pdo->query("SELECT MAX(CAST(SUBSTRING(admission_no, 4) AS UNSIGNED)) FROM students WHERE admission_no LIKE 'ADM%'")->fetchColumn();
+            if ($maxAdm <= 0) {
+                $maxAdm = (int) $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
+            }
+            $generatedAdmNo = sprintf("ADM%04d", $maxAdm + 1);
+
+            if (empty($admissionNo)) {
+                $admissionNo = $generatedAdmNo;
+            } else {
+                $checkAdm = $pdo->prepare("SELECT id FROM students WHERE admission_no = :ano LIMIT 1");
+                $checkAdm->execute(['ano' => $admissionNo]);
+                if ($checkAdm->fetchColumn()) {
+                    $admissionNo = $generatedAdmNo;
+                }
+            }
+            if (empty($studentIdCode)) {
+                $studentIdCode = sprintf("STU-%s-%05d", date('Y'), $maxAdm + 1);
+            }
 
             $addrParts = array_filter([$app['address_line1'], $app['address_line2'], $app['village_city'] ?? $app['district'], $app['state'], $app['pin']]);
             $addr = implode(', ', $addrParts);
 
-            $insStmt = $pdo->prepare("INSERT INTO students (admission_no, first_name, last_name, gender, dob, blood_group, phone, email, address) VALUES (:admission_no, :first_name, :last_name, :gender, :dob, :blood_group, :phone, :email, :address)");
+            $insStmt = $pdo->prepare("INSERT INTO students (admission_no, student_id_code, registration_no, roll_no, first_name, last_name, gender, dob, blood_group, phone, email, address, created_at) VALUES (:admission_no, :student_id_code, :registration_no, :roll_no, :first_name, :last_name, :gender, :dob, :blood_group, :phone, :email, :address, NOW())");
             $insStmt->execute([
                 'admission_no' => $admissionNo,
+                'student_id_code' => $studentIdCode,
+                'registration_no' => $regNo,
+                'roll_no' => $rollNo,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'gender' => $app['gender'],
@@ -112,20 +155,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_application'])) 
             $sessionStmt->execute();
             $sessionLabel = $sessionStmt->fetchColumn() ?: date('Y') . '-' . (date('y') + 1);
 
-            $enrollStmt = $pdo->prepare("INSERT INTO student_enrollments (student_id, class_name, session_label, status, is_current) VALUES (:student_id, :class_name, :session_label, 'active', 1)");
+            $enrollStmt = $pdo->prepare("INSERT INTO student_enrollments (student_id, class_name, section_name, roll_no, session_label, status, is_current) VALUES (:student_id, :class_name, :section_name, :roll_no, :session_label, 'active', 1)");
             $enrollStmt->execute([
                 'student_id' => $studentId,
-                'class_name' => $app['class_sought'],
+                'class_name' => $classSought,
+                'section_name' => $sectionName,
+                'roll_no' => $rollNo,
                 'session_label' => $sessionLabel,
             ]);
 
-            $pdo->prepare("UPDATE applications SET student_id = :sid, admission_no = :ano WHERE id = :id")
-                ->execute(['sid' => $studentId, 'ano' => $admissionNo, 'id' => $appId]);
+            $pdo->prepare("UPDATE applications SET student_id = :sid, admission_no = :ano, student_id_code = :scode, registration_no = :regno, roll_no = :roll, section_name = :sec WHERE id = :id")
+                ->execute([
+                    'sid' => $studentId,
+                    'ano' => $admissionNo,
+                    'scode' => $studentIdCode,
+                    'regno' => $regNo,
+                    'roll' => $rollNo,
+                    'sec' => $sectionName,
+                    'id' => $appId
+                ]);
+        } elseif (!empty($app['student_id'])) {
+            $studentId = (int) $app['student_id'];
 
-            $stmt = $pdo->prepare("SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone FROM applications a LEFT JOIN parents p ON p.id = a.parent_id WHERE a.id = :id AND a.deleted_at IS NULL");
-            $stmt->execute(['id' => $appId]);
-            $app = $stmt->fetch(PDO::FETCH_ASSOC);
+            // Sync students table
+            $stUpdates = [];
+            $stParams = [':sid' => $studentId];
+            if (isset($_POST['student_id_code'])) {
+                $stUpdates[] = "student_id_code = :student_id_code";
+                $stParams[':student_id_code'] = $studentIdCode;
+            }
+            if (isset($_POST['registration_no'])) {
+                $stUpdates[] = "registration_no = :registration_no";
+                $stParams[':registration_no'] = $regNo;
+            }
+            if (isset($_POST['roll_no'])) {
+                $stUpdates[] = "roll_no = :roll_no";
+                $stParams[':roll_no'] = $rollNo;
+            }
+            if (!empty($admissionNo)) {
+                $stUpdates[] = "admission_no = :admission_no";
+                $stParams[':admission_no'] = $admissionNo;
+            }
+            if (!empty($stUpdates)) {
+                $pdo->prepare("UPDATE students SET " . implode(', ', $stUpdates) . " WHERE id = :sid")->execute($stParams);
+            }
+
+            // Sync student_enrollments table
+            $checkEnr = $pdo->prepare("SELECT id FROM student_enrollments WHERE student_id = :sid AND is_current = 1 LIMIT 1");
+            $checkEnr->execute(['sid' => $studentId]);
+            if ($checkEnr->fetchColumn()) {
+                $pdo->prepare("UPDATE student_enrollments SET section_name = :sec, roll_no = :roll, class_name = :cls WHERE student_id = :sid AND is_current = 1")
+                    ->execute(['sec' => $sectionName, 'roll' => $rollNo, 'cls' => $classSought, 'sid' => $studentId]);
+            } else {
+                $sessionStmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'academic_year' LIMIT 1");
+                $sessionStmt->execute();
+                $sessionLabel = $sessionStmt->fetchColumn() ?: date('Y') . '-' . (date('y') + 1);
+
+                $pdo->prepare("INSERT INTO student_enrollments (student_id, class_name, section_name, roll_no, session_label, status, is_current) VALUES (:sid, :cls, :sec, :roll, :sess, 'active', 1)")
+                    ->execute([
+                        'sid' => $studentId,
+                        'cls' => $classSought,
+                        'sec' => $sectionName,
+                        'roll' => $rollNo,
+                        'sess' => $sessionLabel,
+                    ]);
+            }
         }
+
+        // Reload fresh application data including joined student and enrollment details
+        $stmt = $pdo->prepare("
+            SELECT a.*, 
+                   p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone,
+                   s.student_id_code AS student_code, s.registration_no AS st_reg_no, s.roll_no AS st_roll_no,
+                   se.section_name AS enr_section, se.roll_no AS enr_roll_no
+            FROM applications a 
+            LEFT JOIN parents p ON p.id = a.parent_id 
+            LEFT JOIN students s ON s.id = a.student_id
+            LEFT JOIN student_enrollments se ON se.student_id = a.student_id AND se.is_current = 1
+            WHERE a.id = :id AND a.deleted_at IS NULL
+        ");
+        $stmt->execute(['id' => $appId]);
+        $app = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $sectionVal = !empty($app['section_name']) ? $app['section_name'] : ($app['enr_section'] ?? '');
+        $studentIdCodeVal = !empty($app['student_id_code']) ? $app['student_id_code'] : ($app['student_code'] ?? '');
+        $regNoVal = !empty($app['registration_no']) ? $app['registration_no'] : ($app['st_reg_no'] ?? '');
+        $rollNoVal = !empty($app['roll_no']) ? $app['roll_no'] : (!empty($app['enr_roll_no']) ? $app['enr_roll_no'] : ($app['st_roll_no'] ?? ''));
 
         $success = 'Application updated successfully.';
         $emailNotified = false;
@@ -288,6 +403,11 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                     <p>Submitted on <?= date('d M Y, h:i A', strtotime($app['applied_at'])) ?> &middot; <?= $statusBadge ?> &middot; Payment: <?= $payStatusBadge ?></p>
                 </div>
                 <div style="display:flex;gap:.75rem;">
+                    <?php if (!empty($app['student_id'])): ?>
+                        <a href="student-lifecycle.php?q=<?= urlencode($app['admission_no'] ?? '') ?>" target="_blank" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:.4rem;">
+                            <span>👤</span> View Student 360°
+                        </a>
+                    <?php endif; ?>
                     <a href="applications-list.php" class="btn btn-soft">Back to List</a>
                 </div>
             </div>
@@ -358,6 +478,8 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                                 <?php endforeach; ?>
                             </select>
                         </span></div>
+                        <div class="field-row"><span class="lbl">Section</span><span class="inp"><input type="text" name="section_name" placeholder="e.g. A, B, C, Rose, Lotus" value="<?= e($sectionVal) ?>"></span></div>
+                        <div class="field-row"><span class="lbl">Student Roll No</span><span class="inp"><input type="text" name="roll_no" placeholder="e.g. 01, 15, 24" value="<?= e($rollNoVal) ?>"></span></div>
                     </div>
                 </div>
 
@@ -409,12 +531,11 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
 
                 <!-- Parent Account & Status -->
                 <div class="detail-card">
-                    <div class="head">Account & Status</div>
+                    <div class="head">Enrollment, Account & Status</div>
                     <div class="body">
-                        <div class="field-row"><span class="lbl">Parent Name</span><span class="inp"><input type="text" value="<?= e($app['parent_name'] ?? '—') ?>" disabled style="background:#f1f5f9;"></span></div>
-                        <div class="field-row"><span class="lbl">Phone</span><span class="inp"><input type="text" value="<?= e($app['parent_phone'] ?? '—') ?>" disabled style="background:#f1f5f9;"></span></div>
-                        <div class="field-row"><span class="lbl">Email</span><span class="inp"><input type="text" value="<?= e($app['parent_email'] ?? '—') ?>" disabled style="background:#f1f5f9;"></span></div>
-                        <div class="field-row"><span class="lbl">Admission No</span><span class="inp"><input type="text" name="admission_no" value="<?= e($app['admission_no'] ?? '') ?>"></span></div>
+                        <div class="field-row"><span class="lbl">Student ID</span><span class="inp"><input type="text" name="student_id_code" placeholder="e.g. STU-2026-00044" value="<?= e($studentIdCodeVal) ?>"></span></div>
+                        <div class="field-row"><span class="lbl">Student Registration No</span><span class="inp"><input type="text" name="registration_no" placeholder="e.g. REG-2026-9812" value="<?= e($regNoVal) ?>"></span></div>
+                        <div class="field-row"><span class="lbl">Admission No</span><span class="inp"><input type="text" name="admission_no" placeholder="e.g. ADM0044" value="<?= e($app['admission_no'] ?? '') ?>"></span></div>
                         <div class="field-row"><span class="lbl">Status</span><span class="inp">
                             <select name="status">
                                 <?php foreach (['Application started','Under review','Admitted','Rejected'] as $s): ?>
@@ -422,6 +543,9 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                                 <?php endforeach; ?>
                             </select>
                         </span></div>
+                        <div class="field-row"><span class="lbl">Parent Name</span><span class="inp"><input type="text" value="<?= e($app['parent_name'] ?? '—') ?>" disabled style="background:#f1f5f9;"></span></div>
+                        <div class="field-row"><span class="lbl">Phone</span><span class="inp"><input type="text" value="<?= e($app['parent_phone'] ?? '—') ?>" disabled style="background:#f1f5f9;"></span></div>
+                        <div class="field-row"><span class="lbl">Email</span><span class="inp"><input type="text" value="<?= e($app['parent_email'] ?? '—') ?>" disabled style="background:#f1f5f9;"></span></div>
                         <div class="field-row"><span class="lbl">Payment Method</span><span class="inp"><input type="text" name="payment_method" value="<?= e($app['payment_method'] ?? 'Offline') ?>"></span></div>
                         <div class="field-row"><span class="lbl">Payment Status</span><span class="inp">
                             <select name="payment_status">
@@ -430,6 +554,13 @@ $incomeOptions = ['Below 1 Lakh', '1-2 Lakhs', '2-5 Lakhs', '5-8 Lakhs', 'Above 
                             </select>
                         </span></div>
                         <div class="field-row"><span class="lbl">Applied On</span><span class="inp"><input type="text" value="<?= date('d M Y, h:i A', strtotime($app['applied_at'])) ?>" disabled style="background:#f1f5f9;"></span></div>
+                        <?php if (!empty($app['student_id'])): ?>
+                            <div class="field-row"><span class="lbl">Student 360° Dossier</span><span class="inp">
+                                <a href="student-lifecycle.php?q=<?= urlencode($app['admission_no'] ?? '') ?>" target="_blank" class="btn btn-sm" style="background:#2563eb;color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border-radius:6px;font-weight:600;font-size:.8rem;">
+                                    👤 Open 360° Dossier Popup
+                                </a>
+                            </span></div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
