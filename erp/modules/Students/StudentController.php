@@ -19,6 +19,16 @@ class StudentController extends Controller
         $where = [];
         $params = [];
 
+        if ($status === 'deleted') {
+            $where[] = 's.deleted_at IS NOT NULL';
+        } else {
+            $where[] = 's.deleted_at IS NULL';
+            if ($status !== '') {
+                $where[] = 'se.status = :status';
+                $params['status'] = $status;
+            }
+        }
+
         if ($q !== '') {
             $where[] = '(s.first_name LIKE :q OR s.last_name LIKE :q OR s.admission_no LIKE :q)';
             $params['q'] = '%' . $q . '%';
@@ -26,10 +36,6 @@ class StudentController extends Controller
         if ($class !== '') {
             $where[] = 'se.class_name = :class_name';
             $params['class_name'] = $class;
-        }
-        if ($status !== '') {
-            $where[] = 'se.status = :status';
-            $params['status'] = $status;
         }
 
         $whereSql = empty($where) ? '' : ' WHERE ' . implode(' AND ', $where);
@@ -129,8 +135,14 @@ class StudentController extends Controller
 
     public function delete(array $params): void
     {
-        $this->pdo->prepare('DELETE FROM students WHERE id = :id')->execute(['id' => $params['id']]);
+        $this->pdo->prepare('UPDATE students SET deleted_at = NOW() WHERE id = :id')->execute(['id' => $params['id']]);
         $this->ok([], 'Student deleted');
+    }
+
+    public function restore(array $params): void
+    {
+        $this->pdo->prepare('UPDATE students SET deleted_at = NULL WHERE id = :id')->execute(['id' => $params['id']]);
+        $this->ok([], 'Student restored');
     }
 
     public function listAttendance(): void

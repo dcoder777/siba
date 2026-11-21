@@ -53,6 +53,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 $success = "Student enrollment status updated to '{$newStatus}'.";
             }
         }
+
+        if ($action === 'soft_delete_student' && ($canDelete || $isOwner)) {
+            $studentId = (int) ($_POST['student_id'] ?? 0);
+            if ($studentId > 0) {
+                $pdo->prepare("UPDATE students SET deleted_at = NOW() WHERE id = ?")->execute([$studentId]);
+                $success = 'Student record has been moved to soft-deleted archive. Filter by "Soft-Deleted" to review or restore.';
+            }
+        }
+
+        if ($action === 'restore_student' && ($canDelete || $isOwner)) {
+            $studentId = (int) ($_POST['student_id'] ?? 0);
+            if ($studentId > 0) {
+                $pdo->prepare("UPDATE students SET deleted_at = NULL WHERE id = ?")->execute([$studentId]);
+                $success = 'Student record has been successfully restored.';
+            }
+        }
     } catch (Throwable $e) {
         $error = $e->getMessage();
     }
@@ -77,6 +93,16 @@ $houseList = $pdo->query("SELECT id, house_name, color_code FROM houses WHERE st
 $whereSql = " WHERE 1=1";
 $params = [];
 
+if ($filterStatus === 'deleted') {
+    $whereSql .= " AND s.deleted_at IS NOT NULL";
+} else {
+    $whereSql .= " AND s.deleted_at IS NULL";
+    if ($filterStatus !== '') {
+        $whereSql .= " AND e.status = :st";
+        $params['st'] = $filterStatus;
+    }
+}
+
 if ($search !== '') {
     $whereSql .= " AND (s.admission_no LIKE :q OR s.first_name LIKE :q OR s.last_name LIKE :q OR s.phone LIKE :q)";
     $params['q'] = '%' . $search . '%';
@@ -85,10 +111,6 @@ if ($filterClass !== '') {
     $whereSql .= " AND e.class_name = :class";
     $params['class'] = $filterClass;
 }
-if ($filterStatus !== '') {
-    $whereSql .= " AND e.status = :st";
-    $params['st'] = $filterStatus;
-}
 if ($filterHouse !== '') {
     $whereSql .= " AND sha.house_id = :house";
     $params['house'] = (int) $filterHouse;
@@ -96,7 +118,7 @@ if ($filterHouse !== '') {
 
 $query = "
     SELECT 
-        s.id, s.admission_no, s.first_name, s.last_name, s.gender, s.dob, s.phone, s.email, s.blood_group,
+        s.id, s.admission_no, s.first_name, s.last_name, s.gender, s.dob, s.phone, s.email, s.blood_group, s.deleted_at,
         e.class_name, e.section_name, e.session_label, e.status as enrollment_status,
         h.house_name, h.color_code as house_color, sha.role as house_role,
         tr.route_name, ta.pickup_stop,
@@ -140,10 +162,11 @@ foreach ($students as &$st) {
 unset($st);
 
 // Overall Lifecycle KPIs
-$totalStudents = (int) $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
-$activeEnrolled = (int) $pdo->query("SELECT COUNT(*) FROM student_enrollments WHERE is_current = 1 AND status = 'active'")->fetchColumn();
-$housesAssignedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_house_allocations WHERE status = 'Active'")->fetchColumn();
-$remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_discipline")->fetchColumn();
+$totalStudents = (int) $pdo->query("SELECT COUNT(*) FROM students WHERE deleted_at IS NULL")->fetchColumn();
+$activeEnrolled = (int) $pdo->query("SELECT COUNT(*) FROM student_enrollments se JOIN students s ON s.id = se.student_id WHERE se.is_current = 1 AND se.status = 'active' AND s.deleted_at IS NULL")->fetchColumn();
+$housesAssignedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_house_allocations sha JOIN students s ON s.id = sha.student_id WHERE sha.status = 'Active' AND s.deleted_at IS NULL")->fetchColumn();
+$remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_discipline srd JOIN students s ON s.id = srd.student_id WHERE s.deleted_at IS NULL")->fetchColumn();
+$deletedStudentsCount = (int) $pdo->query("SELECT COUNT(*) FROM students WHERE deleted_at IS NOT NULL")->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -227,7 +250,7 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
             <div class="kpi-card">
                 <div class="kpi-label">Total Student Records</div>
                 <div class="kpi-value"><?= $totalStudents ?></div>
-                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">All historical & active admissions</div>
+                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Active student directory</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Currently Enrolled</div>
@@ -243,6 +266,17 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                 <div class="kpi-label">Disciplinary Logs</div>
                 <div class="kpi-value"><?= $remarksLoggedCount ?></div>
                 <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Behavioral & staff records</div>
+            </div>
+            <div class="kpi-card" style="<?= $deletedStudentsCount > 0 ? 'border:1px solid #fca5a5;background:#fff5f5;' : '' ?>">
+                <div class="kpi-label" style="<?= $deletedStudentsCount > 0 ? 'color:#b91c1c;' : '' ?>">Soft-Deleted Records</div>
+                <div class="kpi-value" style="color:<?= $deletedStudentsCount > 0 ? '#dc2626' : '#64748b' ?>;"><?= $deletedStudentsCount ?></div>
+                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">
+                    <?php if ($deletedStudentsCount > 0): ?>
+                        <a href="student-lifecycle.php?status=deleted" style="color:#dc2626;font-weight:600;text-decoration:underline;">View soft-deleted</a>
+                    <?php else: ?>
+                        No archived records
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
 
@@ -270,12 +304,13 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                 </div>
                 <div>
                     <select name="status" style="padding:.45rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
-                        <option value="">All Statuses</option>
+                        <option value="">All Statuses (Active)</option>
                         <option value="active" <?= $filterStatus === 'active' ? 'selected' : '' ?>>Active</option>
                         <option value="promoted" <?= $filterStatus === 'promoted' ? 'selected' : '' ?>>Promoted</option>
                         <option value="transferred" <?= $filterStatus === 'transferred' ? 'selected' : '' ?>>Transferred</option>
                         <option value="withdrawn" <?= $filterStatus === 'withdrawn' ? 'selected' : '' ?>>Withdrawn</option>
                         <option value="alumni" <?= $filterStatus === 'alumni' ? 'selected' : '' ?>>Alumni</option>
+                        <option value="deleted" <?= $filterStatus === 'deleted' ? 'selected' : '' ?>>🗑 Soft-Deleted / Archived (<?= $deletedStudentsCount ?>)</option>
                     </select>
                 </div>
                 <button type="submit" class="btn btn-sm">Filter</button>
@@ -289,8 +324,12 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
         <div class="panel" style="min-width:0; max-width:100%; width:100%; overflow:hidden; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #e2e8f0;">
             <div style="padding:0.85rem 1.25rem; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; background:#f8fafc;">
                 <div style="display:flex; align-items:center; gap:0.6rem;">
-                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#0f172a;">Student Profiles (<?= count($students) ?>)</h3>
-                    <span style="font-size:.78rem; color:#475569; background:#e2e8f0; padding:2px 8px; border-radius:12px; font-weight:600;">Active &amp; Historical</span>
+                    <h3 style="margin:0; font-size:1.05rem; font-weight:700; color:#0f172a;">
+                        <?= $filterStatus === 'deleted' ? 'Soft-Deleted Students' : 'Student Profiles' ?> (<?= count($students) ?>)
+                    </h3>
+                    <span style="font-size:.78rem; color:<?= $filterStatus === 'deleted' ? '#991b1b' : '#475569' ?>; background:<?= $filterStatus === 'deleted' ? '#fee2e2' : '#e2e8f0' ?>; padding:2px 8px; border-radius:12px; font-weight:600;">
+                        <?= $filterStatus === 'deleted' ? '🗑 Soft-Deleted / Archived' : 'Active &amp; Historical' ?>
+                    </span>
                 </div>
                 <div style="display:flex; align-items:center; gap:.5rem;">
                     <button type="button" class="btn btn-sm btn-outline" onclick="scrollStudentTable(-280)" title="Scroll Left" style="padding:3px 10px; font-weight:700; font-size:.8rem;">
@@ -382,32 +421,57 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <span class="badge" style="
-                                            <?php
-                                             echo match($s['enrollment_status']) {
-                                                 'active' => 'background:#d1fae5;color:#065f46;',
-                                                 'promoted' => 'background:#dbeafe;color:#1e40af;',
-                                                 'transferred' => 'background:#fef3c7;color:#92400e;',
-                                                 'withdrawn' => 'background:#fee2e2;color:#991b1b;',
-                                                 'alumni' => 'background:#f1f5f9;color:#475569;',
-                                                 default => 'background:#f1f5f9;color:#475569;',
-                                             };
-                                            ?>
-                                        ">
-                                            <?= ucfirst(e($s['enrollment_status'] ?: 'Active')) ?>
-                                        </span>
+                                        <?php if (!empty($s['deleted_at'])): ?>
+                                            <span class="badge" style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;font-weight:700;">
+                                                🗑 Soft-Deleted
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge" style="
+                                                <?php
+                                                 echo match($s['enrollment_status']) {
+                                                     'active' => 'background:#d1fae5;color:#065f46;',
+                                                     'promoted' => 'background:#dbeafe;color:#1e40af;',
+                                                     'transferred' => 'background:#fef3c7;color:#92400e;',
+                                                     'withdrawn' => 'background:#fee2e2;color:#991b1b;',
+                                                     'alumni' => 'background:#f1f5f9;color:#475569;',
+                                                     default => 'background:#f1f5f9;color:#475569;',
+                                                 };
+                                                ?>
+                                            ">
+                                                <?= ucfirst(e($s['enrollment_status'] ?: 'Active')) ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
                                     <td style="text-align:center; position:sticky; right:0; background:#fff; box-shadow:-2px 0 4px rgba(0,0,0,0.03);">
-                                        <div style="display:flex;gap:.35rem;justify-content:center;">
+                                        <div style="display:flex;gap:.35rem;justify-content:center;align-items:center;">
                                             <button type="button" class="btn btn-sm btn-soft" onclick='openStudent360(<?= json_encode($s) ?>)'>
                                                 🔍 360° View
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-outline" onclick="openRemarkModal(<?= (int)$s['id'] ?>, '<?= e(addslashes($s['first_name'] . ' ' . $s['last_name'])) ?>')">
-                                                + Remark
-                                            </button>
-                                            <a href="student-certificates.php?student_id=<?= (int)$s['id'] ?>" class="btn btn-sm btn-outline" title="Issue Certificate">
-                                                📜
-                                            </a>
+                                            <?php if (empty($s['deleted_at'])): ?>
+                                                <button type="button" class="btn btn-sm btn-outline" onclick="openRemarkModal(<?= (int)$s['id'] ?>, '<?= e(addslashes($s['first_name'] . ' ' . $s['last_name'])) ?>')">
+                                                    + Remark
+                                                </button>
+                                                <a href="student-certificates.php?student_id=<?= (int)$s['id'] ?>" class="btn btn-sm btn-outline" title="Issue Certificate">
+                                                    📜
+                                                </a>
+                                                <?php if ($canDelete || $isOwner): ?>
+                                                    <form method="post" action="student-lifecycle.php" style="display:inline;margin:0;" onsubmit="return confirm('Soft-delete student <?= e(addslashes($s['first_name'] . ' ' . $s['last_name'])) ?> (<?= e($s['admission_no']) ?>)? You can restore them anytime.');">
+                                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                                        <input type="hidden" name="action" value="soft_delete_student">
+                                                        <input type="hidden" name="student_id" value="<?= (int) $s['id'] ?>">
+                                                        <button type="submit" class="btn btn-sm" style="padding:.25rem .5rem;background:#ef4444;color:#fff;border:none;border-radius:4px;" title="Soft Delete Student">🗑</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <?php if ($canDelete || $isOwner): ?>
+                                                    <form method="post" action="student-lifecycle.php" style="display:inline;margin:0;" onsubmit="return confirm('Restore student <?= e(addslashes($s['first_name'] . ' ' . $s['last_name'])) ?> (<?= e($s['admission_no']) ?>)?');">
+                                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                                        <input type="hidden" name="action" value="restore_student">
+                                                        <input type="hidden" name="student_id" value="<?= (int) $s['id'] ?>">
+                                                        <button type="submit" class="btn btn-sm" style="padding:.25rem .6rem;background:#059669;color:#fff;border:none;border-radius:4px;font-weight:600;" title="Restore Student">↺ Restore</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -513,6 +577,9 @@ $remarksLoggedCount = (int) $pdo->query("SELECT COUNT(*) FROM student_remarks_di
 </div>
 
 <script>
+var csrfToken = '<?= e(csrf_token()) ?>';
+var canManageDelete = <?= ($canDelete || $isOwner) ? 'true' : 'false' ?>;
+
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     return String(text)
@@ -623,13 +690,16 @@ function openStudent360(s) {
     var fullName = ((s.first_name || '') + ' ' + (s.last_name || '')).trim() || 'Student';
     var admNo = s.admission_no || '—';
     var initials = ((s.first_name ? s.first_name[0] : '') + (s.last_name ? s.last_name[0] : '')).toUpperCase() || 'ST';
-    var status = (s.enrollment_status || 'active').toLowerCase();
+    var isDeleted = Boolean(s.deleted_at);
+    var status = isDeleted ? 'Soft-Deleted' : (s.enrollment_status || 'active').toLowerCase();
 
-    var statusBadgeStyle = 'background:#d1fae5;color:#065f46;';
-    if (status === 'promoted') statusBadgeStyle = 'background:#dbeafe;color:#1e40af;';
-    else if (status === 'transferred') statusBadgeStyle = 'background:#fef3c7;color:#92400e;';
-    else if (status === 'withdrawn') statusBadgeStyle = 'background:#fee2e2;color:#991b1b;';
-    else if (status === 'alumni') statusBadgeStyle = 'background:#f1f5f9;color:#475569;';
+    var statusBadgeStyle = isDeleted ? 'background:#fee2e2;color:#991b1b;border:1px solid #fecaca;' : 'background:#d1fae5;color:#065f46;';
+    if (!isDeleted) {
+        if (status === 'promoted') statusBadgeStyle = 'background:#dbeafe;color:#1e40af;';
+        else if (status === 'transferred') statusBadgeStyle = 'background:#fef3c7;color:#92400e;';
+        else if (status === 'withdrawn') statusBadgeStyle = 'background:#fee2e2;color:#991b1b;';
+        else if (status === 'alumni') statusBadgeStyle = 'background:#f1f5f9;color:#475569;';
+    }
 
     document.getElementById('dossierTitle').innerHTML = `
         <div style="display:flex;align-items:center;gap:.85rem;">
@@ -643,8 +713,8 @@ function openStudent360(s) {
                 <div style="font-size:.8rem;color:#64748b;margin-top:.2rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
                     <span>Admission No: <strong style="font-family:monospace;color:#1e40af;">${escapeHtml(admNo)}</strong></span>
                     <span>•</span>
-                    <span class="badge" style="${statusBadgeStyle}font-size:.72rem;padding:.2rem .55rem;border-radius:20px;text-transform:capitalize;">
-                        ${escapeHtml(status)}
+                    <span class="badge" style="${statusBadgeStyle}font-size:.72rem;padding:.2rem .55rem;border-radius:20px;text-transform:capitalize;font-weight:700;">
+                        ${isDeleted ? '🗑 Soft-Deleted' : escapeHtml(status)}
                     </span>
                 </div>
             </div>
@@ -663,8 +733,29 @@ function openStudent360(s) {
     var routeName = s.route_name || 'Self Travel';
     var pickupStop = s.pickup_stop ? ('Stop: ' + s.pickup_stop) : (s.route_name ? 'Standard Route Stop' : 'No school bus allocated');
 
+    var deletedBanner = isDeleted ? `
+        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:.85rem 1.15rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
+            <div style="display:flex;align-items:center;gap:.6rem;">
+                <span style="font-size:1.3rem;">🗑</span>
+                <div>
+                    <strong style="color:#991b1b;font-size:.9rem;">Soft-Deleted / Archived Student Record</strong>
+                    <div style="font-size:.78rem;color:#7f1d1d;">Archived on ${escapeHtml(s.deleted_at)}. Excluded from active student rosters and KPIs. All historical academic & financial data is retained.</div>
+                </div>
+            </div>
+            ${canManageDelete ? `
+                <form method="post" action="student-lifecycle.php" style="margin:0;" onsubmit="return confirm('Restore this student back to the active directory?');">
+                    <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
+                    <input type="hidden" name="action" value="restore_student">
+                    <input type="hidden" name="student_id" value="${s.id}">
+                    <button type="submit" class="btn btn-sm" style="background:#059669;color:#fff;border:none;font-weight:600;padding:.3rem .75rem;">↺ Restore Record</button>
+                </form>
+            ` : ''}
+        </div>
+    ` : '';
+
     var body = document.getElementById('dossierBody');
     body.innerHTML = `
+        ${deletedBanner}
         <!-- Section 1: Personal & Contact Information -->
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:1.15rem;margin-bottom:1.25rem;">
             <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#475569;margin-bottom:.85rem;display:flex;align-items:center;gap:.4rem;">
@@ -820,18 +911,42 @@ function openStudent360(s) {
 
     var footer = document.getElementById('dossierFooter');
     if (footer) {
+        var actionButtons = '';
+        if (isDeleted) {
+            actionButtons = canManageDelete ? `
+                <form method="post" action="student-lifecycle.php" style="margin:0;display:inline;" onsubmit="return confirm('Restore this student back to the active directory?');">
+                    <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
+                    <input type="hidden" name="action" value="restore_student">
+                    <input type="hidden" name="student_id" value="${s.id}">
+                    <button type="submit" class="btn btn-sm" style="background:#059669;color:#fff;border:none;font-weight:600;padding:.35rem .75rem;">↺ Restore Student</button>
+                </form>
+            ` : '';
+        } else {
+            actionButtons = `
+                <a href="student-certificates.php?student_id=${s.id}" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:.35rem;">
+                    📜 Generate Certificate
+                </a>
+                <button type="button" class="btn btn-sm btn-outline" onclick="closeModal('student360Modal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
+                    ⚠️ Add Remark
+                </button>
+                <a href="student-promotions.php" class="btn btn-sm btn-soft">
+                    🚀 Promote Student
+                </a>
+                ${canManageDelete ? `
+                    <form method="post" action="student-lifecycle.php" style="margin:0;display:inline;" onsubmit="return confirm('Soft-delete student ${escapeJs(fullName)} (${escapeJs(admNo)})? You can restore them anytime.');">
+                        <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
+                        <input type="hidden" name="action" value="soft_delete_student">
+                        <input type="hidden" name="student_id" value="${s.id}">
+                        <button type="submit" class="btn btn-sm" style="background:#ef4444;color:#fff;border:none;font-weight:600;padding:.35rem .65rem;" title="Soft Delete Student">🗑 Soft Delete</button>
+                    </form>
+                ` : ''}
+            `;
+        }
+
         footer.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:.75rem;flex-wrap:wrap;">
-                <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-                    <a href="student-certificates.php?student_id=${s.id}" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:.35rem;">
-                        📜 Generate Certificate
-                    </a>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="closeModal('student360Modal'); openRemarkModal(${s.id}, '${escapeJs(fullName)}');">
-                        ⚠️ Add Remark
-                    </button>
-                    <a href="student-promotions.php" class="btn btn-sm btn-soft">
-                        🚀 Promote Student
-                    </a>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+                    ${actionButtons}
                 </div>
                 <button type="button" class="btn btn-sm btn-soft" onclick="closeModal('student360Modal')">Close</button>
             </div>

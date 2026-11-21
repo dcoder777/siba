@@ -39,6 +39,7 @@ return function (Router $router, array $context): void {
     $router->add('POST', '/api/v1/students', fn() => $students->create(), true, ['admin'], 'students');
     $router->add('PUT', '/api/v1/students/{id}', fn($p) => $students->update($p), true, ['admin'], 'students');
     $router->add('DELETE', '/api/v1/students/{id}', fn($p) => $students->delete($p), true, ['admin'], 'students');
+    $router->add('POST', '/api/v1/students/{id}/restore', fn($p) => $students->restore($p), true, ['admin'], 'students');
     $router->add('GET', '/api/v1/students/attendance', fn() => $students->listAttendance(), true, ['admin', 'teacher'], 'students');
     $router->add('POST', '/api/v1/students/attendance', fn($_, $ctx) => $students->createAttendance($ctx), true, ['admin', 'teacher'], 'students');
     $router->add('PUT', '/api/v1/students/attendance/{id}', fn($p) => $students->updateAttendance($p), true, ['admin', 'teacher'], 'students');
