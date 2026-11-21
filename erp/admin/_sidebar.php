@@ -15,8 +15,10 @@ $isOwner = $isOwner ?? (($user['role'] ?? '') === 'owner');
             <button type="button" class="btn btn-soft sidebar-toggle" id="sidebarToggle" title="Collapse menu">
                 <span class="sidebar-icon">≡</span>
             </button>
-            <button type="button" class="btn btn-soft sidebar-toggle theme-toggle" id="themeToggle" title="Toggle theme">
-                <span class="sidebar-icon" id="themeToggleIcon">D</span>
+            <button type="button" class="btn btn-soft sidebar-toggle theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+                <span class="sidebar-icon" id="themeToggleIcon" style="display:inline-flex;align-items:center;justify-content:center;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+                </span>
             </button>
         </div>
     </div>
