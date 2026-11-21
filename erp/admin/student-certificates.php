@@ -146,6 +146,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 // ── Search & Filter State ──
 $searchQ = trim((string) ($_GET['q'] ?? ''));
 $filterType = trim((string) ($_GET['type'] ?? ''));
+$filterClass = trim((string) ($_GET['class'] ?? ''));
+$filterStatus = trim((string) ($_GET['status'] ?? ''));
+$filterDate = trim((string) ($_GET['issue_date'] ?? ($_GET['date'] ?? '')));
+
+// Available classes for dropdown filter
+$classList = $pdo->query("SELECT DISTINCT class_name FROM student_enrollments WHERE class_name IS NOT NULL AND class_name <> '' ORDER BY class_name ASC")->fetchAll(PDO::FETCH_COLUMN) ?: [];
+if (empty($classList)) {
+    $classList = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+}
+usort($classList, 'strnatcasecmp');
 
 $whereParts = ["1=1"];
 $pParams = [];
@@ -157,6 +167,21 @@ if ($filterType !== '') {
     $whereParts[] = "sc.certificate_type = :t";
     $pParams['t'] = $filterType;
 }
+if ($filterClass !== '') {
+    $whereParts[] = "(e.class_name = :cls OR sc.content_json LIKE :cls_json)";
+    $pParams['cls'] = $filterClass;
+    $pParams['cls_json'] = '%"class_name":"' . $filterClass . '"%';
+}
+if ($filterStatus !== '') {
+    $whereParts[] = "sc.status = :st";
+    $pParams['st'] = $filterStatus;
+}
+if ($filterDate !== '') {
+    $whereParts[] = "sc.issue_date = :dt";
+    $pParams['dt'] = $filterDate;
+}
+
+$hasActiveFilter = ($searchQ !== '' || $filterType !== '' || $filterClass !== '' || $filterStatus !== '' || $filterDate !== '');
 
 $whereStr = implode(' AND ', $whereParts);
 
@@ -230,7 +255,7 @@ $allStudents = $pdo->query("
         <!-- Filter Bar -->
         <div class="panel" style="padding:1rem 1.25rem;margin-bottom:1.25rem;">
             <form method="get" action="student-certificates.php" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;">
-                <div style="flex:1;min-width:200px;">
+                <div style="flex:1;min-width:180px;">
                     <input type="text" name="q" value="<?= e($searchQ) ?>" placeholder="Search by Certificate No, Admission No, Student Name..." style="width:100%;padding:.45rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
                 </div>
                 <div>
@@ -241,10 +266,34 @@ $allStudents = $pdo->query("
                         <option value="Character Certificate" <?= $filterType === 'Character Certificate' ? 'selected' : '' ?>>Character Certificate</option>
                         <option value="Leaving Certificate" <?= $filterType === 'Leaving Certificate' ? 'selected' : '' ?>>Leaving Certificate</option>
                         <option value="No-Dues Certificate" <?= $filterType === 'No-Dues Certificate' ? 'selected' : '' ?>>No-Dues Certificate</option>
+                        <option value="Attendance Certificate" <?= $filterType === 'Attendance Certificate' ? 'selected' : '' ?>>Attendance Certificate</option>
                     </select>
                 </div>
+                <div>
+                    <select name="class" style="padding:.45rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
+                        <option value="">All Classes</option>
+                        <?php foreach ($classList as $c): ?>
+                            <option value="<?= e($c) ?>" <?= $filterClass === (string)$c ? 'selected' : '' ?>>
+                                <?= (is_numeric($c) || !str_starts_with(strtolower($c), 'class')) ? ('Class ' . e($c)) : e($c) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <select name="status" style="padding:.45rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
+                        <option value="">All Statuses</option>
+                        <option value="Issued" <?= $filterStatus === 'Issued' ? 'selected' : '' ?>>Issued</option>
+                        <option value="Cancelled" <?= $filterStatus === 'Cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                        <option value="Approved" <?= $filterStatus === 'Approved' ? 'selected' : '' ?>>Approved</option>
+                        <option value="Draft" <?= $filterStatus === 'Draft' ? 'selected' : '' ?>>Draft</option>
+                    </select>
+                </div>
+                <div style="display:flex;align-items:center;gap:.35rem;">
+                    <label style="font-size:.8rem;color:#64748b;font-weight:600;white-space:nowrap;">Issue Date:</label>
+                    <input type="date" name="issue_date" value="<?= e($filterDate) ?>" style="padding:.42rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.875rem;">
+                </div>
                 <button type="submit" class="btn btn-sm">Filter</button>
-                <?php if ($searchQ !== '' || $filterType !== ''): ?>
+                <?php if ($hasActiveFilter): ?>
                     <a href="student-certificates.php" class="btn btn-sm btn-soft">Clear</a>
                 <?php endif; ?>
             </form>
