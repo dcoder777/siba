@@ -228,7 +228,6 @@ $allStudents = $pdo->query("
                 </div>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
                     <button type="button" class="btn btn-sm btn-primary" onclick="openModal('issueCertModal')">+ Issue New Certificate</button>
-                    <a href="student-lifecycle.php" class="btn btn-sm btn-outline">← Back to Student Directory</a>
                 </div>
             </div>
         </section>
