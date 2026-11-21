@@ -30,6 +30,10 @@ if (!$cert) {
     die('Certificate not found.');
 }
 
+if (($cert['status'] ?? '') === 'Cancelled') {
+    die('This certificate has been cancelled and cannot be printed.');
+}
+
 $payload = json_decode($cert['content_json'] ?? '{}', true) ?: [];
 $studentName = $payload['student_name'] ?? ($cert['first_name'] . ' ' . $cert['last_name']);
 $admNo = $payload['admission_no'] ?? $cert['admission_no'];

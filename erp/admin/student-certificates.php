@@ -296,17 +296,21 @@ $allStudents = $pdo->query("
                                         </span>
                                     </td>
                                     <td style="text-align:center;">
-                                        <div style="display:flex;gap:.35rem;justify-content:center;">
-                                            <a href="certificate-print.php?id=<?= (int)$c['id'] ?>" target="_blank" class="btn btn-sm btn-primary" title="Print Official Certificate">
-                                                🖨 Print
-                                            </a>
-                                            <?php if ($c['status'] === 'Issued' && ($canDelete || $isOwner)): ?>
-                                                <form method="post" style="display:inline;" onsubmit="return confirm('Cancel certificate <?= e($c['certificate_no']) ?>?');">
-                                                    <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
-                                                    <input type="hidden" name="action" value="cancel_certificate">
-                                                    <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger" title="Cancel">✕</button>
-                                                </form>
+                                        <div style="display:flex;gap:.35rem;justify-content:center;align-items:center;">
+                                            <?php if ($c['status'] !== 'Cancelled'): ?>
+                                                <a href="certificate-print.php?id=<?= (int)$c['id'] ?>" target="_blank" class="btn btn-sm btn-primary" title="Print Official Certificate">
+                                                    🖨 Print
+                                                </a>
+                                                <?php if ($c['status'] === 'Issued' && ($canDelete || $isOwner)): ?>
+                                                    <form method="post" style="display:inline;" onsubmit="return confirm('Cancel certificate <?= e($c['certificate_no']) ?>?');">
+                                                        <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+                                                        <input type="hidden" name="action" value="cancel_certificate">
+                                                        <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="Cancel">✕</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <span style="font-size:.8rem;color:#94a3b8;font-weight:600;">—</span>
                                             <?php endif; ?>
                                         </div>
                                     </td>
