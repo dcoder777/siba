@@ -57,25 +57,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
             $start = trim((string) ($_POST['start_date'] ?? date('Y-m-d')));
             $end = trim((string) ($_POST['end_date'] ?? date('Y-m-d', strtotime('+7 days'))));
             $status = trim((string) ($_POST['status'] ?? 'Upcoming'));
-            $teacherIdRaw = trim((string) ($_POST['teacher_id'] ?? ''));
-            $teacherName = trim((string) ($_POST['teacher_name'] ?? ''));
+            $teacherId = (int) ($_POST['teacher_id'] ?? 0);
 
             if ($title === '') {
                 throw new \RuntimeException('Exam title is required.');
             }
-
-            $teacherId = null;
-            if (is_numeric($teacherIdRaw) && (int)$teacherIdRaw > 0) {
-                $teacherId = (int) $teacherIdRaw;
-                if ($teacherName === '') {
-                    $tStmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
-                    $tStmt->execute([$teacherId]);
-                    $teacherName = (string) $tStmt->fetchColumn();
-                }
+            if ($teacherId <= 0) {
+                throw new \RuntimeException('Please select an assigned teacher.');
             }
 
+            $tStmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+            $tStmt->execute([$teacherId]);
+            $teacherName = (string) $tStmt->fetchColumn();
             if ($teacherName === '') {
-                throw new \RuntimeException('Please select or specify an assigned teacher for this examination term.');
+                throw new \RuntimeException('Selected teacher not found.');
             }
 
             $stmt = $pdo->prepare("INSERT INTO exams (title, academic_year, teacher_id, teacher_name, start_date, end_date, status) VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -109,7 +104,7 @@ $exams = $pdo->query("
     ORDER BY e.start_date DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch active teachers from users and staff who can log in and enter marks
+// Fetch active teachers who can log in and enter marks
 $teachers = $pdo->query("
     SELECT u.id, u.name, u.email 
     FROM users u 
@@ -117,17 +112,6 @@ $teachers = $pdo->query("
     WHERE r.name = 'teacher' AND u.is_active = 1
     ORDER BY u.name ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
-
-try {
-    $staffTeachers = $pdo->query("
-        SELECT id, name, email 
-        FROM staff 
-        WHERE (staff_type = 'Teaching' OR designation LIKE '%Teacher%') AND status = 'Active'
-        ORDER BY name ASC
-    ")->fetchAll(PDO::FETCH_ASSOC);
-} catch (\Throwable $e) {
-    $staffTeachers = [];
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -252,20 +236,13 @@ try {
 
             <div style="margin-bottom:1rem;">
                 <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.3rem;">Assigned Teacher *</label>
-                <select name="teacher_id" id="examTeacherSelect" required onchange="handleTeacherSelect(this)" style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;margin-bottom:.4rem;">
+                <select name="teacher_id" id="examTeacherSelect" required style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;">
                     <option value="">— Select Assigned Teacher —</option>
                     <?php foreach ($teachers as $t): ?>
-                        <option value="<?= (int)$t['id'] ?>" data-name="<?= e($t['name']) ?>"><?= e($t['name']) ?> (<?= e($t['email']) ?>)</option>
+                        <option value="<?= (int)$t['id'] ?>"><?= e($t['name']) ?> (<?= e($t['email']) ?>)</option>
                     <?php endforeach; ?>
-                    <?php foreach ($staffTeachers as $st): ?>
-                        <?php if (!in_array($st['name'], array_column($teachers, 'name'))): ?>
-                            <option value="staff_<?= (int)$st['id'] ?>" data-name="<?= e($st['name']) ?>"><?= e($st['name']) ?> (Staff / <?= e($st['email'] ?: 'No email') ?>)</option>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                    <option value="custom">✏️ Enter Custom Teacher Name...</option>
                 </select>
-                <input type="text" name="teacher_name" id="examTeacherName" placeholder="Enter teacher name..." style="width:100%;padding:.5rem;border:1px solid #cbd5e1;border-radius:6px;display:none;">
-                <span style="font-size:.74rem;color:#64748b;">The assigned teacher logs into the ERP/App with their credentials to record & submit marks.</span>
+                <span style="font-size:.74rem;color:#64748b;margin-top:.25rem;display:block;">The assigned teacher logs into the ERP/App with their credentials to record & submit marks.</span>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
@@ -297,21 +274,6 @@ try {
 </div>
 
 <script>
-function handleTeacherSelect(sel) {
-    var nameInput = document.getElementById('examTeacherName');
-    if (!sel || !nameInput) return;
-    var selectedOpt = sel.options[sel.selectedIndex];
-    if (sel.value === 'custom') {
-        nameInput.style.display = 'block';
-        nameInput.value = '';
-        nameInput.required = true;
-        nameInput.focus();
-    } else {
-        nameInput.style.display = 'none';
-        nameInput.required = false;
-        nameInput.value = selectedOpt.getAttribute('data-name') || '';
-    }
-}
 function openModal(id) {
     var el = document.getElementById(id);
     if (el) el.classList.add('show');
