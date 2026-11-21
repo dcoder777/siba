@@ -190,11 +190,6 @@ $totalResults = (int) $pdo->query("SELECT COUNT(*) FROM exam_results")->fetchCol
                 <div class="kpi-value" style="color:#16a34a;"><?= $totalResults ?></div>
                 <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Individual subject scores</div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Evaluation Standard</div>
-                <div class="kpi-value" style="font-size:1.3rem;">Marks Only</div>
-                <div style="font-size:.78rem;color:#64748b;margin-top:.2rem;">Official scoring system</div>
-            </div>
         </div>
 
         <!-- Filter Bar -->
