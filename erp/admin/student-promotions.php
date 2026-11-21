@@ -200,9 +200,6 @@ if (is_numeric($selectedFromClass)) {
                     <h1>Student Session Promotions & Rollover</h1>
                     <p>Promote entire classes to the next academic year or handle retentions, section transfers, and graduation.</p>
                 </div>
-                <div>
-                    <a href="student-lifecycle.php" class="btn btn-sm btn-outline">← Back to Student Directory</a>
-                </div>
             </div>
         </section>
 
