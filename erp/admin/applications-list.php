@@ -111,6 +111,141 @@ HTML;
     }
 }
 
+// ─── Batch Multi-Select Status Update (Admit & Move to Student Directory or Update Status) ───
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['batch_status_update']) && verify_csrf()) {
+    $selectedIds = array_filter(array_map('intval', (array) ($_POST['selected_app_ids'] ?? [])));
+    $targetStatus = trim((string) ($_POST['target_status'] ?? ''));
+
+    if (empty($selectedIds)) {
+        $error = 'Please select at least one application from the list.';
+    } elseif (!in_array($targetStatus, $statusOptions, true)) {
+        $error = 'Invalid status selected.';
+    } else {
+        try {
+            $updatedCount = 0;
+            $admittedCount = 0;
+
+            // Session label for new enrollments
+            $sessionStmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'academic_year' LIMIT 1");
+            $sessionStmt->execute();
+            $sessionLabel = $sessionStmt->fetchColumn() ?: date('Y') . '-' . (date('y') + 1);
+
+            // Fetch selected applications
+            $inPlaceholders = implode(',', array_fill(0, count($selectedIds), '?'));
+            $fetchStmt = $pdo->prepare("
+                SELECT a.*, p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone 
+                FROM applications a 
+                LEFT JOIN parents p ON p.id = a.parent_id 
+                WHERE a.id IN ($inPlaceholders) AND a.deleted_at IS NULL
+            ");
+            $fetchStmt->execute($selectedIds);
+            $appsToUpdate = $fetchStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Determine starting admission number sequence
+            $maxAdm = (int) $pdo->query("SELECT MAX(CAST(SUBSTRING(admission_no, 4) AS UNSIGNED)) FROM students WHERE admission_no LIKE 'ADM%'")->fetchColumn();
+            if ($maxAdm <= 0) {
+                $maxAdm = (int) $pdo->query("SELECT COUNT(*) FROM students")->fetchColumn();
+            }
+            $nextAdmNum = $maxAdm + 1;
+
+            $insStudentStmt = $pdo->prepare("
+                INSERT INTO students (admission_no, first_name, last_name, gender, dob, blood_group, phone, email, address, created_at) 
+                VALUES (:admission_no, :first_name, :last_name, :gender, :dob, :blood_group, :phone, :email, :address, NOW())
+            ");
+
+            $enrollStmt = $pdo->prepare("
+                INSERT INTO student_enrollments (student_id, class_name, session_label, status, is_current) 
+                VALUES (:student_id, :class_name, :session_label, 'active', 1)
+            ");
+
+            $updateAppStmt = $pdo->prepare("
+                UPDATE applications 
+                SET status = :status, student_id = COALESCE(:student_id, student_id), admission_no = COALESCE(:admission_no, admission_no) 
+                WHERE id = :id
+            ");
+
+            foreach ($appsToUpdate as $appData) {
+                $appId = (int) $appData['id'];
+                $oldStatus = (string) ($appData['status'] ?? '');
+                $existingStudentId = !empty($appData['student_id']) ? (int) $appData['student_id'] : null;
+                $existingAdmNo = !empty($appData['admission_no']) ? (string) $appData['admission_no'] : null;
+
+                $newStudentId = $existingStudentId;
+                $newAdmNo = $existingAdmNo;
+
+                if ($targetStatus === 'Admitted' && empty($existingStudentId)) {
+                    // Create student in directory
+                    $nameParts = explode(' ', trim((string)$appData['student_name']), 2);
+                    $firstName = $nameParts[0];
+                    $lastName = $nameParts[1] ?? '';
+
+                    $assignedAdmNo = sprintf("ADM%04d", $nextAdmNum++);
+                    $addrParts = array_filter([
+                        $appData['address_line1'],
+                        $appData['address_line2'],
+                        $appData['village_city'] ?? $appData['district'],
+                        $appData['state'],
+                        $appData['pin']
+                    ]);
+                    $addr = implode(', ', $addrParts) ?: ($appData['address'] ?? '');
+
+                    $insStudentStmt->execute([
+                        'admission_no' => $assignedAdmNo,
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
+                        'gender' => $appData['gender'] ?? null,
+                        'dob' => $appData['dob'] ?? null,
+                        'blood_group' => $appData['blood_group'] ?? null,
+                        'phone' => $appData['contact_no'] ?: ($appData['parent_phone'] ?? null),
+                        'email' => $appData['email'] ?: ($appData['parent_email'] ?? null),
+                        'address' => $addr,
+                    ]);
+                    $newStudentId = (int) $pdo->lastInsertId();
+                    $newAdmNo = $assignedAdmNo;
+
+                    // Create enrollment
+                    $enrollStmt->execute([
+                        'student_id' => $newStudentId,
+                        'class_name' => $appData['class_sought'],
+                        'session_label' => $sessionLabel,
+                    ]);
+
+                    $admittedCount++;
+                }
+
+                $updateAppStmt->execute([
+                    'status' => $targetStatus,
+                    'student_id' => $newStudentId,
+                    'admission_no' => $newAdmNo,
+                    'id' => $appId
+                ]);
+
+                // Email notification if status changed to Admitted and parent email exists
+                if ($oldStatus !== $targetStatus && $targetStatus === 'Admitted' && !empty($appData['parent_email'])) {
+                    $parentEmail = $appData['parent_email'];
+                    $parentName = $appData['parent_name'] ?? 'Parent';
+                    $studentName = $appData['student_name'] ?? 'Applicant';
+                    $appNo = $appData['application_no'] ?? ('#' . $appId);
+                    $subject = "Admission Approved – SIBA Public School ({$appNo})";
+                    $body = "Dear {$parentName},\r\n\r\nCongratulations! The admission application for {$studentName} has been approved and admitted.\r\nAdmission Number: {$newAdmNo}\r\nClass: {$appData['class_sought']}\r\n\r\nBest regards,\r\nSIBA Public School Administration";
+                    $headers = "From: noreply@sibapublicschool.com\r\n";
+                    try { @mail($parentEmail, $subject, $body, $headers); } catch (\Throwable) {}
+                }
+
+                $updatedCount++;
+            }
+
+            if ($targetStatus === 'Admitted') {
+                $success = "Successfully updated {$updatedCount} application(s) to 'Admitted'. {$admittedCount} new student profile(s) moved to the Student Directory!";
+            } else {
+                $success = "Successfully updated {$updatedCount} application(s) to '{$targetStatus}'.";
+            }
+        } catch (Exception $e) {
+            $error = 'Failed to update application statuses: ' . $e->getMessage();
+        }
+    }
+}
+
 // ─── Fetch Applications ───
 $where = [];
 $params = [];
@@ -246,10 +381,44 @@ function statusBadge(string $s): string {
             <span style="margin-left:auto;color:#64748b;font-size:.85rem;"><?= $totalApps ?> application<?= $totalApps !== 1 ? 's' : '' ?></span>
         </form>
 
+        <!-- Batch Multi-Select Status Update Toolbar -->
+        <form method="post" id="batchActionForm" action="applications-list.php<?= !empty($_SERVER['QUERY_STRING']) ? ('?' . e($_SERVER['QUERY_STRING'])) : '' ?>" style="margin-bottom:1rem;">
+            <input type="hidden" name="_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="batch_status_update" value="1">
+            <div id="batchActionBar" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:.85rem 1.15rem;transition:all .2s ease;">
+                <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:.45rem;font-weight:700;color:#0f172a;font-size:.9rem;">
+                        <span style="font-size:1.15rem;">☑️</span>
+                        <span id="selectedCountText">0 applications selected</span>
+                    </div>
+                    <div style="display:flex;gap:.35rem;">
+                        <button type="button" class="btn btn-sm btn-soft" onclick="toggleSelectAll(true)" style="padding:.25rem .6rem;font-size:.78rem;">Select Page (<?= count($applications) ?>)</button>
+                        <button type="button" class="btn btn-sm btn-soft" onclick="toggleSelectAll(false)" style="padding:.25rem .6rem;font-size:.78rem;">Clear</button>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+                    <label for="target_status" style="font-size:.82rem;font-weight:600;color:#334155;margin:0;">Change Status To:</label>
+                    <select name="target_status" id="target_status" style="padding:.38rem .75rem;border:1px solid #cbd5e1;border-radius:6px;font-size:.85rem;background:#fff;font-weight:600;">
+                        <option value="">— Choose Status —</option>
+                        <option value="Admitted" style="color:#065f46;font-weight:700;">🎓 Admitted (Move to Student Directory)</option>
+                        <option value="Under review">⏳ Under review</option>
+                        <option value="Application started">📝 Application started</option>
+                        <option value="Rejected" style="color:#991b1b;">❌ Rejected</option>
+                    </select>
+                    <button type="submit" id="btnApplyBatch" class="btn btn-sm btn-primary" style="padding:.4rem 1rem;font-weight:600;display:inline-flex;align-items:center;gap:.4rem;" disabled onclick="return confirmBatchAction();">
+                        <span>Apply Status</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow-x:auto;">
             <table class="app-table">
                 <thead>
                     <tr>
+                        <th style="width:38px;text-align:center;">
+                            <input type="checkbox" id="masterCheckbox" title="Select all applications on this page" style="cursor:pointer;width:16px;height:16px;">
+                        </th>
                         <th>#</th>
                         <th>App No</th>
                         <th>Student</th>
@@ -263,10 +432,13 @@ function statusBadge(string $s): string {
                 </thead>
                 <tbody>
                     <?php if (empty($applications)): ?>
-                        <tr><td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No applications found.</td></tr>
+                        <tr><td colspan="10" style="text-align:center;padding:2rem;color:#94a3b8;">No applications found.</td></tr>
                     <?php else: ?>
                         <?php foreach ($applications as $i => $a): ?>
-                                <tr>
+                            <tr>
+                                <td style="text-align:center;">
+                                    <input type="checkbox" class="app-checkbox" value="<?= (int) $a['id'] ?>" style="cursor:pointer;width:16px;height:16px;" onchange="updateSelectedCount();">
+                                </td>
                                 <td style="color:#94a3b8;"><?= $offset + $i + 1 ?></td>
                                 <td><code style="font-size:.8rem;"><?= e($a['application_no'] ?? '—') ?></code></td>
                                 <td>
@@ -279,7 +451,14 @@ function statusBadge(string $s): string {
                                 <td><?= e($a['parent_name'] ?? '—') ?></td>
                                 <td><?= e($a['parent_phone'] ?? $a['contact_no'] ?? '—') ?></td>
                                 <td style="white-space:nowrap;"><?= date('d-m-Y', strtotime($a['applied_at'])) ?></td>
-                                <td><?= statusBadge($a['status']) ?></td>
+                                <td>
+                                    <?= statusBadge($a['status']) ?>
+                                    <?php if (!empty($a['student_id'])): ?>
+                                        <div style="font-size:.72rem;color:#059669;font-weight:600;margin-top:3px;display:flex;align-items:center;gap:3px;">
+                                            <span>✓</span> In Directory
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <?php $payStatus = $a['payment_status'] ?? 'Pending'; ?>
                                     <form method="post" onsubmit="return confirm('Update payment for <?= e($a['student_name']) ?>?')">
@@ -331,6 +510,81 @@ function statusBadge(string $s): string {
         <?php endif; ?>
     </main>
 </div>
+<script>
+function updateSelectedCount() {
+    var checkedBoxes = document.querySelectorAll('.app-checkbox:checked');
+    var count = checkedBoxes.length;
+    var countText = document.getElementById('selectedCountText');
+    var applyBtn = document.getElementById('btnApplyBatch');
+    var bar = document.getElementById('batchActionBar');
+    var master = document.getElementById('masterCheckbox');
+    var allBoxes = document.querySelectorAll('.app-checkbox');
+
+    if (countText) {
+        countText.textContent = count + ' application' + (count === 1 ? '' : 's') + ' selected';
+    }
+    if (applyBtn) {
+        applyBtn.disabled = (count === 0);
+    }
+    if (master && allBoxes.length > 0) {
+        master.checked = (count === allBoxes.length);
+        master.indeterminate = (count > 0 && count < allBoxes.length);
+    }
+
+    if (bar) {
+        if (count > 0) {
+            bar.style.borderColor = '#3b82f6';
+            bar.style.background = '#eff6ff';
+            bar.style.boxShadow = '0 2px 8px rgba(59,130,246,0.12)';
+        } else {
+            bar.style.borderColor = '#cbd5e1';
+            bar.style.background = '#f8fafc';
+            bar.style.boxShadow = 'none';
+        }
+    }
+}
+
+function toggleSelectAll(checked) {
+    document.querySelectorAll('.app-checkbox').forEach(function(cb) {
+        cb.checked = checked;
+    });
+    updateSelectedCount();
+}
+
+document.getElementById('masterCheckbox')?.addEventListener('change', function() {
+    toggleSelectAll(this.checked);
+});
+
+function confirmBatchAction() {
+    var checked = document.querySelectorAll('.app-checkbox:checked');
+    if (checked.length === 0) {
+        alert('Please select at least one application.');
+        return false;
+    }
+    var targetStatus = document.getElementById('target_status').value;
+    if (!targetStatus) {
+        alert('Please choose a status from the dropdown to apply.');
+        document.getElementById('target_status').focus();
+        return false;
+    }
+
+    // Populate hidden inputs in batchActionForm for all checked checkboxes
+    var form = document.getElementById('batchActionForm');
+    form.querySelectorAll('input[name="selected_app_ids[]"]').forEach(function(el) { el.remove(); });
+    checked.forEach(function(cb) {
+        var hiddenInp = document.createElement('input');
+        hiddenInp.type = 'hidden';
+        hiddenInp.name = 'selected_app_ids[]';
+        hiddenInp.value = cb.value;
+        form.appendChild(hiddenInp);
+    });
+
+    if (targetStatus === 'Admitted') {
+        return confirm('Are you sure you want to ADMIT ' + checked.length + ' application(s)?\n\nAll selected applicants will be assigned Admission Numbers and moved directly into the Student Directory.');
+    }
+    return confirm('Update status of ' + checked.length + ' application(s) to "' + targetStatus + '"?');
+}
+</script>
 <script src="../assets/erp.js?v=<?php echo filemtime(dirname(__DIR__) . '/assets/erp.js'); ?>"></script>
 <?php include __DIR__ . '/_theme-js.php'; ?>
 </body>
