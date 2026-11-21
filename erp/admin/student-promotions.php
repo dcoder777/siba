@@ -42,7 +42,7 @@ $classList = $pdo->query("SELECT DISTINCT class_name FROM student_enrollments WH
 
 // Standard and database classes for promote-to dropdown
 $standardClasses = [
-    'Playgroup', 'Nursery', 'LKG', 'UKG',
+    'Playgroup', 'Nursery',
     'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
     'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
     'Class 11', 'Class 12',
@@ -172,10 +172,6 @@ if (is_numeric($selectedFromClass)) {
 } elseif ($selectedFromClass === 'Playgroup' || $selectedFromClass === 'Play School') {
     $suggestedNextClass = 'Nursery';
 } elseif ($selectedFromClass === 'Nursery') {
-    $suggestedNextClass = 'LKG';
-} elseif ($selectedFromClass === 'LKG') {
-    $suggestedNextClass = 'UKG';
-} elseif ($selectedFromClass === 'UKG') {
     $suggestedNextClass = in_array('Class 1', $toClassList, true) ? 'Class 1' : (in_array('1', $toClassList, true) ? '1' : 'Class 1');
 }
 ?>

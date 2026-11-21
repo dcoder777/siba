@@ -11,7 +11,7 @@ $user = admin_user();
 $error = '';
 $success = '';
 
-$classOptions = ['Play School', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
+$classOptions = ['Play School', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 $frequencyOptions = ['Monthly', 'Quarterly', 'Half-Yearly', 'Yearly', 'One-Time'];
 
 // ─── Ensure tables exist ───
