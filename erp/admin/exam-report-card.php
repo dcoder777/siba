@@ -275,8 +275,8 @@ $attPct = ($totalAtt > 0) ? round(($presents / $totalAtt) * 100, 1) : 100.0;
     <div class="header">
         <img src="../../assets/images/logo.jpg" alt="SIBA Public School Logo" class="school-logo" onerror="this.src='https://sibapublicschool.com/assets/images/logo.jpg'">
         <div class="school-name">SIBA Public School</div>
-        <div class="sub-header">Affiliated & Recognized English Medium Institution</div>
-        <div style="font-size:.85rem;color:#64748b;">Official Student Performance Evaluation | Evaluation Scheme: Marks Only</div>
+        <div class="sub-header">Nurturing Young Minds for a Brighter Future</div>
+        <div style="font-size:.85rem;color:#64748b;">WBBSE Affiliated &bull; Chapra, Nadia, West Bengal</div>
     </div>
 
     <div class="report-title-box">
