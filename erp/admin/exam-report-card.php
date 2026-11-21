@@ -217,10 +217,11 @@ $attPct = ($totalAtt > 0) ? round(($presents / $totalAtt) * 100, 1) : 100.0;
         .badge-pass { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
         .badge-fail { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .sig-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
             margin-top: 3.5rem;
+            padding: 0 1rem;
         }
         .sig-line {
             border-top: 1px solid #94a3b8;
@@ -228,20 +229,8 @@ $attPct = ($totalAtt > 0) ? round(($presents / $totalAtt) * 100, 1) : 100.0;
             font-weight: 700;
             font-size: .9rem;
             color: #334155;
-            margin: 0 1rem;
-        }
-        .seal-circle {
-            width: 80px;
-            height: 80px;
-            border: 2px dashed #94a3b8;
-            border-radius: 50%;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: .75rem;
-            color: #94a3b8;
-            text-transform: uppercase;
+            min-width: 200px;
+            text-align: center;
         }
         .toolbar-print {
             max-width: 820px;
@@ -403,11 +392,6 @@ $attPct = ($totalAtt > 0) ? round(($presents / $totalAtt) * 100, 1) : 100.0;
     <div class="sig-grid">
         <div class="sig-line">
             Class Teacher Signature
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;">
-            <div class="seal-circle">
-                School Seal
-            </div>
         </div>
         <div class="sig-line">
             Principal Signature
