@@ -23,7 +23,7 @@ $generatedAppNo = '';
 $generatedAppId = 0;
 $parentLoginUrl = 'https://sibapublicschool.com/parent/login.php';
 
-$classOptions = ['Nursery', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
+$classOptions = ['Pre Nursery', 'Nursery', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 $genderOptions = ['Male', 'Female', 'Other'];
 $bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 $incomeOptions = ['Below 1 Lakh', '1 - 2.5 Lakhs', '2.5 - 5 Lakhs', '5 - 10 Lakhs', 'Above 10 Lakhs'];

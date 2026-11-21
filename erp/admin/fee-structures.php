@@ -8,7 +8,7 @@ $pdo = $GLOBALS['pdo'];
 $error = '';
 $success = '';
 
-$classOptions = ['Play School', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
+$classOptions = ['Pre Nursery', 'Nursery', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 
 // Auto-create tables (FK constraints omitted to avoid type mismatch with legacy tables)
 try {

@@ -1361,7 +1361,7 @@ if (isset($_GET['edit'])) {
                             <select name="class_name">
                                 <option value="">— All / Not class-specific —</option>
                                 <?php
-                                $classes = ['Nursery', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+                                $classes = ['Pre Nursery', 'Nursery', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
                                 foreach ($classes as $cls): ?>
                                     <option value="<?= $cls ?>" <?= (isset($editRecord['class_name']) && $editRecord['class_name'] === $cls) ? 'selected' : '' ?>><?= $cls ?></option>
                                 <?php endforeach; ?>

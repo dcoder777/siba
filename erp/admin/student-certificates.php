@@ -153,7 +153,7 @@ $filterDate = trim((string) ($_GET['issue_date'] ?? ($_GET['date'] ?? '')));
 // Available classes for dropdown filter
 $classList = $pdo->query("SELECT DISTINCT class_name FROM student_enrollments WHERE class_name IS NOT NULL AND class_name <> '' ORDER BY class_name ASC")->fetchAll(PDO::FETCH_COLUMN) ?: [];
 if (empty($classList)) {
-    $classList = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10'];
+    $classList = ['Pre Nursery', 'Nursery', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8'];
 }
 usort($classList, 'strnatcasecmp');
 
