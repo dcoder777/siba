@@ -160,11 +160,10 @@ $activityLogs = $pdo->query("
                 <div class="stack" style="gap:.4rem">
                     <span class="eyebrow">Campus Life & Co-Curricular</span>
                     <h1>House Management & Leaderboard</h1>
-                    <p>Track school houses, manage student allocations, and award inter-house competition points.</p>
+                    <p>Track school houses, house standings, and award inter-house competition points.</p>
                 </div>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
                     <button type="button" class="btn btn-sm btn-primary" onclick="openModal('awardPointsModal')">🏆 Award House Points</button>
-                    <a href="house-allocations.php" class="btn btn-sm btn-outline">👥 Student Allocations</a>
                     <button type="button" class="btn btn-sm btn-soft" onclick="openAddHouseModal()">+ Add House</button>
                 </div>
             </div>
