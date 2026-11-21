@@ -175,7 +175,6 @@ $allStudents = $pdo->query("SELECT s.id, s.admission_no, s.first_name, s.last_na
                             ⚖ Auto-Balance <?= $unallocatedCount > 0 ? "({$unallocatedCount} Unassigned)" : '' ?>
                         </button>
                     </form>
-                    <button type="button" class="btn btn-sm btn-primary" onclick="openModal('allocModal')">+ Assign Student</button>
                     <a href="house-management.php" class="btn btn-sm btn-soft">← Back to Leaderboard</a>
                 </div>
             </div>
