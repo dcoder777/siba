@@ -25,6 +25,7 @@ try {
         subject_id BIGINT NOT NULL,
         exam_name VARCHAR(120) NOT NULL,
         max_marks DECIMAL(8,2) NOT NULL DEFAULT 100.00,
+        pass_marks DECIMAL(8,2) NOT NULL DEFAULT 33.00,
         obtained_marks DECIMAL(8,2) NOT NULL DEFAULT 0.00,
         grade VARCHAR(5) DEFAULT NULL,
         result_date DATE DEFAULT NULL,
@@ -33,6 +34,7 @@ try {
         KEY idx_er_subject (subject_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 } catch (Throwable $e) {}
+try { $pdo->exec("ALTER TABLE exam_results ADD COLUMN pass_marks DECIMAL(8,2) NOT NULL DEFAULT 33.00 AFTER max_marks"); } catch (Throwable $e) {}
 
 // Distinct exams & classes
 $examList = $pdo->query("SELECT DISTINCT title FROM exams ORDER BY id DESC")->fetchAll(PDO::FETCH_COLUMN);
@@ -68,13 +70,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                 throw new \RuntimeException('No marks data submitted.');
             }
 
-            $pdo->beginTransaction();
+            // Load subjects to inherit custom max_marks and pass_marks
+            $allSubs = $pdo->query("SELECT id, max_marks, pass_marks FROM subjects")->fetchAll(PDO::FETCH_ASSOC);
+            $subParamMap = [];
+            foreach ($allSubs as $sbRow) {
+                $subParamMap[(int) $sbRow['id']] = [
+                    'max' => (float) ($sbRow['max_marks'] ?? $maxMarks),
+                    'pass' => (float) ($sbRow['pass_marks'] ?? round($maxMarks * 0.33, 1))
+                ];
+            }
 
-            $saveStmt = $pdo->prepare("
-                INSERT INTO exam_results (student_id, subject_id, exam_name, max_marks, obtained_marks, result_date)
-                VALUES (:student_id, :subject_id, :exam_name, :max_marks, :obtained_marks, CURDATE())
-                ON DUPLICATE KEY UPDATE obtained_marks = VALUES(obtained_marks), max_marks = VALUES(max_marks), result_date = CURDATE()
-            ");
+            $pdo->beginTransaction();
 
             $savedCount = 0;
             foreach ($marksData as $studentIdStr => $subjects) {
@@ -85,7 +91,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                     $subjectId = (int) $subjectIdStr;
                     if ($subjectId <= 0 || $scoreStr === '') continue;
 
-                    $score = min($maxMarks, max(0.0, (float) $scoreStr));
+                    $subMax = isset($subParamMap[$subjectId]) && $subParamMap[$subjectId]['max'] > 0
+                        ? $subParamMap[$subjectId]['max']
+                        : $maxMarks;
+                    $subPass = isset($subParamMap[$subjectId]) && $subParamMap[$subjectId]['pass'] >= 0
+                        ? $subParamMap[$subjectId]['pass']
+                        : round($subMax * 0.33, 1);
+
+                    $score = min($subMax, max(0.0, (float) $scoreStr));
 
                     // Check if existing record
                     $exist = $pdo->prepare("SELECT id FROM exam_results WHERE student_id = ? AND subject_id = ? AND exam_name = ?");
@@ -93,11 +106,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
                     $rowId = $exist->fetchColumn();
 
                     if ($rowId) {
-                        $pdo->prepare("UPDATE exam_results SET obtained_marks = ?, max_marks = ?, result_date = CURDATE() WHERE id = ?")
-                            ->execute([$score, $maxMarks, $rowId]);
+                        $pdo->prepare("UPDATE exam_results SET obtained_marks = ?, max_marks = ?, pass_marks = ?, result_date = CURDATE() WHERE id = ?")
+                            ->execute([$score, $subMax, $subPass, $rowId]);
                     } else {
-                        $pdo->prepare("INSERT INTO exam_results (student_id, subject_id, exam_name, max_marks, obtained_marks, result_date) VALUES (?, ?, ?, ?, ?, CURDATE())")
-                            ->execute([$studentId, $subjectId, $examName, $maxMarks, $score]);
+                        $pdo->prepare("INSERT INTO exam_results (student_id, subject_id, exam_name, max_marks, pass_marks, obtained_marks, result_date) VALUES (?, ?, ?, ?, ?, ?, CURDATE())")
+                            ->execute([$studentId, $subjectId, $examName, $subMax, $subPass, $score]);
                     }
 
                     $savedCount++;
@@ -119,13 +132,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
 }
 
 // ── Fetch subjects for this class ──
-$subjectsStmt = $pdo->prepare("SELECT id, subject_code, subject_name FROM subjects WHERE class_name = ? OR class_name = ? ORDER BY id ASC");
+$subjectsStmt = $pdo->prepare("SELECT id, subject_code, subject_name, max_marks, pass_marks FROM subjects WHERE class_name = ? OR class_name = ? ORDER BY id ASC");
 $subjectsStmt->execute([$selectedClass, str_replace('Class ', '', $selectedClass)]);
 $subjects = $subjectsStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // If no subjects found, fallback to all subjects
 if (empty($subjects)) {
-    $subjects = $pdo->query("SELECT id, subject_code, subject_name FROM subjects ORDER BY id ASC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+    $subjects = $pdo->query("SELECT id, subject_code, subject_name, max_marks, pass_marks FROM subjects ORDER BY id ASC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // ── Fetch students in this class ──
@@ -262,7 +275,9 @@ if (!empty($students) && !empty($subjects)) {
                                 <?php foreach ($subjects as $sb): ?>
                                     <th style="text-align:center;min-width:110px;">
                                         <?= e($sb['subject_name']) ?>
-                                        <div style="font-size:.7rem;font-weight:normal;color:#64748b;">(<?= e($sb['subject_code']) ?>)</div>
+                                        <div style="font-size:.7rem;font-weight:normal;color:#64748b;">
+                                            <?= e($sb['subject_code']) ?> &bull; Pass: <strong style="color:#0284c7;"><?= number_format((float)($sb['pass_marks'] ?? 33), 1) ?></strong>
+                                        </div>
                                     </th>
                                 <?php endforeach; ?>
                                 <th style="text-align:center;">Total</th>

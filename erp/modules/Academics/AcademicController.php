@@ -46,13 +46,17 @@ class AcademicController extends Controller
             $this->fail('subject_code, subject_name and class_name are required', 422);
             return;
         }
+        $max = max(1.0, (float) ($payload['max_marks'] ?? 100.0));
+        $pass = max(0.0, (float) ($payload['pass_marks'] ?? round($max * 0.33, 1)));
         $this->pdo->prepare(
-            'INSERT INTO subjects (subject_code, subject_name, class_name, created_at)
-             VALUES (:subject_code, :subject_name, :class_name, NOW())'
+            'INSERT INTO subjects (subject_code, subject_name, class_name, max_marks, pass_marks, created_at)
+             VALUES (:subject_code, :subject_name, :class_name, :max_marks, :pass_marks, NOW())'
         )->execute([
             'subject_code' => $payload['subject_code'],
             'subject_name' => $payload['subject_name'],
             'class_name' => $payload['class_name'],
+            'max_marks' => $max,
+            'pass_marks' => $pass,
         ]);
         $this->ok(['subject_id' => (int) $this->pdo->lastInsertId()], 'Subject created');
     }
@@ -60,13 +64,17 @@ class AcademicController extends Controller
     public function updateSubject(array $params): void
     {
         $payload = Request::json();
+        $max = max(1.0, (float) ($payload['max_marks'] ?? 100.0));
+        $pass = max(0.0, (float) ($payload['pass_marks'] ?? round($max * 0.33, 1)));
         $this->pdo->prepare(
-            'UPDATE subjects SET subject_code = :subject_code, subject_name = :subject_name, class_name = :class_name WHERE id = :id'
+            'UPDATE subjects SET subject_code = :subject_code, subject_name = :subject_name, class_name = :class_name, max_marks = :max_marks, pass_marks = :pass_marks WHERE id = :id'
         )->execute([
             'id' => $params['id'],
             'subject_code' => $payload['subject_code'] ?? '',
             'subject_name' => $payload['subject_name'] ?? '',
             'class_name' => $payload['class_name'] ?? '',
+            'max_marks' => $max,
+            'pass_marks' => $pass,
         ]);
         $this->ok([], 'Subject updated');
     }
@@ -693,9 +701,9 @@ class AcademicController extends Controller
             return;
         }
 
-        // Marks (Marks-only evaluation system as requested)
+        // Marks evaluation query
         $mStmt = $this->pdo->prepare(
-            'SELECT em.marks_obtained, em.remarks, sub.subject_name, sub.subject_code, 100 AS max_marks
+            'SELECT em.marks_obtained, em.remarks, sub.subject_name, sub.subject_code, sub.max_marks, sub.pass_marks
              FROM exam_marks em
              JOIN subjects sub ON sub.id = em.subject_id
              WHERE em.student_id = :sid AND em.exam_id = :eid
@@ -706,10 +714,21 @@ class AcademicController extends Controller
 
         $totalObtained = 0.0;
         $totalMax = 0.0;
-        foreach ($subjectsMarks as $row) {
-            $totalObtained += (float) $row['marks_obtained'];
-            $totalMax += (float) $row['max_marks'];
+        $allPassed = true;
+        foreach ($subjectsMarks as &$row) {
+            $m = (float) $row['marks_obtained'];
+            $maxM = (float) (!empty($row['max_marks']) ? $row['max_marks'] : 100.0);
+            $passM = (float) (!empty($row['pass_marks']) ? $row['pass_marks'] : round($maxM * 0.33, 1));
+            $row['max_marks'] = $maxM;
+            $row['pass_marks'] = $passM;
+            $row['is_pass'] = ($m >= $passM);
+            if (!$row['is_pass']) {
+                $allPassed = false;
+            }
+            $totalObtained += $m;
+            $totalMax += $maxM;
         }
+        unset($row);
 
         $percentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
 
@@ -721,7 +740,7 @@ class AcademicController extends Controller
                 'total_obtained' => $totalObtained,
                 'total_max' => $totalMax,
                 'percentage' => $percentage,
-                'result' => $percentage >= 33.0 ? 'PASSED' : 'NEEDS IMPROVEMENT',
+                'result' => ($allPassed && $percentage >= 33.0) ? 'PASSED' : 'NEEDS IMPROVEMENT',
                 'evaluation_scheme' => 'Marks Only',
             ]
         ]);

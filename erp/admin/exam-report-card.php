@@ -32,9 +32,21 @@ if (!$student) {
     die('Student record not found.');
 }
 
+try { $pdo->exec("ALTER TABLE exam_results ADD COLUMN pass_marks DECIMAL(8,2) NOT NULL DEFAULT 33.00 AFTER max_marks"); } catch (Throwable $e) {}
+
+$defaultPassPct = 33.0;
+try {
+    $passPctStmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'default_pass_percentage' LIMIT 1");
+    $passPctStmt->execute();
+    $val = $passPctStmt->fetchColumn();
+    if ($val !== false && is_numeric($val)) {
+        $defaultPassPct = (float) $val;
+    }
+} catch (Throwable $e) {}
+
 // Fetch marks for this student and exam
 $marksStmt = $pdo->prepare("
-    SELECT er.*, sb.subject_code, sb.subject_name
+    SELECT er.*, sb.subject_code, sb.subject_name, sb.max_marks as sb_max_marks, sb.pass_marks as sb_pass_marks
     FROM exam_results er
     JOIN subjects sb ON sb.id = er.subject_id
     WHERE er.student_id = ? AND er.exam_name = ?
@@ -46,7 +58,7 @@ $results = $marksStmt->fetchAll(PDO::FETCH_ASSOC);
 // If no marks found for this specific exam, fallback to any available marks for preview
 if (empty($results)) {
     $marksStmt = $pdo->prepare("
-        SELECT er.*, sb.subject_code, sb.subject_name
+        SELECT er.*, sb.subject_code, sb.subject_name, sb.max_marks as sb_max_marks, sb.pass_marks as sb_pass_marks
         FROM exam_results er
         JOIN subjects sb ON sb.id = er.subject_id
         WHERE er.student_id = ?
@@ -63,17 +75,22 @@ $grandObtained = 0.0;
 $isAllPass = true;
 
 foreach ($results as $r) {
-    $maxM = (float) $r['max_marks'];
+    $maxM = (float) (!empty($r['max_marks']) && (float)$r['max_marks'] > 0 ? $r['max_marks'] : (!empty($r['sb_max_marks']) ? $r['sb_max_marks'] : 100.0));
     $obtM = (float) $r['obtained_marks'];
+    $passM = (isset($r['pass_marks']) && (float) $r['pass_marks'] > 0)
+        ? (float) $r['pass_marks']
+        : (!empty($r['sb_pass_marks']) && (float) $r['sb_pass_marks'] > 0
+            ? (float) $r['sb_pass_marks']
+            : round($maxM * ($defaultPassPct / 100.0), 1));
     $grandMax += $maxM;
     $grandObtained += $obtM;
-    if ($obtM < ($maxM * 0.33)) {
+    if ($obtM < $passM) {
         $isAllPass = false;
     }
 }
 
 $percentage = ($grandMax > 0) ? round(($grandObtained / $grandMax) * 100, 2) : 0.0;
-$finalStatus = ($isAllPass && $percentage >= 33.0) ? 'PASS' : 'NEEDS IMPROVEMENT';
+$finalStatus = ($isAllPass && $percentage >= $defaultPassPct) ? 'PASS' : 'NEEDS IMPROVEMENT';
 
 $totalAtt = (int) $student['total_attendance'];
 $presents = (int) $student['presents'];
@@ -331,16 +348,20 @@ $attPct = ($totalAtt > 0) ? round(($presents / $totalAtt) * 100, 1) : 100.0;
                 </tr>
             <?php else: ?>
                 <?php foreach ($results as $res): 
-                    $max = (float) $res['max_marks'];
+                    $max = (float) (!empty($res['max_marks']) && (float)$res['max_marks'] > 0 ? $res['max_marks'] : (!empty($res['sb_max_marks']) ? $res['sb_max_marks'] : 100.0));
                     $obt = (float) $res['obtained_marks'];
-                    $pass = round($max * 0.33, 1);
+                    $pass = (isset($res['pass_marks']) && (float) $res['pass_marks'] > 0)
+                        ? (float) $res['pass_marks']
+                        : (!empty($res['sb_pass_marks']) && (float) $res['sb_pass_marks'] > 0
+                            ? (float) $res['sb_pass_marks']
+                            : round($max * ($defaultPassPct / 100.0), 1));
                     $subPassed = ($obt >= $pass);
                 ?>
                     <tr>
                         <td style="font-family:monospace;"><?= e($res['subject_code']) ?></td>
                         <td><strong><?= e($res['subject_name']) ?></strong></td>
                         <td style="text-align:right;"><?= number_format($max, 1) ?></td>
-                        <td style="text-align:right;color:#64748b;"><?= number_format($pass, 1) ?></td>
+                        <td style="text-align:right;font-weight:600;color:#0284c7;"><?= number_format($pass, 1) ?></td>
                         <td style="text-align:right;font-weight:700;font-size:1.05rem;color:<?= $subPassed ? '#0f172a' : '#dc2626' ?>;">
                             <?= number_format($obt, 1) ?>
                         </td>
