@@ -113,7 +113,6 @@ $exams = $pdo->query("
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
                     <a href="exam-marks.php" class="btn btn-sm btn-outline">📝 Marks Entry Sheet</a>
                     <button type="button" class="btn btn-sm btn-primary" onclick="openModal('examModal')">+ Create New Exam Term</button>
-                    <a href="academic-subjects.php" class="btn btn-sm btn-soft">← Subjects Master</a>
                 </div>
             </div>
         </section>
