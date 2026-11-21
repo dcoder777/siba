@@ -540,6 +540,11 @@ function field_feedback(string $field, array $errors): string {
                     <h2>Parent / Guardian Details</h2>
                 </div>
                 <div class="row g-3">
+                    <div class="col-12" style="margin-top:.25rem;margin-bottom:-.25rem;">
+                        <h4 style="font-size:.92rem;font-weight:700;color:var(--text-heading,#1e3a8a);border-bottom:1px solid #e2e8f0;padding-bottom:.4rem;display:flex;align-items:center;gap:.5rem;">
+                            <span>👨</span> Father's Information
+                        </h4>
+                    </div>
                     <div class="col-md-6">
                         <label class="form-label" for="father_name">Father's Name *</label>
                         <input class="form-control<?= field_error('father_name', $errors) ?>" id="father_name" name="father_name" type="text" value="<?= e($_POST['father_name'] ?? '') ?>">
@@ -574,6 +579,13 @@ function field_feedback(string $field, array $errors): string {
                         <label class="form-label" for="father_voter">Father Voter Card Copy</label>
                         <input class="form-control" id="father_voter" name="father_voter" type="file" accept="image/*,application/pdf">
                     </div>
+
+                    <!-- Mother's Details (New Row) -->
+                    <div class="col-12" style="margin-top:1.25rem;margin-bottom:-.25rem;">
+                        <h4 style="font-size:.92rem;font-weight:700;color:var(--text-heading,#1e3a8a);border-bottom:1px solid #e2e8f0;padding-bottom:.4rem;display:flex;align-items:center;gap:.5rem;">
+                            <span>👩</span> Mother's Information
+                        </h4>
+                    </div>
                     <div class="col-md-6">
                         <label class="form-label" for="mother_name">Mother's Name *</label>
                         <input class="form-control<?= field_error('mother_name', $errors) ?>" id="mother_name" name="mother_name" type="text" value="<?= e($_POST['mother_name'] ?? '') ?>">
@@ -607,6 +619,13 @@ function field_feedback(string $field, array $errors): string {
                     <div class="col-md-6">
                         <label class="form-label" for="mother_voter">Mother Voter Card Copy</label>
                         <input class="form-control" id="mother_voter" name="mother_voter" type="file" accept="image/*,application/pdf">
+                    </div>
+
+                    <!-- Guardian & Financial Details (New Row) -->
+                    <div class="col-12" style="margin-top:1.25rem;margin-bottom:-.25rem;">
+                        <h4 style="font-size:.92rem;font-weight:700;color:var(--text-heading,#1e3a8a);border-bottom:1px solid #e2e8f0;padding-bottom:.4rem;display:flex;align-items:center;gap:.5rem;">
+                            <span>👥</span> Guardian &amp; Financial Information
+                        </h4>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="guardian_name">Guardian Name <span class="text-muted fw-normal">(if different)</span></label>
