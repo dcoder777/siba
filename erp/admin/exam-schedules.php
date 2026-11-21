@@ -111,7 +111,6 @@ $exams = $pdo->query("
                     <p>Create institutional examination terms, datesheets, and manage student evaluation cycles.</p>
                 </div>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
-                    <a href="exam-marks.php" class="btn btn-sm btn-outline">📝 Marks Entry Sheet</a>
                     <button type="button" class="btn btn-sm btn-primary" onclick="openModal('examModal')">+ Create New Exam Term</button>
                 </div>
             </div>
