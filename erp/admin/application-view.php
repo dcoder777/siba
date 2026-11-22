@@ -18,18 +18,68 @@ if (!$appId) {
     exit();
 }
 
-try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+// ── Self-healing schema synchronization for student identification & dossier columns ──
+try {
+    $testCol = $pdo->query("SHOW COLUMNS FROM students LIKE 'registration_no'")->fetchColumn();
+    if (!$testCol) {
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER admission_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
+try {
+    $testColEnr = $pdo->query("SHOW COLUMNS FROM student_enrollments LIKE 'section_name'")->fetchColumn();
+    if (!$testColEnr) {
+        try { $pdo->exec("ALTER TABLE student_enrollments ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_name"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE student_enrollments ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER section_name"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
+try {
+    $testColApp = $pdo->query("SHOW COLUMNS FROM applications LIKE 'student_id_code'")->fetchColumn();
+    if (!$testColApp) {
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_sought"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER section_name"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
+$stCols = [];
+try { $stCols = $pdo->query("SHOW COLUMNS FROM students")->fetchAll(PDO::FETCH_COLUMN); } catch (\Throwable $e) {}
+$hasStCode = in_array('student_id_code', $stCols, true);
+$hasStReg = in_array('registration_no', $stCols, true);
+$hasStRoll = in_array('roll_no', $stCols, true);
+
+$enrCols = [];
+try { $enrCols = $pdo->query("SHOW COLUMNS FROM student_enrollments")->fetchAll(PDO::FETCH_COLUMN); } catch (\Throwable $e) {}
+$hasEnrSec = in_array('section_name', $enrCols, true);
+$hasEnrRoll = in_array('roll_no', $enrCols, true);
+
+$appCols = [];
+try { $appCols = $pdo->query("SHOW COLUMNS FROM applications")->fetchAll(PDO::FETCH_COLUMN); } catch (\Throwable $e) {}
+$hasAppDel = in_array('deleted_at', $appCols, true);
+
+$colStCode = $hasStCode ? "s.student_id_code AS student_code" : "NULL AS student_code";
+$colStReg = $hasStReg ? "s.registration_no AS st_reg_no" : "NULL AS st_reg_no";
+$colStRoll = $hasStRoll ? "s.roll_no AS st_roll_no" : "NULL AS st_roll_no";
+$colEnrSec = $hasEnrSec ? "se.section_name AS enr_section" : "NULL AS enr_section";
+$colEnrRoll = $hasEnrRoll ? "se.roll_no AS enr_roll_no" : "NULL AS enr_roll_no";
+$whereDel = $hasAppDel ? "AND a.deleted_at IS NULL" : "";
 
 $stmt = $pdo->prepare("
     SELECT a.*, 
            p.name AS parent_name, p.email AS parent_email, p.phone AS parent_phone,
-           s.student_id_code AS student_code, s.registration_no AS st_reg_no, s.roll_no AS st_roll_no,
-           se.section_name AS enr_section, se.roll_no AS enr_roll_no
+           {$colStCode}, {$colStReg}, {$colStRoll},
+           {$colEnrSec}, {$colEnrRoll}
     FROM applications a 
     LEFT JOIN parents p ON p.id = a.parent_id 
     LEFT JOIN students s ON s.id = a.student_id
     LEFT JOIN student_enrollments se ON se.student_id = a.student_id AND se.is_current = 1
-    WHERE a.id = :id AND a.deleted_at IS NULL
+    WHERE a.id = :id {$whereDel}
 ");
 $stmt->execute(['id' => $appId]);
 $app = $stmt->fetch(PDO::FETCH_ASSOC);

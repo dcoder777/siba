@@ -19,6 +19,36 @@ if (isset($_GET['success'])) {
     $success = htmlspecialchars($_GET['success']);
 }
 
+// ── Self-healing schema synchronization for student identification & dossier columns ──
+try {
+    $testCol = $pdo->query("SHOW COLUMNS FROM students LIKE 'registration_no'")->fetchColumn();
+    if (!$testCol) {
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER admission_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
+try {
+    $testColEnr = $pdo->query("SHOW COLUMNS FROM student_enrollments LIKE 'section_name'")->fetchColumn();
+    if (!$testColEnr) {
+        try { $pdo->exec("ALTER TABLE student_enrollments ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_name"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE student_enrollments ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER section_name"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
+try {
+    $testColApp = $pdo->query("SHOW COLUMNS FROM applications LIKE 'student_id_code'")->fetchColumn();
+    if (!$testColApp) {
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_sought"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER section_name"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
 // ── Handle Post Actions (Disciplinary Remark, Status Update) ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $action = trim((string) ($_POST['action'] ?? ''));
@@ -89,14 +119,35 @@ $filterHouse = trim((string) ($_GET['house'] ?? ''));
 $classList = $pdo->query("SELECT DISTINCT class_name FROM student_enrollments WHERE class_name IS NOT NULL AND class_name <> '' ORDER BY class_name ASC")->fetchAll(PDO::FETCH_COLUMN);
 $houseList = $pdo->query("SELECT id, house_name, color_code FROM houses WHERE status = 'Active' ORDER BY house_name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
+// Check column availability to ensure zero fatal errors across all environments
+$stCols = [];
+try {
+    $stCols = $pdo->query("SHOW COLUMNS FROM students")->fetchAll(PDO::FETCH_COLUMN);
+} catch (\Throwable $e) {}
+
+$hasStudentIdCode = in_array('student_id_code', $stCols, true);
+$hasRegNo = in_array('registration_no', $stCols, true);
+$hasRollNo = in_array('roll_no', $stCols, true);
+$hasDeletedAt = in_array('deleted_at', $stCols, true);
+
+$enrCols = [];
+try {
+    $enrCols = $pdo->query("SHOW COLUMNS FROM student_enrollments")->fetchAll(PDO::FETCH_COLUMN);
+} catch (\Throwable $e) {}
+
+$hasEnrSection = in_array('section_name', $enrCols, true);
+$hasEnrRoll = in_array('roll_no', $enrCols, true);
+
 // Base Query with 360-degree joins
 $whereSql = " WHERE 1=1";
 $params = [];
 
 if ($filterStatus === 'deleted') {
-    $whereSql .= " AND s.deleted_at IS NOT NULL";
+    $whereSql .= $hasDeletedAt ? " AND s.deleted_at IS NOT NULL" : " AND 1=0";
 } else {
-    $whereSql .= " AND s.deleted_at IS NULL";
+    if ($hasDeletedAt) {
+        $whereSql .= " AND s.deleted_at IS NULL";
+    }
     if ($filterStatus !== '') {
         $whereSql .= " AND e.status = :st";
         $params['st'] = $filterStatus;
@@ -104,7 +155,10 @@ if ($filterStatus === 'deleted') {
 }
 
 if ($search !== '') {
-    $whereSql .= " AND (s.admission_no LIKE :q OR s.student_id_code LIKE :q OR s.registration_no LIKE :q OR s.first_name LIKE :q OR s.last_name LIKE :q OR s.phone LIKE :q)";
+    $searchParts = ["s.admission_no LIKE :q", "s.first_name LIKE :q", "s.last_name LIKE :q", "s.phone LIKE :q"];
+    if ($hasStudentIdCode) $searchParts[] = "s.student_id_code LIKE :q";
+    if ($hasRegNo) $searchParts[] = "s.registration_no LIKE :q";
+    $whereSql .= " AND (" . implode(" OR ", $searchParts) . ")";
     $params['q'] = '%' . $search . '%';
 }
 if ($filterClass !== '') {
@@ -116,11 +170,19 @@ if ($filterHouse !== '') {
     $params['house'] = (int) $filterHouse;
 }
 
+$colCode = $hasStudentIdCode ? "s.student_id_code" : "NULL as student_id_code";
+$colReg = $hasRegNo ? "s.registration_no" : "NULL as registration_no";
+$colRoll = ($hasEnrRoll && $hasRollNo)
+    ? "COALESCE(e.roll_no, s.roll_no) as roll_no"
+    : ($hasEnrRoll ? "e.roll_no as roll_no" : ($hasRollNo ? "s.roll_no as roll_no" : "NULL as roll_no"));
+$colSection = $hasEnrSection ? "e.section_name" : "NULL as section_name";
+$colDeleted = $hasDeletedAt ? "s.deleted_at" : "NULL as deleted_at";
+
 $query = "
     SELECT 
-        s.id, s.admission_no, s.student_id_code, s.registration_no, COALESCE(e.roll_no, s.roll_no) as roll_no,
-        s.first_name, s.last_name, s.gender, s.dob, s.phone, s.email, s.blood_group, s.deleted_at,
-        e.class_name, e.section_name, e.session_label, e.status as enrollment_status,
+        s.id, s.admission_no, {$colCode}, {$colReg}, {$colRoll},
+        s.first_name, s.last_name, s.gender, s.dob, s.phone, s.email, s.blood_group, {$colDeleted},
+        e.class_name, {$colSection}, e.session_label, e.status as enrollment_status,
         h.house_name, h.color_code as house_color, sha.role as house_role,
         tr.route_name, ta.pickup_stop,
         (SELECT COUNT(*) FROM student_remarks_discipline WHERE student_id = s.id) as remarks_count,

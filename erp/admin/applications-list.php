@@ -22,6 +22,36 @@ $searchQ = trim((string) ($_GET['q'] ?? ''));
 // One-time: restore any soft-deleted applications
 try { $pdo->exec("UPDATE applications SET deleted_at = NULL WHERE deleted_at IS NOT NULL"); } catch (\Throwable $e) {}
 
+// Self-healing schema synchronization for student identification & dossier columns
+try {
+    $testCol = $pdo->query("SHOW COLUMNS FROM students LIKE 'registration_no'")->fetchColumn();
+    if (!$testCol) {
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER admission_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE students ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
+try {
+    $testColEnr = $pdo->query("SHOW COLUMNS FROM student_enrollments LIKE 'section_name'")->fetchColumn();
+    if (!$testColEnr) {
+        try { $pdo->exec("ALTER TABLE student_enrollments ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_name"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE student_enrollments ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER section_name"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
+try {
+    $testColApp = $pdo->query("SHOW COLUMNS FROM applications LIKE 'student_id_code'")->fetchColumn();
+    if (!$testColApp) {
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_sought"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER section_name"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no"); } catch (\Throwable $e) {}
+        try { $pdo->exec("ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"); } catch (\Throwable $e) {}
+    }
+} catch (\Throwable $e) {}
+
 // ─── Delete Application (Permanent) ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_app']) && verify_csrf()) {
     $appId = (int) ($_POST['app_id'] ?? 0);

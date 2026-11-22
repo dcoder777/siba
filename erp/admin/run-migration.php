@@ -110,6 +110,65 @@ run_ddl($pdo, 'Student Disciplinary Remarks', "
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ", $results);
 
+// Ensure extended columns exist on students table
+foreach ([
+    'student_id_code' => "ALTER TABLE students ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER admission_no",
+    'registration_no' => "ALTER TABLE students ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code",
+    'roll_no' => "ALTER TABLE students ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no",
+    'deleted_at' => "ALTER TABLE students ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"
+] as $col => $sql) {
+    try {
+        $chk = $pdo->query("SHOW COLUMNS FROM students LIKE '{$col}'")->fetchColumn();
+        if (!$chk) {
+            $pdo->exec($sql);
+            $results[] = ['label' => "Students column: {$col}", 'status' => 'OK', 'msg' => 'Column added successfully.'];
+        } else {
+            $results[] = ['label' => "Students column: {$col}", 'status' => 'OK', 'msg' => 'Column verified.'];
+        }
+    } catch (\Throwable $e) {
+        $results[] = ['label' => "Students column: {$col}", 'status' => 'WARN', 'msg' => $e->getMessage()];
+    }
+}
+
+// Ensure extended columns exist on student_enrollments table
+foreach ([
+    'section_name' => "ALTER TABLE student_enrollments ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_name",
+    'roll_no' => "ALTER TABLE student_enrollments ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER section_name"
+] as $col => $sql) {
+    try {
+        $chk = $pdo->query("SHOW COLUMNS FROM student_enrollments LIKE '{$col}'")->fetchColumn();
+        if (!$chk) {
+            $pdo->exec($sql);
+            $results[] = ['label' => "Enrollments column: {$col}", 'status' => 'OK', 'msg' => 'Column added successfully.'];
+        } else {
+            $results[] = ['label' => "Enrollments column: {$col}", 'status' => 'OK', 'msg' => 'Column verified.'];
+        }
+    } catch (\Throwable $e) {
+        $results[] = ['label' => "Enrollments column: {$col}", 'status' => 'WARN', 'msg' => $e->getMessage()];
+    }
+}
+
+// Ensure extended columns exist on applications table
+foreach ([
+    'section_name' => "ALTER TABLE applications ADD COLUMN section_name VARCHAR(50) NULL DEFAULT NULL AFTER class_sought",
+    'student_id_code' => "ALTER TABLE applications ADD COLUMN student_id_code VARCHAR(50) NULL DEFAULT NULL AFTER section_name",
+    'registration_no' => "ALTER TABLE applications ADD COLUMN registration_no VARCHAR(50) NULL DEFAULT NULL AFTER student_id_code",
+    'roll_no' => "ALTER TABLE applications ADD COLUMN roll_no VARCHAR(50) NULL DEFAULT NULL AFTER registration_no",
+    'deleted_at' => "ALTER TABLE applications ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL"
+] as $col => $sql) {
+    try {
+        $chk = $pdo->query("SHOW COLUMNS FROM applications LIKE '{$col}'")->fetchColumn();
+        if (!$chk) {
+            $pdo->exec($sql);
+            $results[] = ['label' => "Applications column: {$col}", 'status' => 'OK', 'msg' => 'Column added successfully.'];
+        } else {
+            $results[] = ['label' => "Applications column: {$col}", 'status' => 'OK', 'msg' => 'Column verified.'];
+        }
+    } catch (\Throwable $e) {
+        $results[] = ['label' => "Applications column: {$col}", 'status' => 'WARN', 'msg' => $e->getMessage()];
+    }
+}
+
 // 3. HOUSE MANAGEMENT TABLES
 run_ddl($pdo, 'Houses Master', "
     CREATE TABLE IF NOT EXISTS houses (
