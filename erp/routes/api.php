@@ -48,6 +48,8 @@ return function (Router $router, array $context): void {
     $router->add('POST', '/api/v1/students/lifecycle', fn() => $students->createLifecycle(), true, ['admin'], 'students');
     $router->add('PUT', '/api/v1/students/lifecycle/{id}', fn($p) => $students->updateLifecycle($p), true, ['admin'], 'students');
     $router->add('DELETE', '/api/v1/students/lifecycle/{id}', fn($p) => $students->deleteLifecycle($p), true, ['admin'], 'students');
+    $router->add('GET', '/api/v1/students/classes', fn() => $students->classes(), true, ['admin', 'teacher', 'finance', 'parent', 'student'], 'students');
+    $router->add('GET', '/api/v1/classes', fn() => $students->classes(), true, ['admin', 'teacher', 'finance', 'parent', 'student'], 'students');
     $router->add('GET', '/api/v1/students/{id}', fn($p) => $students->show($p), true, ['admin', 'teacher', 'finance'], 'students');
 
     $router->add('GET', '/api/v1/academics/subjects', fn() => $academics->listSubjects(), true, ['admin', 'teacher'], 'academics');

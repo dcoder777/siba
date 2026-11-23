@@ -626,6 +626,53 @@ paths:
       responses:
         '200': { description: Created }
 
+  /students/classes:
+    get:
+      tags: [Students]
+      summary: List distinct classes and sections with student counts
+      description: Returns distinct active class and section combinations, both grouped by class and as a flat list, without loading heavy individual student profiles.
+      parameters:
+        - in: query
+          name: session_label
+          schema: { type: string, example: "2026-2027" }
+          description: Optional filter by academic session label
+        - in: query
+          name: status
+          schema: { type: string, example: "active" }
+          description: Optional filter by enrollment status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string, example: "Classes and sections retrieved successfully" }
+                  data:
+                    type: object
+                    properties:
+                      classes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            class_name: { type: string, example: "Class 1" }
+                            sections:
+                              type: array
+                              items: { type: string, example: "A" }
+                            total_students: { type: integer, example: 45 }
+                      flat:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            class_name: { type: string, example: "Class 1" }
+                            section_name: { type: string, example: "A" }
+                            student_count: { type: integer, example: 23 }
+                      total_classes: { type: integer, example: 12 }
+
   /students/{id}:
     get:
       tags: [Students]

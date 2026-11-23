@@ -581,4 +581,83 @@ class StudentController extends Controller
 
         $this->ok(['certificate' => $cert]);
     }
+
+    public function classes(): void
+    {
+        $session = trim((string) Request::query('session_label', ''));
+        $status = trim((string) Request::query('status', ''));
+
+        $where = [
+            'se.is_current = 1',
+            'se.class_name IS NOT NULL',
+            "TRIM(se.class_name) != ''",
+        ];
+        $params = [];
+
+        // Defensively check if deleted_at exists on students table
+        $hasDeletedAt = false;
+        try {
+            $hasDeletedAt = (bool) $this->pdo->query("SHOW COLUMNS FROM students LIKE 'deleted_at'")->fetchColumn();
+        } catch (\Throwable) {}
+
+        if ($hasDeletedAt) {
+            $where[] = 's.deleted_at IS NULL';
+        }
+
+        if ($session !== '') {
+            $where[] = 'se.session_label = :session_label';
+            $params['session_label'] = $session;
+        }
+
+        if ($status !== '') {
+            $where[] = 'se.status = :status';
+            $params['status'] = $status;
+        }
+
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+        $sql = "
+            SELECT 
+                TRIM(se.class_name) AS class_name,
+                COALESCE(NULLIF(TRIM(se.section_name), ''), 'A') AS section_name,
+                COUNT(s.id) AS student_count
+            FROM student_enrollments se
+            JOIN students s ON s.id = se.student_id
+            {$whereSql}
+            GROUP BY TRIM(se.class_name), COALESCE(NULLIF(TRIM(se.section_name), ''), 'A')
+            ORDER BY class_name ASC, section_name ASC
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $cName = (string) $row['class_name'];
+            $sName = (string) $row['section_name'];
+            $count = (int) ($row['student_count'] ?? 0);
+
+            if (!isset($grouped[$cName])) {
+                $grouped[$cName] = [
+                    'class_name' => $cName,
+                    'sections' => [],
+                    'total_students' => 0,
+                ];
+            }
+            if (!in_array($sName, $grouped[$cName]['sections'], true)) {
+                $grouped[$cName]['sections'][] = $sName;
+            }
+            $grouped[$cName]['total_students'] += $count;
+        }
+
+        $classes = array_values($grouped);
+
+        $this->ok([
+            'classes' => $classes,
+            'items' => $rows,
+            'flat' => $rows,
+            'total_classes' => count($classes),
+        ], 'Classes and sections retrieved successfully');
+    }
 }

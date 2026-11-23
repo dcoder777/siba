@@ -28,6 +28,7 @@ The site (public website & parent portal) and ERP now share a single database **
 
 ## Students
 - `GET /students`
+- `GET /students/classes` (alias: `GET /classes`) — fast lightweight distinct class and section list with student counts
 - `GET /students/{id}`
 - `POST /students`
 - `PUT /students/{id}`
